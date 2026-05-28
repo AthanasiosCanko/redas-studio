@@ -329,16 +329,19 @@
     if (!name || !contact) return;
 
     const submitBtn    = admBkForm.querySelector('.bk-submit');
+    const origLabel    = submitBtn.textContent;
     submitBtn.disabled = true;
+    submitBtn.textContent = 'Confirming…';
 
     try {
+      const { date, time } = pendingAdmSlot;
       await apiFetch('/api/admin/bookings', {
         method: 'POST',
-        body: JSON.stringify({ date: pendingAdmSlot.date, time: pendingAdmSlot.time, name, contact }),
+        body: JSON.stringify({ date, time, name, contact }),
       });
       admBkForm.hidden    = true;
       admBkSuccess.hidden = false;
-      const bookedDate = pendingAdmSlot.date;
+      const bookedDate = date;
       setTimeout(async () => {
         closeAdmModal();
         loadBookings();
@@ -347,7 +350,9 @@
       }, 1400);
     } catch (err) {
       alert(err.message === 'Already booked' ? 'This slot is already booked.' : 'Could not save booking.');
-      submitBtn.disabled = false;
+    } finally {
+      submitBtn.disabled    = false;
+      submitBtn.textContent = origLabel;
     }
   });
 
