@@ -230,7 +230,7 @@ app.post('/api/bookings', async (req, res) => {
       weekday: 'short', day: 'numeric', month: 'short',
     });
     notifyAdmin({
-      title: 'New booking — R-EDA\'S STUDIO',
+      title: 'New booking',
       body:  `${name.trim()} · ${friendlyDate} · ${time}`,
     });
 
