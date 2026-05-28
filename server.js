@@ -66,7 +66,11 @@ function requireAdmin(req, res, next) {
   }
 }
 
-// ── Public routes ────────────────────────────────────────
+// ── Routes ───────────────────────────────────────────────
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 app.post('/api/admin/login', (req, res) => {
   if (req.body.password !== ADMIN_PASSWORD) {
