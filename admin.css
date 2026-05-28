@@ -133,6 +133,7 @@
   border-bottom: 1px solid var(--brown-faint);
   padding: 0 clamp(20px, 5vw, 48px);
   display: flex;
+  justify-content: center;
 }
 
 .adm-tab {
@@ -166,7 +167,7 @@
 .adm-section[hidden] { display: none; }
 
 .adm-inner {
-  max-width: 760px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
