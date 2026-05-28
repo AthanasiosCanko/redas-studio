@@ -22,6 +22,12 @@
   font-weight: 300;
 }
 
+.booking-title .title-plain {
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 6.5vw, 3.8rem);
+}
+
 /* ── Calendar shell ────────────────────────────────────── */
 .cal-wrap {
   border: 1px solid var(--brown-faint);
