@@ -8,9 +8,14 @@ const jwt     = require('jsonwebtoken');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set.');
+  process.exit(1);
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
 });
 
 const JWT_SECRET     = process.env.JWT_SECRET || 'dev-secret-change-in-prod';
