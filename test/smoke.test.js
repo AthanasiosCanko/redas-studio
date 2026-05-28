@@ -77,7 +77,7 @@ test('service-worker precache lists only files that exist', () => {
 
 test('SLOTS are defined once in server.js and consumed by every booking path', () => {
   const server = read('server.js');
-  const match = server.match(/const SLOTS = \[([^\]]*)\]/);
+  const match = server.match(/const SLOTS\s*=\s*\[([^\]]*)\]/);
   assert.ok(match, 'SLOTS array not found in server.js');
   const slots = [...match[1].matchAll(/'(\d{2}:\d{2})'/g)].map((m) => m[1]);
   assert.ok(slots.length >= 1, 'SLOTS is empty');
