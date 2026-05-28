@@ -178,12 +178,14 @@
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--brown-mid);
+  text-align: center;
   margin-bottom: 20px;
 }
 
 /* ── Filter row ────────────────────────────────────────── */
 .adm-filter-row {
   display: flex;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 28px;
   flex-wrap: wrap;
