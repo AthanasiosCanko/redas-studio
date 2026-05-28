@@ -306,8 +306,9 @@ app.get('/api/admin/slots/:date', requireAdmin, async (req, res) => {
     const blocked    = new Set(bsRes.rows.map(r => r.time));
 
     const slots = SLOTS.map(time => {
-      if (booked[time]) return { time, status: 'booked', booking: booked[time] };
+      if (booked[time])                    return { time, status: 'booked',    booking: booked[time] };
       if (dayBlocked || blocked.has(time)) return { time, status: 'blocked' };
+      if (isSlotPast(date, time))          return { time, status: 'past' };
       return { time, status: 'available' };
     });
 
@@ -318,11 +319,14 @@ app.get('/api/admin/slots/:date', requireAdmin, async (req, res) => {
   }
 });
 
-// Admin creates a booking (bypasses blocked checks)
+// Admin creates a booking (bypasses blocked checks, but not the time cutoff)
 app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
   const { date, time, name, contact } = req.body;
   if (!date || !time || !name?.trim() || !contact?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
+  }
+  if (isSlotPast(date, time)) {
+    return res.status(409).json({ error: 'Slot is in the past' });
   }
   try {
     const existing = await pool.query(

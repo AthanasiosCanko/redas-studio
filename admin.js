@@ -349,7 +349,9 @@
         await loadDayPanel(bookedDate);
       }, 1400);
     } catch (err) {
-      alert(err.message === 'Already booked' ? 'This slot is already booked.' : 'Could not save booking.');
+      alert(err.message === 'Already booked'     ? 'This slot is already booked.'
+          : err.message === 'Slot is in the past' ? 'This slot has already passed.'
+          :                                          'Could not save booking.');
     } finally {
       submitBtn.disabled    = false;
       submitBtn.textContent = origLabel;
@@ -398,9 +400,12 @@
         } else if (slot.status === 'blocked') {
           btn.classList.add('adm-slot-btn--blocked');
         }
-        if (isPast) btn.classList.add('adm-slot-btn--past');
 
-        if (!isPast && slot.status !== 'booked') {
+        // Treat whole-past-day OR an elapsed same-day slot the same way
+        const slotIsPast = isPast || slot.status === 'past';
+        if (slotIsPast) btn.classList.add('adm-slot-btn--past');
+
+        if (!slotIsPast && slot.status !== 'booked') {
           if (slot.status === 'available') {
             // Click → open booking modal
             btn.addEventListener('click', () => openAdmModal(dateKey, slot.time));
