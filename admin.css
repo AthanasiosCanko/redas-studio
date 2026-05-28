@@ -227,53 +227,31 @@
 
 .bk-item {
   display: grid;
-  grid-template-columns: 56px 1fr 1fr auto;
+  grid-template-columns: auto 60px 1fr 1fr;
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 16px;
-  padding: 13px 0;
+  column-gap: 18px;
+  row-gap: 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--brown-faint);
 }
 
 .bk-item--past { opacity: 0.4; }
 
-.bk-item-time {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--brown);
-}
-
-.bk-item-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 1.1rem;
-  color: var(--brown);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bk-item-contact {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 300;
-  font-size: 0.67rem;
-  letter-spacing: 0.05em;
-  color: var(--brown-mid);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+/* Cancel spans both rows, sits on the left */
 .bk-item-cancel {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: center;
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;
-  font-size: 0.55rem;
-  letter-spacing: 0.25em;
+  font-size: 0.52rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--brown-mid);
   background: none;
   border: 1px solid var(--brown-faint);
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 2px;
   cursor: pointer;
   white-space: nowrap;
@@ -284,6 +262,43 @@
   background: #9b2c2c;
   color: white;
   border-color: #9b2c2c;
+}
+
+.bk-item-time {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--brown);
+}
+
+.bk-item-name {
+  grid-column: 3;
+  grid-row: 1;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  color: var(--brown);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.bk-item-contact {
+  grid-column: 3;
+  grid-row: 2;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  color: var(--brown-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .adm-empty {
@@ -512,14 +527,10 @@
   /* Section padding */
   .adm-section { padding: 20px 16px 40px; }
 
-  /* Bookings: stack to 2-col on very small screens */
-  .bk-item {
-    grid-template-columns: 48px 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 4px 12px;
-  }
-  .bk-item-contact { grid-column: 2; }
-  .bk-item-cancel  { grid-column: 1 / -1; justify-self: start; margin-top: 6px; }
+  /* Bookings: tighten on small screens */
+  .bk-item { grid-template-columns: auto 48px 1fr; column-gap: 12px; }
+  .bk-item-name    { grid-column: 3; }
+  .bk-item-contact { grid-column: 3; }
 
   /* Day panel */
   .day-panel { padding: 16px; }
