@@ -30,11 +30,21 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ── Fetch: network-first for API, cache-first for assets ──
+// ── Fetch: smart caching strategy ────────────────────────
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return; // never cache API
 
+  // Navigation requests (page loads) — always network-first so iOS
+  // PWA launches open the correct URL, not a cached one
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Static assets — cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       const network = fetch(e.request).then(res => {
