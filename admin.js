@@ -295,6 +295,7 @@
     admBkSuccess.hidden   = true;
     admBkName.value       = '';
     admBkContact.value    = '';
+    admBkForm.querySelector('.bk-submit').disabled = false;
     admOverlay.hidden     = false;
     admBkName.focus();
   }
@@ -337,11 +338,12 @@
       });
       admBkForm.hidden    = true;
       admBkSuccess.hidden = false;
+      const bookedDate = pendingAdmSlot.date;
       setTimeout(async () => {
         closeAdmModal();
         loadBookings();
         await loadAdmCalendar();
-        await loadDayPanel(pendingAdmSlot?.date || admSelectedDate);
+        await loadDayPanel(bookedDate);
       }, 1400);
     } catch (err) {
       alert(err.message === 'Already booked' ? 'This slot is already booked.' : 'Could not save booking.');
