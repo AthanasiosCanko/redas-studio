@@ -1,0 +1,340 @@
+(() => {
+  'use strict';
+
+  const MONTH_NAMES = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ];
+
+  // ── Token helpers ────────────────────────────────────────
+  const TOKEN_KEY  = 'redas_admin_token';
+  const getToken   = () => sessionStorage.getItem(TOKEN_KEY);
+  const setToken   = t  => sessionStorage.setItem(TOKEN_KEY, t);
+  const clearToken = () => sessionStorage.removeItem(TOKEN_KEY);
+
+  async function apiFetch(url, opts = {}) {
+    const token = getToken();
+    const res   = await fetch(url, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(opts.headers || {}),
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) throw Object.assign(new Error(data.error || 'API error'), { status: res.status });
+    return data;
+  }
+
+  // ── DOM refs ─────────────────────────────────────────────
+  const loginScreen   = document.getElementById('login-screen');
+  const dashboard     = document.getElementById('dashboard');
+  const loginForm     = document.getElementById('login-form');
+  const loginError    = document.getElementById('login-error');
+  const logoutBtn     = document.getElementById('logout-btn');
+
+  const tabBtns       = document.querySelectorAll('.adm-tab');
+  const filterBtns    = document.querySelectorAll('.adm-filter');
+  const bookingsList  = document.getElementById('bookings-list');
+
+  const admGrid       = document.getElementById('adm-cal-grid');
+  const admMonthLbl   = document.getElementById('adm-cal-month');
+  const admPrevBtn    = document.getElementById('adm-cal-prev');
+  const admNextBtn    = document.getElementById('adm-cal-next');
+  const dayPanel      = document.getElementById('day-panel');
+  const dayPanelTitle = document.getElementById('day-panel-title');
+  const blockDayBtn   = document.getElementById('adm-block-day-btn');
+  const daySlots      = document.getElementById('day-panel-slots');
+
+  // ── State ─────────────────────────────────────────────────
+  let admViewYear, admViewMonth;
+  let admSelectedDate = null;
+  let admCalData      = {};
+  let currentFilter   = 'upcoming';
+
+  // ── Utilities ────────────────────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function hint(text) {
+    return `<span style="font-family:'Montserrat',sans-serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--brown-mid)">${text}</span>`;
+  }
+
+  // ── Session ───────────────────────────────────────────────
+  async function checkSession() {
+    if (!getToken()) return showLogin();
+    try {
+      await apiFetch('/api/admin/bookings');
+      showDashboard();
+    } catch {
+      clearToken();
+      showLogin();
+    }
+  }
+
+  function showLogin() {
+    loginScreen.hidden = false;
+    dashboard.hidden   = true;
+  }
+
+  function showDashboard() {
+    loginScreen.hidden = true;
+    dashboard.hidden   = false;
+    loadBookings();
+    initAdminCalendar();
+  }
+
+  loginForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const pw = document.getElementById('login-pw').value;
+    try {
+      const { token } = await apiFetch('/api/admin/login', {
+        method: 'POST',
+        body:   JSON.stringify({ password: pw }),
+      });
+      setToken(token);
+      showDashboard();
+    } catch {
+      loginError.hidden = false;
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => { clearToken(); showLogin(); });
+
+  // ── Tabs ─────────────────────────────────────────────────
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.toggle('adm-tab--active', b === btn));
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.adm-section[id^="tab-"]').forEach(s => {
+        s.hidden = (s.id !== `tab-${target}`);
+      });
+    });
+  });
+
+  // ── Bookings ─────────────────────────────────────────────
+  async function loadBookings() {
+    try {
+      const { bookings } = await apiFetch('/api/admin/bookings');
+      renderBookings(bookings);
+    } catch {
+      bookingsList.innerHTML = hint('Could not load bookings.');
+    }
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.toggle('adm-filter--active', b === btn));
+      currentFilter = btn.dataset.filter;
+      loadBookings();
+    });
+  });
+
+  function renderBookings(all) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    const list = all.filter(bk => {
+      const dt = new Date(bk.date + 'T00:00:00');
+      if (currentFilter === 'upcoming') return dt >= today;
+      if (currentFilter === 'past')     return dt < today;
+      return true;
+    });
+
+    if (!list.length) {
+      bookingsList.innerHTML = '<p class="adm-empty">No bookings found.</p>';
+      return;
+    }
+
+    const groups = {};
+    for (const bk of list) {
+      if (!groups[bk.date]) groups[bk.date] = [];
+      groups[bk.date].push(bk);
+    }
+
+    bookingsList.innerHTML = '';
+    for (const date of Object.keys(groups).sort()) {
+      const dt     = new Date(date + 'T00:00:00');
+      const isPast = dt < today;
+
+      const group      = document.createElement('div');
+      group.className  = 'bk-group';
+
+      const label       = document.createElement('p');
+      label.className   = 'bk-group-date';
+      label.textContent = dt.toLocaleDateString('en-GB', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      });
+      group.appendChild(label);
+
+      for (const bk of groups[date].sort((a, b) => a.time.localeCompare(b.time))) {
+        const row     = document.createElement('div');
+        row.className = 'bk-item' + (isPast ? ' bk-item--past' : '');
+        row.innerHTML = `
+          <span class="bk-item-time">${esc(bk.time)}</span>
+          <span class="bk-item-name">${esc(bk.name)}</span>
+          <span class="bk-item-contact">${esc(bk.contact)}</span>
+          <button class="bk-item-cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Cancel</button>
+        `;
+        group.appendChild(row);
+      }
+      bookingsList.appendChild(group);
+    }
+
+    bookingsList.querySelectorAll('.bk-item-cancel').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Cancel this booking?')) return;
+        try {
+          await apiFetch(`/api/admin/bookings/${btn.dataset.date}/${btn.dataset.time}`, { method: 'DELETE' });
+          loadBookings();
+          if (admSelectedDate === btn.dataset.date) loadDayPanel(admSelectedDate);
+          await loadAdmCalendar();
+        } catch {
+          alert('Could not cancel booking.');
+        }
+      });
+    });
+  }
+
+  // ── Admin calendar ───────────────────────────────────────
+  function initAdminCalendar() {
+    const now    = new Date();
+    admViewYear  = now.getFullYear();
+    admViewMonth = now.getMonth();
+    loadAdmCalendar();
+  }
+
+  async function loadAdmCalendar() {
+    try {
+      const data = await apiFetch(`/api/calendar/${admViewYear}/${admViewMonth + 1}`);
+      admCalData = data.days || {};
+    } catch {
+      admCalData = {};
+    }
+    renderAdmCalendar();
+  }
+
+  function renderAdmCalendar() {
+    admMonthLbl.textContent = `${MONTH_NAMES[admViewMonth]} ${admViewYear}`;
+
+    const headers = Array.from(admGrid.querySelectorAll('.cal-day-name'));
+    admGrid.innerHTML = '';
+    headers.forEach(h => admGrid.appendChild(h));
+
+    const firstDay    = new Date(admViewYear, admViewMonth, 1).getDay();
+    const daysInMonth = new Date(admViewYear, admViewMonth + 1, 0).getDate();
+    const today       = new Date(); today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('span');
+      empty.className = 'cal-cell cal-cell--empty';
+      admGrid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dt   = new Date(admViewYear, admViewMonth, d);
+      const key  = `${admViewYear}-${String(admViewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const info = admCalData[key] || { blocked: false, bookingCount: 0 };
+
+      const cell       = document.createElement('button');
+      cell.type        = 'button';
+      cell.className   = 'cal-cell';
+      cell.textContent = d;
+
+      if (info.blocked)            cell.classList.add('cal-cell--adm-blocked');
+      if (dt < today)              cell.classList.add('cal-cell--adm-past');
+      if (key === admSelectedDate) cell.classList.add('cal-cell--selected');
+      if (info.bookingCount > 0)   cell.classList.add('cal-cell--has-bookings');
+
+      cell.addEventListener('click', () => {
+        admSelectedDate = key;
+        renderAdmCalendar();
+        loadDayPanel(key);
+      });
+      admGrid.appendChild(cell);
+    }
+
+    const now = new Date();
+    admPrevBtn.disabled      = (admViewYear === now.getFullYear() && admViewMonth === now.getMonth());
+    admPrevBtn.style.opacity = admPrevBtn.disabled ? '0.3' : '';
+    admPrevBtn.style.cursor  = admPrevBtn.disabled ? 'default' : '';
+  }
+
+  admPrevBtn.addEventListener('click', () => {
+    if (admViewMonth === 0) { admViewMonth = 11; admViewYear--; } else admViewMonth--;
+    loadAdmCalendar();
+  });
+
+  admNextBtn.addEventListener('click', () => {
+    if (admViewMonth === 11) { admViewMonth = 0; admViewYear++; } else admViewMonth++;
+    loadAdmCalendar();
+  });
+
+  // ── Day panel ─────────────────────────────────────────────
+  async function loadDayPanel(dateKey) {
+    dayPanel.hidden       = false;
+    dayPanelTitle.textContent = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+    daySlots.innerHTML = hint('Loading…');
+
+    try {
+      const { slots, dayBlocked } = await apiFetch(`/api/admin/slots/${dateKey}`);
+
+      blockDayBtn.textContent = dayBlocked ? 'Unblock day' : 'Block day';
+      blockDayBtn.classList.toggle('adm-block-day-btn--on', dayBlocked);
+
+      blockDayBtn.onclick = async () => {
+        try {
+          const { blocked } = await apiFetch('/api/admin/blocked-days/toggle', {
+            method: 'POST', body: JSON.stringify({ date: dateKey }),
+          });
+          blockDayBtn.textContent = blocked ? 'Unblock day' : 'Block day';
+          blockDayBtn.classList.toggle('adm-block-day-btn--on', blocked);
+          await loadAdmCalendar();
+          await loadDayPanel(dateKey);
+        } catch { alert('Could not update.'); }
+      };
+
+      const today  = new Date(); today.setHours(0, 0, 0, 0);
+      const isPast = new Date(dateKey + 'T00:00:00') < today;
+
+      daySlots.innerHTML = '';
+      for (const slot of slots) {
+        const btn       = document.createElement('button');
+        btn.type        = 'button';
+        btn.className   = 'adm-slot-btn';
+        btn.textContent = slot.time;
+
+        if (slot.status === 'booked') {
+          btn.classList.add('adm-slot-btn--booked');
+          btn.title = `${slot.booking.name} — ${slot.booking.contact}`;
+        } else if (slot.status === 'blocked') {
+          btn.classList.add('adm-slot-btn--blocked');
+        }
+        if (isPast) btn.classList.add('adm-slot-btn--past');
+
+        if (!isPast && slot.status !== 'booked') {
+          btn.addEventListener('click', async () => {
+            try {
+              await apiFetch('/api/admin/blocked-slots/toggle', {
+                method: 'POST', body: JSON.stringify({ date: dateKey, time: slot.time }),
+              });
+              await loadAdmCalendar();
+              await loadDayPanel(dateKey);
+            } catch { alert('Could not update.'); }
+          });
+        }
+        daySlots.appendChild(btn);
+      }
+    } catch {
+      daySlots.innerHTML = hint('Could not load slots.');
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  checkSession();
+})();

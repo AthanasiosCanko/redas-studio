@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — R-EDA'S STUDIO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="booking.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+  <!-- ─── LOGIN ─────────────────────────────────────────── -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <p class="login-brand">R&#x2011;EDA'S STUDIO</p>
+      <h1 class="login-title"><em>Admin</em> access</h1>
+      <form id="login-form" class="login-form" novalidate>
+        <label class="bk-label">
+          Password
+          <input id="login-pw" class="bk-input" type="password" autocomplete="current-password" required>
+        </label>
+        <p id="login-error" class="login-error" hidden>Incorrect password — try again.</p>
+        <button class="bk-submit" type="submit">Enter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── DASHBOARD ────────────────────────────────────── -->
+  <div id="dashboard" hidden>
+
+    <header class="adm-header">
+      <span class="adm-header-brand">
+        R&#x2011;EDA'S STUDIO
+        <span class="adm-header-tag">Admin</span>
+      </span>
+      <div class="adm-header-actions">
+        <a href="index.html" class="adm-link">View site</a>
+        <button id="logout-btn" class="adm-link adm-link--btn">Log out</button>
+      </div>
+    </header>
+
+    <nav class="adm-tabs">
+      <button class="adm-tab adm-tab--active" data-tab="bookings">Bookings</button>
+      <button class="adm-tab" data-tab="availability">Availability</button>
+    </nav>
+
+    <!-- ── BOOKINGS TAB ─────────────────────────────────── -->
+    <section id="tab-bookings" class="adm-section">
+      <div class="adm-inner">
+        <div class="adm-filter-row">
+          <button class="adm-filter adm-filter--active" data-filter="upcoming">Upcoming</button>
+          <button class="adm-filter" data-filter="past">Past</button>
+          <button class="adm-filter" data-filter="all">All</button>
+        </div>
+        <div id="bookings-list"></div>
+        <p id="bookings-empty" class="adm-empty" hidden>No bookings found.</p>
+      </div>
+    </section>
+
+    <!-- ── AVAILABILITY TAB ─────────────────────────────── -->
+    <section id="tab-availability" class="adm-section" hidden>
+      <div class="adm-inner">
+
+        <p class="adm-section-hint">Click any day to manage its slots or block it entirely.</p>
+
+        <div class="cal-wrap adm-cal-wrap">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="adm-cal-prev" aria-label="Previous month">&#8592;</button>
+            <span class="cal-month-label" id="adm-cal-month"></span>
+            <button class="cal-nav-btn" id="adm-cal-next" aria-label="Next month">&#8594;</button>
+          </div>
+          <div class="cal-grid" id="adm-cal-grid">
+            <span class="cal-day-name">Sun</span>
+            <span class="cal-day-name">Mon</span>
+            <span class="cal-day-name">Tue</span>
+            <span class="cal-day-name">Wed</span>
+            <span class="cal-day-name">Thu</span>
+            <span class="cal-day-name">Fri</span>
+            <span class="cal-day-name">Sat</span>
+          </div>
+        </div>
+
+        <div id="day-panel" class="day-panel" hidden>
+          <div class="day-panel-header">
+            <h3 class="day-panel-title" id="day-panel-title"></h3>
+            <button class="adm-block-day-btn" id="adm-block-day-btn"></button>
+          </div>
+          <div id="day-panel-slots" class="day-panel-slots"></div>
+          <div class="adm-slot-legend">
+            <span class="adm-legend-item">
+              <span class="adm-legend-dot adm-legend-dot--available"></span> Available
+            </span>
+            <span class="adm-legend-item">
+              <span class="adm-legend-dot adm-legend-dot--blocked"></span> Blocked by you
+            </span>
+            <span class="adm-legend-item">
+              <span class="adm-legend-dot adm-legend-dot--booked"></span> Customer booking
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
