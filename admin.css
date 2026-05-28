@@ -434,6 +434,25 @@
   cursor: default;
 }
 
+/* ── Admin modal: secondary block button ───────────────── */
+.adm-block-slot-btn {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--brown-mid);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 2px;
+  text-align: center;
+  transition: color 0.15s;
+}
+
+.adm-block-slot-btn:hover { color: var(--brown); }
+
 /* ── Legend ────────────────────────────────────────────── */
 .adm-slot-legend {
   display: flex;

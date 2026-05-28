@@ -290,6 +290,29 @@ app.get('/api/admin/slots/:date', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin creates a booking (bypasses blocked checks)
+app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
+  const { date, time, name, contact } = req.body;
+  if (!date || !time || !name?.trim() || !contact?.trim()) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+  try {
+    const existing = await pool.query(
+      `SELECT 1 FROM bookings WHERE date = $1 AND time = $2`, [date, time]
+    );
+    if (existing.rows.length) return res.status(409).json({ error: 'Already booked' });
+
+    await pool.query(
+      `INSERT INTO bookings (date, time, name, contact) VALUES ($1, $2, $3, $4)`,
+      [date, time, name.trim(), contact.trim()]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
 app.delete('/api/admin/bookings/:date/:time', requireAdmin, async (req, res) => {
   const { date, time } = req.params;
   try {

@@ -111,6 +111,34 @@
 
   </div>
 
+  <!-- ─── ADMIN BOOKING MODAL ──────────────────────────── -->
+  <div class="bk-overlay" id="adm-bk-overlay" hidden>
+    <div class="bk-modal" role="dialog" aria-modal="true" aria-labelledby="adm-bk-title">
+      <button class="bk-close" id="adm-bk-close" aria-label="Close">&times;</button>
+      <h3 class="bk-modal-title" id="adm-bk-title">New booking</h3>
+      <p class="bk-modal-sub" id="adm-bk-sub"></p>
+      <form class="bk-form" id="adm-bk-form" novalidate>
+        <label class="bk-label">
+          Client name
+          <input class="bk-input" id="adm-bk-name" type="text" placeholder="e.g. Eda Hasani" required autocomplete="off">
+        </label>
+        <label class="bk-label">
+          Phone or e-mail
+          <input class="bk-input" id="adm-bk-contact" type="text" placeholder="+355 69 …  or  you@mail.com" required autocomplete="off">
+        </label>
+        <button class="bk-submit" type="submit">Confirm booking</button>
+        <button class="adm-block-slot-btn" id="adm-bk-block" type="button">Block this slot instead</button>
+      </form>
+      <div class="bk-success" id="adm-bk-success" hidden>
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 20.5l5.5 5.5 10-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>Booking confirmed.</p>
+      </div>
+    </div>
+  </div>
+
   <script src="admin.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

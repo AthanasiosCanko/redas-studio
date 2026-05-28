@@ -274,6 +274,81 @@
     loadAdmCalendar();
   });
 
+  // ── Admin booking modal ───────────────────────────────────
+  const admOverlay  = document.getElementById('adm-bk-overlay');
+  const admBkClose  = document.getElementById('adm-bk-close');
+  const admBkSub    = document.getElementById('adm-bk-sub');
+  const admBkForm   = document.getElementById('adm-bk-form');
+  const admBkName   = document.getElementById('adm-bk-name');
+  const admBkContact= document.getElementById('adm-bk-contact');
+  const admBkSuccess= document.getElementById('adm-bk-success');
+
+  let pendingAdmSlot = null;
+
+  function openAdmModal(dateKey, time) {
+    pendingAdmSlot        = { date: dateKey, time };
+    const friendly = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+    admBkSub.textContent  = `${friendly}  ·  ${time}`;
+    admBkForm.hidden      = false;
+    admBkSuccess.hidden   = true;
+    admBkName.value       = '';
+    admBkContact.value    = '';
+    admOverlay.hidden     = false;
+    admBkName.focus();
+  }
+
+  function closeAdmModal() {
+    admOverlay.hidden  = true;
+    pendingAdmSlot     = null;
+  }
+
+  admBkClose.addEventListener('click', closeAdmModal);
+  admOverlay.addEventListener('click', e => { if (e.target === admOverlay) closeAdmModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !admOverlay.hidden) closeAdmModal(); });
+
+  document.getElementById('adm-bk-block').addEventListener('click', async () => {
+    if (!pendingAdmSlot) return;
+    const { date, time } = pendingAdmSlot;
+    try {
+      await apiFetch('/api/admin/blocked-slots/toggle', {
+        method: 'POST', body: JSON.stringify({ date, time }),
+      });
+      closeAdmModal();
+      await loadAdmCalendar();
+      await loadDayPanel(date);
+    } catch { alert('Could not block slot.'); }
+  });
+
+  admBkForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name    = admBkName.value.trim();
+    const contact = admBkContact.value.trim();
+    if (!name || !contact) return;
+
+    const submitBtn    = admBkForm.querySelector('.bk-submit');
+    submitBtn.disabled = true;
+
+    try {
+      await apiFetch('/api/admin/bookings', {
+        method: 'POST',
+        body: JSON.stringify({ date: pendingAdmSlot.date, time: pendingAdmSlot.time, name, contact }),
+      });
+      admBkForm.hidden    = true;
+      admBkSuccess.hidden = false;
+      setTimeout(async () => {
+        closeAdmModal();
+        loadBookings();
+        await loadAdmCalendar();
+        await loadDayPanel(pendingAdmSlot?.date || admSelectedDate);
+      }, 1400);
+    } catch (err) {
+      alert(err.message === 'Already booked' ? 'This slot is already booked.' : 'Could not save booking.');
+      submitBtn.disabled = false;
+    }
+  });
+
   // ── Day panel ─────────────────────────────────────────────
   async function loadDayPanel(dateKey) {
     dayPanel.hidden       = false;
@@ -319,15 +394,21 @@
         if (isPast) btn.classList.add('adm-slot-btn--past');
 
         if (!isPast && slot.status !== 'booked') {
-          btn.addEventListener('click', async () => {
-            try {
-              await apiFetch('/api/admin/blocked-slots/toggle', {
-                method: 'POST', body: JSON.stringify({ date: dateKey, time: slot.time }),
-              });
-              await loadAdmCalendar();
-              await loadDayPanel(dateKey);
-            } catch { alert('Could not update.'); }
-          });
+          if (slot.status === 'available') {
+            // Click → open booking modal
+            btn.addEventListener('click', () => openAdmModal(dateKey, slot.time));
+          } else {
+            // Blocked → click to unblock
+            btn.addEventListener('click', async () => {
+              try {
+                await apiFetch('/api/admin/blocked-slots/toggle', {
+                  method: 'POST', body: JSON.stringify({ date: dateKey, time: slot.time }),
+                });
+                await loadAdmCalendar();
+                await loadDayPanel(dateKey);
+              } catch { alert('Could not update.'); }
+            });
+          }
         }
         daySlots.appendChild(btn);
       }
