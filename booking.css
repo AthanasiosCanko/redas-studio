@@ -36,7 +36,7 @@
   border: 1px solid var(--brown-faint);
   border-radius: 2px;
   padding: clamp(20px, 4vw, 36px);
-  margin-bottom: 28px;
+  margin: 0 auto 28px;
   max-width: 520px;
 }
 
@@ -152,8 +152,8 @@
 
 /* ── Time slots ────────────────────────────────────────── */
 .slots-wrap {
-  margin-top: 4px;
   max-width: 520px;
+  margin: 4px auto 0;
 }
 
 .slots-date-label {

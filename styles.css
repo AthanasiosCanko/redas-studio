@@ -104,11 +104,8 @@ address { font-style: normal; }
   margin: 0 4px;
 }
 
-/* "Price list." stacked logotype + overlapping badge (matches PDF) */
+/* "Price list." stacked logotype */
 .prices-title-wrap {
-  position: relative;
-  width: max-content;
-  max-width: 100%;
   margin: 0 auto clamp(32px, 6vw, 56px);
 }
 
@@ -127,25 +124,6 @@ address { font-style: normal; }
 .title-price { font-style: normal; font-weight: 400; }
 .title-list  { font-style: italic; font-weight: 300; padding-left: 0.12em; }
 
-/* circular "PRICE LIST" badge — overlaps the right of "Price" */
-.prices-badge {
-  position: absolute;
-  left: calc(100% - 1.6em);
-  top: -0.15em;
-  width: clamp(64px, 9vw, 92px);
-  height: clamp(64px, 9vw, 92px);
-}
-
-.badge-svg { width: 100%; height: 100%; overflow: visible; }
-
-.badge-text {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 7.5px;
-  font-weight: 400;
-  fill: var(--brown);
-  letter-spacing: 2.8px;
-  text-transform: uppercase;
-}
 
 /* ── Category ──────────────────────────────────────────── */
 .category { margin-bottom: clamp(28px, 5vw, 48px); }
@@ -239,5 +217,4 @@ address { font-style: normal; }
 @media (max-width: 420px) {
   .prices         { padding-left: 16px; padding-right: 16px; }
   .service-row    { padding-left: 14px; }
-  .prices-badge   { width: 52px; height: 52px; left: calc(100% - 1.2em); }
 }
