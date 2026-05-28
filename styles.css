@@ -33,7 +33,7 @@ address { font-style: normal; }
 }
 
 .hero-logo {
-  width: clamp(220px, 50vw, 380px);
+  width: clamp(280px, 62vw, 480px);
   height: auto;
   display: block;
 }
