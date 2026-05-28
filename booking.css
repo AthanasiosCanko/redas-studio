@@ -325,10 +325,50 @@
 }
 
 /* ── Responsive ────────────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  /* Booking section */
+  .booking { padding-left: 20px; padding-right: 20px; }
+
+  /* Calendar */
+  .cal-wrap { padding: 16px; }
+  .cal-nav-btn { width: 36px; height: 36px; } /* better touch target */
+  .cal-month-label { font-size: 0.72rem; letter-spacing: 0.28em; }
+  .cal-day-name { font-size: 0.58rem; letter-spacing: 0.1em; }
+  .cal-cell { font-size: 0.78rem; }
+
+  /* Slots grid — even columns on mobile */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .slot-btn {
+    padding: 12px 8px;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    min-height: 44px;
+    text-align: center;
+    width: 100%;
+  }
+
+  /* Modal */
+  .bk-overlay { padding: 16px; align-items: flex-end; }
+  .bk-modal {
+    padding: 28px 20px 24px;
+    max-width: 100%;
+    border-radius: 4px 4px 2px 2px;
+  }
+  .bk-modal-title { font-size: 1.6rem; }
+  .bk-modal-sub { font-size: 0.62rem; margin-bottom: 20px; }
+  .bk-submit { padding: 16px 24px; }
+}
+
+@media (max-width: 420px) {
   .booking { padding-left: 16px; padding-right: 16px; }
-  .cal-wrap { padding: 14px; }
-  .slots-grid { gap: 8px; }
-  .slot-btn { padding: 9px 14px; font-size: 0.68rem; }
-  .bk-modal { padding: 24px 20px; }
+  .cal-wrap { padding: 12px; }
+
+  /* 2-col slots grid on very small phones */
+  .slots-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .slot-btn { font-size: 0.62rem; padding: 12px 6px; }
 }
