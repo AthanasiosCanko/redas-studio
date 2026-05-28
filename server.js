@@ -1,9 +1,10 @@
 'use strict';
 
-const express = require('express');
-const path    = require('path');
+const express  = require('express');
+const path     = require('path');
 const { Pool } = require('pg');
-const jwt     = require('jsonwebtoken');
+const jwt      = require('jsonwebtoken');
+const webpush  = require('web-push');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -18,8 +19,14 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
 });
 
-const JWT_SECRET     = process.env.JWT_SECRET || 'dev-secret-change-in-prod';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'redas2024';
+const JWT_SECRET      = process.env.JWT_SECRET      || 'dev-secret-change-in-prod';
+const ADMIN_PASSWORD  = process.env.ADMIN_PASSWORD  || 'redas2024';
+const VAPID_PUBLIC    = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE   = process.env.VAPID_PRIVATE_KEY;
+
+if (VAPID_PUBLIC && VAPID_PRIVATE) {
+  webpush.setVapidDetails('mailto:admin@redas-studio.com', VAPID_PUBLIC, VAPID_PRIVATE);
+}
 
 const SLOTS = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00'];
 
@@ -44,9 +51,36 @@ async function initDb() {
         time VARCHAR(5) NOT NULL,
         PRIMARY KEY (date, time)
       );
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         SERIAL      PRIMARY KEY,
+        subscription JSONB     NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
   } finally {
     client.release();
+  }
+}
+
+// ── Push helper ───────────────────────────────────────────
+async function notifyAdmin(payload) {
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return;
+  try {
+    const { rows } = await pool.query(`SELECT subscription FROM push_subscriptions`);
+    await Promise.allSettled(
+      rows.map(r =>
+        webpush.sendNotification(r.subscription, JSON.stringify(payload)).catch(async err => {
+          // Remove expired/invalid subscriptions automatically
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await pool.query(
+              `DELETE FROM push_subscriptions WHERE subscription = $1`, [r.subscription]
+            );
+          }
+        })
+      )
+    );
+  } catch (err) {
+    console.error('Push error:', err.message);
   }
 }
 
@@ -72,12 +106,36 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+// Expose VAPID public key to client
+app.get('/api/vapid-public-key', (req, res) => {
+  if (!VAPID_PUBLIC) return res.json({ key: null });
+  res.json({ key: VAPID_PUBLIC });
+});
+
 app.post('/api/admin/login', (req, res) => {
   if (req.body.password !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Wrong password' });
   }
   const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '12h' });
   res.json({ token });
+});
+
+// Save admin push subscription
+app.post('/api/admin/push-subscribe', requireAdmin, async (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription) return res.status(400).json({ error: 'Missing subscription' });
+  try {
+    await pool.query(
+      `INSERT INTO push_subscriptions (subscription)
+       VALUES ($1)
+       ON CONFLICT (subscription) DO NOTHING`,
+      [JSON.stringify(subscription)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'DB error' });
+  }
 });
 
 // Calendar month data: blocked days + booking dot counts
@@ -166,6 +224,16 @@ app.post('/api/bookings', async (req, res) => {
       `INSERT INTO bookings (date, time, name, contact) VALUES ($1, $2, $3, $4)`,
       [date, time, name.trim(), contact.trim()]
     );
+
+    // Fire push notification to admin (non-blocking)
+    const friendlyDate = new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short',
+    });
+    notifyAdmin({
+      title: 'New booking — R-EDA\'S STUDIO',
+      body:  `${name.trim()} · ${friendlyDate} · ${time}`,
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error(err);

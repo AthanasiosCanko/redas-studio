@@ -85,6 +85,7 @@
     dashboard.hidden   = false;
     loadBookings();
     initAdminCalendar();
+    subscribeToPush();
   }
 
   loginForm.addEventListener('submit', async e => {
@@ -333,6 +334,40 @@
     } catch {
       daySlots.innerHTML = hint('Could not load slots.');
     }
+  }
+
+  // ── Push notifications ────────────────────────────────────
+  async function subscribeToPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    try {
+      const { key } = await fetch('/api/vapid-public-key').then(r => r.json());
+      if (!key) return; // VAPID not configured on server
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const sub = existing || await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key),
+      });
+
+      await apiFetch('/api/admin/push-subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ subscription: sub }),
+      });
+    } catch (err) {
+      console.warn('Push setup failed:', err.message);
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
   }
 
   // ── Init ─────────────────────────────────────────────────

@@ -1,0 +1,14 @@
+{
+  "name": "R-EDA'S STUDIO",
+  "short_name": "R-EDA'S",
+  "description": "Nails & Make-Up booking — Tirana",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#5c2520",
+  "background_color": "#f0e8dc",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
