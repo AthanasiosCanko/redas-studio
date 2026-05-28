@@ -28,7 +28,31 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails('mailto:admin@redas-studio.com', VAPID_PUBLIC, VAPID_PRIVATE);
 }
 
-const SLOTS = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00'];
+const SLOTS       = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30', '19:00'];
+const ALBANIA_TZ  = 'Europe/Tirane';
+
+// Returns { date: 'YYYY-MM-DD', totalMins: number } for right now in Albania time.
+function nowInAlbania() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ALBANIA_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const get = type => parts.find(p => p.type === type).value;
+  return {
+    date:      `${get('year')}-${get('month')}-${get('day')}`,
+    totalMins: parseInt(get('hour')) * 60 + parseInt(get('minute')),
+  };
+}
+
+// A slot is past when its start time has already elapsed in Albania time.
+function isSlotPast(date, time) {
+  const now = nowInAlbania();
+  if (date < now.date) return true;
+  if (date > now.date) return false;
+  const [h, m] = time.split(':').map(Number);
+  return (h * 60 + m) < now.totalMins;
+}
 
 // ── DB bootstrap ─────────────────────────────────────────
 async function initDb() {
@@ -190,6 +214,7 @@ app.get('/api/slots/:date', async (req, res) => {
     const slots = SLOTS.map(time => {
       if (booked.has(time))                return { time, status: 'booked' };
       if (dayBlocked || blocked.has(time)) return { time, status: 'blocked' };
+      if (isSlotPast(date, time))          return { time, status: 'past' };
       return { time, status: 'available' };
     });
 
@@ -205,6 +230,9 @@ app.post('/api/bookings', async (req, res) => {
   const { date, time, name, contact } = req.body;
   if (!date || !time || !name?.trim() || !contact?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
+  }
+  if (isSlotPast(date, time)) {
+    return res.status(409).json({ error: 'Slot is in the past' });
   }
   try {
     const [blockedRes, existsRes] = await Promise.all([

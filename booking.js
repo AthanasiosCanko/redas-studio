@@ -133,7 +133,9 @@
         btn.textContent = time;
         if (status !== 'available') {
           btn.disabled = true;
-          btn.title    = status === 'booked' ? 'Already booked' : 'Not available';
+          btn.title = status === 'booked' ? 'Already booked'
+                    : status === 'past'   ? 'This time has passed'
+                    :                       'Not available';
         } else {
           btn.addEventListener('click', () => openModal(key, time));
         }
@@ -180,9 +182,9 @@
 
       if (!res.ok) {
         const { error } = await res.json();
-        alert(error === 'Already booked'
-          ? 'Sorry, this slot was just taken. Please pick another.'
-          : 'Could not complete booking — please try again.');
+        alert(error === 'Already booked'    ? 'Sorry, this slot was just taken. Please pick another.'
+            : error === 'Slot is in the past' ? 'Sorry, this slot has already passed. Please pick another.'
+            :                                   'Could not complete booking — please try again.');
         submitBtn.disabled = false;
         return;
       }
