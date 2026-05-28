@@ -16,6 +16,7 @@
   font-weight: 400;
   line-height: 1.05;
   color: var(--brown);
+  text-align: center;
   margin-bottom: clamp(28px, 5vw, 48px);
 }
 
