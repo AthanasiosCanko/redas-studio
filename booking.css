@@ -1,12 +1,15 @@
 /* ── Booking section ───────────────────────────────────── */
 .booking {
   background: var(--white);
-  padding: clamp(40px, 7vw, 80px) clamp(24px, 8vw, 96px) clamp(56px, 9vw, 112px);
+  padding: clamp(40px, 7vw, 80px) 0 clamp(56px, 9vw, 112px);
 }
 
+/* Mirrors the .prices box exactly so the R-EDA'S / STUDIO strip and the
+   title line up with the price list. The calendar is constrained separately. */
 .booking-inner {
-  max-width: 520px;
+  max-width: 780px;
   margin: 0 auto;
+  padding: 0 clamp(20px, 6vw, 96px);
 }
 
 .booking-title {
@@ -34,6 +37,7 @@
   border-radius: 2px;
   padding: clamp(20px, 4vw, 36px);
   margin-bottom: 28px;
+  max-width: 520px;
 }
 
 .cal-nav {
@@ -149,6 +153,7 @@
 /* ── Time slots ────────────────────────────────────────── */
 .slots-wrap {
   margin-top: 4px;
+  max-width: 520px;
 }
 
 .slots-date-label {
@@ -332,9 +337,6 @@
 
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 600px) {
-  /* Booking section */
-  .booking { padding-left: 20px; padding-right: 20px; }
-
   /* Calendar */
   .cal-wrap { padding: 16px; }
   .cal-nav-btn { width: 36px; height: 36px; } /* better touch target */
@@ -371,7 +373,8 @@
 }
 
 @media (max-width: 420px) {
-  .booking { padding-left: 16px; padding-right: 16px; }
+  /* Match the price list's tighter gutter so the brand strip stays aligned */
+  .booking-inner { padding-left: 16px; padding-right: 16px; }
   .cal-wrap { padding: 12px; }
 
   /* 2-col slots grid on very small phones */
