@@ -142,7 +142,10 @@
           </label>
           <label class="bk-label">
             Phone number
-            <input class="bk-input" id="bk-phone" type="tel" placeholder="+355 69 …" required autocomplete="tel">
+            <span class="bk-phone-field">
+              <span class="bk-phone-prefix">+355</span>
+              <input class="bk-input" id="bk-phone" type="tel" inputmode="numeric" placeholder="69 123 4567" required autocomplete="tel">
+            </span>
           </label>
           <button class="bk-submit" type="submit">Send request</button>
         </form>

@@ -391,6 +391,30 @@
 
 .bk-input::placeholder { color: rgba(92, 37, 32, 0.35); }
 
+/* Phone field with a fixed +355 prefix */
+.bk-phone-field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--brown-faint);
+  transition: border-color 0.15s;
+}
+
+.bk-phone-field:focus-within { border-bottom-color: var(--brown); }
+
+.bk-phone-prefix {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1rem;
+  color: var(--brown-mid);
+  flex-shrink: 0;
+}
+
+.bk-phone-field .bk-input {
+  border-bottom: none;
+  flex: 1;
+  min-width: 0;
+}
+
 .bk-submit {
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;

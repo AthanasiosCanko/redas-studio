@@ -124,7 +124,10 @@
         </label>
         <label class="bk-label">
           Phone number <span class="bk-optional">(optional)</span>
-          <input class="bk-input" id="adm-bk-phone" type="tel" placeholder="+355 69 …" autocomplete="off">
+          <span class="bk-phone-field">
+            <span class="bk-phone-prefix">+355</span>
+            <input class="bk-input" id="adm-bk-phone" type="tel" inputmode="numeric" placeholder="69 123 4567" autocomplete="off">
+          </span>
         </label>
         <button class="bk-submit" type="submit">Confirm booking</button>
       </form>

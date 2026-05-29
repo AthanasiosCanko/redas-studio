@@ -237,8 +237,9 @@
     e.preventDefault();
     const name  = nameInput.value.trim();
     const email = emailInput.value.trim();
-    const phone = phoneInput.value.trim();
-    if (!name || !email || !phone) return;
+    const local = phoneInput.value.trim();
+    if (!name || !email || !local) return;
+    const phone = '+355 ' + local.replace(/^0+/, '');  // Albanian prefix
 
     const submitBtn    = form.querySelector('.bk-submit');
     submitBtn.disabled = true;

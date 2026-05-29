@@ -28,6 +28,12 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails('mailto:admin@redas-studio.com', VAPID_PUBLIC, VAPID_PRIVATE);
 }
 
+// Twilio SMS (optional — a no-op until all three env vars are set)
+const TWILIO_SID   = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_FROM  = process.env.TWILIO_FROM;          // sender number, e.g. +1xxxxxxxxxx
+const SMS_READY    = !!(TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM);
+
 // ── Booking window ───────────────────────────────────────
 // Clients may request any time from 09:00 to 20:00 in 5-minute steps.
 const ALBANIA_TZ     = 'Europe/Tirane';
@@ -170,6 +176,29 @@ function friendlyDate(date) {
   });
 }
 
+// Send an SMS via Twilio's REST API (graceful no-op when not configured).
+async function sendSms(to, body) {
+  if (!SMS_READY || !to) return;
+  const num = String(to).replace(/[^\d+]/g, '');   // collapse to E.164 digits
+  if (num.length < 8) return;
+  try {
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ To: num, From: TWILIO_FROM, Body: body }),
+      }
+    );
+    if (!res.ok) console.error('SMS failed:', res.status, await res.text());
+  } catch (err) {
+    console.error('SMS error:', err.message);
+  }
+}
+
 // ── Middleware ───────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -283,6 +312,7 @@ app.post('/api/bookings', async (req, res) => {
       title: 'Booking request',
       body:  `${name.trim()} · ${friendlyDate(date)} · ${time}`,
     });
+    sendSms(phone, `R-EDA'S STUDIO — we received your request for ${friendlyDate(date)} at ${time}. We'll confirm shortly.`);
 
     res.json({ ok: true });
   } catch (err) {
@@ -380,10 +410,18 @@ app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
   if (!date || !time || !tr) return res.status(400).json({ error: 'Bad request' });
   try {
     const result = await pool.query(
-      `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4`,
+      `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
+       RETURNING name, phone`,
       [tr.to, date, time, tr.from]
     );
     if (!result.rowCount) return res.status(409).json({ error: 'Not in expected state' });
+
+    const { phone } = result.rows[0];
+    const fd = friendlyDate(date);
+    if (action === 'accept')      sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} is confirmed. See you soon!`);
+    else if (action === 'deny')   sendSms(phone, `R-EDA'S STUDIO — sorry, we couldn't confirm your request for ${fd} at ${time}. Please try another time or contact us.`);
+    else if (action === 'cancel') sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} has been cancelled. Please contact us to rebook.`);
+
     res.json({ ok: true, status: tr.to });
   } catch (err) {
     console.error(err);
@@ -406,11 +444,13 @@ app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
     );
     if (taken.rows.length) return res.status(409).json({ error: 'Already booked' });
 
+    const cleanPhone = phone?.trim() || null;
     await pool.query(
       `INSERT INTO bookings (date, time, name, email, phone, status)
        VALUES ($1, $2, $3, $4, $5, 'accepted')`,
-      [date, time, name.trim(), email?.trim() || null, phone?.trim() || null]
+      [date, time, name.trim(), email?.trim() || null, cleanPhone]
     );
+    sendSms(cleanPhone, `R-EDA'S STUDIO — your appointment on ${friendlyDate(date)} at ${time} is confirmed. See you soon!`);
     res.json({ ok: true });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });

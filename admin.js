@@ -436,11 +436,13 @@
     submitBtn.textContent = 'Saving…';
 
     try {
+      const localPhone = admBkPhone.value.trim();
       await apiFetch('/api/admin/bookings', {
         method: 'POST',
         body: JSON.stringify({
           date: admModalDate, time: admChosen, name,
-          email: admBkEmail.value.trim(), phone: admBkPhone.value.trim(),
+          email: admBkEmail.value.trim(),
+          phone: localPhone ? '+355 ' + localPhone.replace(/^0+/, '') : '',
         }),
       });
       admBkForm.hidden    = true;
