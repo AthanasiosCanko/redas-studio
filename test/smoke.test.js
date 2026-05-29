@@ -91,6 +91,15 @@ test('booking status transitions cover accept, deny and cancel', () => {
   assert.ok(server.includes("'/api/admin/bookings/status'"), 'status endpoint missing');
 });
 
+test('client emails cover all four booking events', () => {
+  const server = read('server.js');
+  assert.ok(server.includes('api.resend.com'), 'email must go through Resend');
+  for (const kind of ['received', 'accepted', 'denied', 'cancelled']) {
+    assert.ok(server.includes(`${kind}:`), `bookingEmail COPY missing "${kind}"`);
+  }
+  assert.ok(server.includes("bookingEmail('received'"), 'request-received email not wired');
+});
+
 test('the time picker exposes RedaTimePicker.create', () => {
   const tp = read('timepicker.js');
   assert.ok(tp.includes('window.RedaTimePicker'), 'timepicker must attach RedaTimePicker to window');

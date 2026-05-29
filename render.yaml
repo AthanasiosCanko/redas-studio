@@ -23,3 +23,7 @@ services:
         sync: false   # optional SMS — Infobip API key
       - key: INFOBIP_SENDER
         sync: false   # optional SMS — sender ID, e.g. REDAS STUDIO
+      - key: RESEND_API_KEY
+        sync: false   # optional email — Resend API key
+      - key: EMAIL_FROM
+        sync: false   # optional email — verified sender, e.g. R-EDA'S STUDIO <bookings@redas-studio.com>

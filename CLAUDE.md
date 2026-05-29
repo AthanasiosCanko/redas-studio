@@ -46,11 +46,13 @@ assets/             — logo, PWA icons, photos
 | `INFOBIP_BASE_URL` | no       | Infobip account base URL (e.g. `xxxxx.api.infobip.com`); SMS off unless all three set |
 | `INFOBIP_API_KEY`  | no       | Infobip API key                                              |
 | `INFOBIP_SENDER`   | no       | Sender ID shown on the text (e.g. `REDAS STUDIO`)            |
+| `RESEND_API_KEY`   | no       | Resend API key; email disabled unless both email vars set    |
+| `EMAIL_FROM`       | no       | Verified sender (e.g. `R-EDA'S STUDIO <bookings@redas-studio.com>`) |
 | `PORT`             | no       | HTTP port (default 3000; Render sets this)                   |
 
 The server exits on startup if `DATABASE_URL` is missing. SSL is enabled unless the
-connection string points at `localhost`. Push notifications and SMS are each a graceful
-no-op when their keys are absent.
+connection string points at `localhost`. Push notifications, SMS, and email are each a
+graceful no-op when their keys are absent.
 
 ## SMS notifications (Infobip)
 
@@ -67,6 +69,20 @@ npm dependency). Messages fire on: **request received**, **accepted**, **denied*
 
 `sendSms` strips the number to digits (e.g. `+355 69…` → `35569…`) before sending. Until
 the keys are set, every booking still works — the SMS step is simply skipped.
+
+## Email notifications (Resend)
+
+The client is emailed (the address they entered) on the same four events via Resend
+(`sendEmail`/`bookingEmail` in `server.js`, `POST https://api.resend.com/emails` — no extra
+npm dependency). Both a plain-text and a lightly branded HTML body are sent. To enable:
+
+1. Create a Resend account and **verify your sending domain** (add the DNS records Resend
+   shows). For quick testing you can use Resend's `onboarding@resend.dev` sender.
+2. Create an **API key**.
+3. Set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `R-EDA'S STUDIO <bookings@redas-studio.com>`,
+   matching the verified domain) in the Render dashboard.
+
+Until both are set, bookings work normally — the email step is simply skipped.
 
 ## Tests
 

@@ -34,6 +34,11 @@ const INFOBIP_API_KEY  = process.env.INFOBIP_API_KEY;
 const INFOBIP_SENDER   = process.env.INFOBIP_SENDER;   // sender ID, e.g. "REDAS STUDIO"
 const SMS_READY        = !!(INFOBIP_BASE_URL && INFOBIP_API_KEY && INFOBIP_SENDER);
 
+// Resend email (optional — a no-op until both env vars are set)
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM     = process.env.EMAIL_FROM;         // e.g. "R-EDA'S STUDIO <bookings@redas-studio.com>"
+const EMAIL_READY    = !!(RESEND_API_KEY && EMAIL_FROM);
+
 // ── Booking window ───────────────────────────────────────
 // Clients may request any time from 09:00 to 20:00 in 5-minute steps.
 const ALBANIA_TZ     = 'Europe/Tirane';
@@ -200,6 +205,58 @@ async function sendSms(to, body) {
   }
 }
 
+function longDate(date) {
+  return new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+}
+
+// Send a transactional email via Resend (graceful no-op when not configured).
+async function sendEmail(to, subject, text, html) {
+  if (!EMAIL_READY || !to) return;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: EMAIL_FROM, to, subject, text, html }),
+    });
+    if (!res.ok) console.error('Email failed:', res.status, await res.text());
+  } catch (err) {
+    console.error('Email error:', err.message);
+  }
+}
+
+// Compose + send the client email for a booking lifecycle event.
+// kind ∈ 'received' | 'accepted' | 'denied' | 'cancelled'
+function bookingEmail(kind, { to, name, date, time }) {
+  if (!to) return;
+  const fd    = longDate(date);
+  const greet = `Hi ${name || 'there'},`;
+
+  const COPY = {
+    received:  ['We received your booking request',
+                `We've received your request for <strong>${fd}</strong> at <strong>${time}</strong>. We'll confirm it shortly — you'll get another email once it's approved.`],
+    accepted:  ['Your appointment is confirmed',
+                `Your appointment on <strong>${fd}</strong> at <strong>${time}</strong> is confirmed. We look forward to seeing you!`],
+    denied:    ['About your booking request',
+                `Unfortunately we couldn't confirm your request for <strong>${fd}</strong> at <strong>${time}</strong>. Please try another time, or reply to this email and we'll help you find one.`],
+    cancelled: ['Your appointment has been cancelled',
+                `Your appointment on <strong>${fd}</strong> at <strong>${time}</strong> has been cancelled. Please contact us to rebook.`],
+  };
+  const entry = COPY[kind];
+  if (!entry) return;
+  const [subject, line] = entry;
+
+  const text = `${greet}\n\n${line.replace(/<\/?strong>/g, '')}\n\n— R-EDA'S STUDIO`;
+  const html = `<div style="font-family:Georgia,'Times New Roman',serif;color:#5c2520;font-size:16px;line-height:1.6;max-width:480px">
+    <p style="margin:0 0 16px">${greet}</p>
+    <p style="margin:0 0 24px">${line}</p>
+    <p style="margin:0;color:#8b5e52;letter-spacing:0.12em;font-size:13px">— R&#8209;EDA'S STUDIO</p>
+  </div>`;
+
+  sendEmail(to, subject, text, html);
+}
+
 // ── Middleware ───────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -314,6 +371,7 @@ app.post('/api/bookings', async (req, res) => {
       body:  `${name.trim()} · ${friendlyDate(date)} · ${time}`,
     });
     sendSms(phone, `R-EDA'S STUDIO — we received your request for ${friendlyDate(date)} at ${time}. We'll confirm shortly.`);
+    bookingEmail('received', { to: email.trim(), name: name.trim(), date, time });
 
     res.json({ ok: true });
   } catch (err) {
@@ -412,16 +470,19 @@ app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
-       RETURNING name, phone`,
+       RETURNING name, email, phone`,
       [tr.to, date, time, tr.from]
     );
     if (!result.rowCount) return res.status(409).json({ error: 'Not in expected state' });
 
-    const { phone } = result.rows[0];
+    const { name, email, phone } = result.rows[0];
     const fd = friendlyDate(date);
     if (action === 'accept')      sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} is confirmed. See you soon!`);
     else if (action === 'deny')   sendSms(phone, `R-EDA'S STUDIO — sorry, we couldn't confirm your request for ${fd} at ${time}. Please try another time or contact us.`);
     else if (action === 'cancel') sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} has been cancelled. Please contact us to rebook.`);
+
+    // status value (accepted|denied|cancelled) matches the email kind
+    bookingEmail(tr.to, { to: email, name, date, time });
 
     res.json({ ok: true, status: tr.to });
   } catch (err) {
@@ -446,12 +507,14 @@ app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
     if (taken.rows.length) return res.status(409).json({ error: 'Already booked' });
 
     const cleanPhone = phone?.trim() || null;
+    const cleanEmail = email?.trim() || null;
     await pool.query(
       `INSERT INTO bookings (date, time, name, email, phone, status)
        VALUES ($1, $2, $3, $4, $5, 'accepted')`,
-      [date, time, name.trim(), email?.trim() || null, cleanPhone]
+      [date, time, name.trim(), cleanEmail, cleanPhone]
     );
     sendSms(cleanPhone, `R-EDA'S STUDIO — your appointment on ${friendlyDate(date)} at ${time} is confirmed. See you soon!`);
+    bookingEmail('accepted', { to: cleanEmail, name: name.trim(), date, time });
     res.json({ ok: true });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });
