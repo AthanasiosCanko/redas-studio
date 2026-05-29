@@ -17,3 +17,9 @@ services:
         sync: false   # from: npx web-push generate-vapid-keys
       - key: VAPID_PRIVATE_KEY
         sync: false   # from: npx web-push generate-vapid-keys
+      - key: INFOBIP_BASE_URL
+        sync: false   # optional SMS — your Infobip base URL (xxxxx.api.infobip.com)
+      - key: INFOBIP_API_KEY
+        sync: false   # optional SMS — Infobip API key
+      - key: INFOBIP_SENDER
+        sync: false   # optional SMS — sender ID, e.g. REDAS STUDIO

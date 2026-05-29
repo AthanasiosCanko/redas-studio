@@ -28,11 +28,11 @@ if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails('mailto:admin@redas-studio.com', VAPID_PUBLIC, VAPID_PRIVATE);
 }
 
-// Twilio SMS (optional — a no-op until all three env vars are set)
-const TWILIO_SID   = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM  = process.env.TWILIO_FROM;          // sender number, e.g. +1xxxxxxxxxx
-const SMS_READY    = !!(TWILIO_SID && TWILIO_TOKEN && TWILIO_FROM);
+// Infobip SMS (optional — a no-op until all three env vars are set)
+const INFOBIP_BASE_URL = process.env.INFOBIP_BASE_URL; // e.g. xxxxx.api.infobip.com
+const INFOBIP_API_KEY  = process.env.INFOBIP_API_KEY;
+const INFOBIP_SENDER   = process.env.INFOBIP_SENDER;   // sender ID, e.g. "REDAS STUDIO"
+const SMS_READY        = !!(INFOBIP_BASE_URL && INFOBIP_API_KEY && INFOBIP_SENDER);
 
 // ── Booking window ───────────────────────────────────────
 // Clients may request any time from 09:00 to 20:00 in 5-minute steps.
@@ -176,23 +176,24 @@ function friendlyDate(date) {
   });
 }
 
-// Send an SMS via Twilio's REST API (graceful no-op when not configured).
+// Send an SMS via Infobip's REST API (graceful no-op when not configured).
 async function sendSms(to, body) {
   if (!SMS_READY || !to) return;
-  const num = String(to).replace(/[^\d+]/g, '');   // collapse to E.164 digits
+  const num = String(to).replace(/\D/g, '');   // digits only, e.g. 35569xxxxxxx
   if (num.length < 8) return;
+  const base = INFOBIP_BASE_URL.replace(/\/+$/, '').replace(/^(?!https?:\/\/)/, 'https://');
   try {
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64'),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ To: num, From: TWILIO_FROM, Body: body }),
-      }
-    );
+    const res = await fetch(`${base}/sms/2/text/advanced`, {
+      method: 'POST',
+      headers: {
+        Authorization: `App ${INFOBIP_API_KEY}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{ from: INFOBIP_SENDER, destinations: [{ to: num }], text: body }],
+      }),
+    });
     if (!res.ok) console.error('SMS failed:', res.status, await res.text());
   } catch (err) {
     console.error('SMS error:', err.message);
