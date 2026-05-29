@@ -45,22 +45,55 @@
   const dayPanel      = document.getElementById('day-panel');
   const dayPanelTitle = document.getElementById('day-panel-title');
   const blockDayBtn   = document.getElementById('adm-block-day-btn');
-  const daySlots      = document.getElementById('day-panel-slots');
+  const dayBookings   = document.getElementById('day-panel-bookings');
+  const addBookingBtn = document.getElementById('adm-add-booking');
 
   // ── State ─────────────────────────────────────────────────
   let admViewYear, admViewMonth;
   let admSelectedDate = null;
   let admCalData      = {};
-  let currentFilter   = 'upcoming';
+  let admDayTaken     = new Set();   // active times for the open day (modal conflict help)
+  let currentFilter   = 'requests';
 
   // ── Utilities ────────────────────────────────────────────
   function esc(str) {
-    return String(str)
+    return String(str ?? '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function hint(text) {
     return `<span style="font-family:'Montserrat',sans-serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--brown-mid)">${text}</span>`;
+  }
+
+  function albaniaNow() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Tirane',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const get = t => parts.find(p => p.type === t).value;
+    return {
+      date:      `${get('year')}-${get('month')}-${get('day')}`,
+      totalMins: parseInt(get('hour')) * 60 + parseInt(get('minute')),
+    };
+  }
+
+  function longDate(dateKey) {
+    return new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+  }
+
+  function defaultTime(dateKey, takenSet) {
+    const now = albaniaNow();
+    let start = 9 * 60;
+    if (dateKey === now.date) start = Math.max(start, Math.ceil(now.totalMins / 5) * 5);
+    for (let t = start; t <= 20 * 60; t += 5) {
+      const hh = String(Math.floor(t / 60)).padStart(2, '0');
+      const mm = String(t % 60).padStart(2, '0');
+      if (!takenSet.has(`${hh}:${mm}`)) return `${hh}:${mm}`;
+    }
+    return '10:00';
   }
 
   // ── Session ───────────────────────────────────────────────
@@ -75,11 +108,7 @@
     }
   }
 
-  function showLogin() {
-    loginScreen.hidden = false;
-    dashboard.hidden   = true;
-  }
-
+  function showLogin()     { loginScreen.hidden = false; dashboard.hidden = true; }
   function showDashboard() {
     loginScreen.hidden = true;
     dashboard.hidden   = false;
@@ -94,8 +123,7 @@
     const pw = document.getElementById('login-pw').value;
     try {
       const { token } = await apiFetch('/api/admin/login', {
-        method: 'POST',
-        body:   JSON.stringify({ password: pw }),
+        method: 'POST', body: JSON.stringify({ password: pw }),
       });
       setToken(token);
       showDashboard();
@@ -117,7 +145,7 @@
     });
   });
 
-  // ── Bookings ─────────────────────────────────────────────
+  // ── Bookings list ────────────────────────────────────────
   async function loadBookings() {
     try {
       const { bookings } = await apiFetch('/api/admin/bookings');
@@ -135,83 +163,104 @@
     });
   });
 
+  function contactLines(bk) {
+    const lines = [];
+    if (bk.email) lines.push(bk.email);
+    if (bk.phone) lines.push(bk.phone);
+    if (!lines.length && bk.contact) lines.push(bk.contact);
+    return lines;
+  }
+
   function renderBookings(all) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const today = albaniaNow().date;
 
     const list = all.filter(bk => {
-      const dt = new Date(bk.date + 'T00:00:00');
-      if (currentFilter === 'upcoming') return dt >= today;
-      if (currentFilter === 'past')     return dt < today;
-      return true;
+      if (currentFilter === 'requests') return bk.status === 'pending';
+      if (currentFilter === 'upcoming') return bk.status === 'accepted' && bk.date >= today;
+      if (currentFilter === 'past')     return bk.status === 'accepted' && bk.date <  today;
+      return true; // all
     });
 
     if (!list.length) {
-      bookingsList.innerHTML = '<p class="adm-empty">No bookings found.</p>';
+      bookingsList.innerHTML = `<p class="adm-empty">No ${currentFilter === 'all' ? '' : currentFilter + ' '}bookings found.</p>`;
       return;
     }
 
     const groups = {};
-    for (const bk of list) {
-      if (!groups[bk.date]) groups[bk.date] = [];
-      groups[bk.date].push(bk);
-    }
+    for (const bk of list) (groups[bk.date] ||= []).push(bk);
 
     bookingsList.innerHTML = '';
     for (const date of Object.keys(groups).sort()) {
-      const dt     = new Date(date + 'T00:00:00');
-      const isPast = dt < today;
+      const isPast = date < today;
 
-      const group      = document.createElement('div');
-      group.className  = 'bk-group';
+      const group     = document.createElement('div');
+      group.className = 'bk-group';
 
       const label       = document.createElement('p');
       label.className   = 'bk-group-date';
-      label.textContent = dt.toLocaleDateString('en-GB', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      });
+      label.textContent = longDate(date);
       group.appendChild(label);
 
       for (const bk of groups[date].sort((a, b) => a.time.localeCompare(b.time))) {
-        const row     = document.createElement('div');
-        row.className = 'bk-item' + (isPast ? ' bk-item--past' : '');
+        const row = document.createElement('div');
+        row.className = 'bk-item' + (isPast || bk.status !== 'accepted' && bk.status !== 'pending' ? ' bk-item--past' : '');
+
+        const contacts = contactLines(bk).map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('');
+
+        let actions = '';
+        if (bk.status === 'pending') {
+          actions = `
+            <button class="bk-act bk-act--accept" data-action="accept" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Accept</button>
+            <button class="bk-act bk-act--deny"   data-action="deny"   data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Deny</button>`;
+        } else if (bk.status === 'accepted' && !isPast) {
+          actions = `<button class="bk-act bk-act--cancel" data-action="cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Cancel</button>`;
+        } else {
+          actions = `<span class="bk-status bk-status--${esc(bk.status)}">${esc(bk.status)}</span>`;
+        }
+
         row.innerHTML = `
           <span class="bk-item-time">${esc(bk.time)}</span>
-          <span class="bk-item-name">${esc(bk.name)}</span>
-          <span class="bk-item-contact">${esc(bk.contact)}</span>
-          <button class="bk-item-cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Cancel</button>
-        `;
+          <div class="bk-item-info">
+            <span class="bk-item-name">${esc(bk.name)}</span>
+            ${contacts}
+          </div>
+          <div class="bk-item-actions">${actions}</div>`;
         group.appendChild(row);
       }
       bookingsList.appendChild(group);
     }
 
-    bookingsList.querySelectorAll('.bk-item-cancel').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Cancel this booking?')) return;
-        try {
-          await apiFetch(`/api/admin/bookings/${btn.dataset.date}/${btn.dataset.time}`, { method: 'DELETE' });
-          loadBookings();
-          if (admSelectedDate === btn.dataset.date) loadDayPanel(admSelectedDate);
-          await loadAdmCalendar();
-        } catch {
-          alert('Could not cancel booking.');
-        }
-      });
+    bookingsList.querySelectorAll('.bk-act').forEach(btn => {
+      btn.addEventListener('click', () => doStatus(btn.dataset.action, btn.dataset.date, btn.dataset.time));
     });
+  }
+
+  async function doStatus(action, date, time) {
+    if (action === 'deny'   && !confirm('Deny this request?'))      return;
+    if (action === 'cancel' && !confirm('Cancel this booking?'))    return;
+    try {
+      await apiFetch('/api/admin/bookings/status', {
+        method: 'POST', body: JSON.stringify({ date, time, action }),
+      });
+      loadBookings();
+      await loadAdmCalendar();
+      if (admSelectedDate) await loadDayPanel(admSelectedDate);
+    } catch {
+      alert('Could not update the booking.');
+    }
   }
 
   // ── Admin calendar ───────────────────────────────────────
   function initAdminCalendar() {
-    const now    = new Date();
-    admViewYear  = now.getFullYear();
-    admViewMonth = now.getMonth();
+    const [y, m] = albaniaNow().date.split('-').map(Number);
+    admViewYear  = y;
+    admViewMonth = m - 1;
     loadAdmCalendar();
   }
 
   async function loadAdmCalendar() {
     try {
-      const data = await apiFetch(`/api/calendar/${admViewYear}/${admViewMonth + 1}`);
-      admCalData = data.days || {};
+      admCalData = (await apiFetch(`/api/calendar/${admViewYear}/${admViewMonth + 1}`)).days || {};
     } catch {
       admCalData = {};
     }
@@ -227,7 +276,7 @@
 
     const firstDay    = new Date(admViewYear, admViewMonth, 1).getDay();
     const daysInMonth = new Date(admViewYear, admViewMonth + 1, 0).getDate();
-    const today       = new Date(); today.setHours(0, 0, 0, 0);
+    const today       = albaniaNow().date;
 
     for (let i = 0; i < firstDay; i++) {
       const empty = document.createElement('span');
@@ -236,7 +285,6 @@
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
-      const dt   = new Date(admViewYear, admViewMonth, d);
       const key  = `${admViewYear}-${String(admViewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const info = admCalData[key] || { blocked: false, bookingCount: 0 };
 
@@ -246,7 +294,7 @@
       cell.textContent = d;
 
       if (info.blocked)            cell.classList.add('cal-cell--adm-blocked');
-      if (dt < today)              cell.classList.add('cal-cell--adm-past');
+      if (key < today)             cell.classList.add('cal-cell--adm-past');
       if (key === admSelectedDate) cell.classList.add('cal-cell--selected');
       if (info.bookingCount > 0)   cell.classList.add('cal-cell--has-bookings');
 
@@ -258,8 +306,8 @@
       admGrid.appendChild(cell);
     }
 
-    const now = new Date();
-    admPrevBtn.disabled      = (admViewYear === now.getFullYear() && admViewMonth === now.getMonth());
+    const [ty, tm] = today.split('-').map(Number);
+    admPrevBtn.disabled      = (admViewYear === ty && admViewMonth === tm - 1);
     admPrevBtn.style.opacity = admPrevBtn.disabled ? '0.3' : '';
     admPrevBtn.style.cursor  = admPrevBtn.disabled ? 'default' : '';
   }
@@ -268,110 +316,23 @@
     if (admViewMonth === 0) { admViewMonth = 11; admViewYear--; } else admViewMonth--;
     loadAdmCalendar();
   });
-
   admNextBtn.addEventListener('click', () => {
     if (admViewMonth === 11) { admViewMonth = 0; admViewYear++; } else admViewMonth++;
     loadAdmCalendar();
   });
 
-  // ── Admin booking modal ───────────────────────────────────
-  const admOverlay  = document.getElementById('adm-bk-overlay');
-  const admBkClose  = document.getElementById('adm-bk-close');
-  const admBkSub    = document.getElementById('adm-bk-sub');
-  const admBkForm   = document.getElementById('adm-bk-form');
-  const admBkName   = document.getElementById('adm-bk-name');
-  const admBkContact= document.getElementById('adm-bk-contact');
-  const admBkSuccess= document.getElementById('adm-bk-success');
-
-  let pendingAdmSlot = null;
-
-  function openAdmModal(dateKey, time) {
-    pendingAdmSlot        = { date: dateKey, time };
-    const friendly = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long',
-    });
-    admBkSub.textContent  = `${friendly}  ·  ${time}`;
-    admBkForm.hidden      = false;
-    admBkSuccess.hidden   = true;
-    admBkName.value       = '';
-    admBkContact.value    = '';
-    admBkForm.querySelector('.bk-submit').disabled = false;
-    admOverlay.hidden     = false;
-    admBkName.focus();
-  }
-
-  function closeAdmModal() {
-    admOverlay.hidden  = true;
-    pendingAdmSlot     = null;
-  }
-
-  admBkClose.addEventListener('click', closeAdmModal);
-  admOverlay.addEventListener('click', e => { if (e.target === admOverlay) closeAdmModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !admOverlay.hidden) closeAdmModal(); });
-
-  document.getElementById('adm-bk-block').addEventListener('click', async () => {
-    if (!pendingAdmSlot) return;
-    const { date, time } = pendingAdmSlot;
-    try {
-      await apiFetch('/api/admin/blocked-slots/toggle', {
-        method: 'POST', body: JSON.stringify({ date, time }),
-      });
-      closeAdmModal();
-      await loadAdmCalendar();
-      await loadDayPanel(date);
-    } catch { alert('Could not block slot.'); }
-  });
-
-  admBkForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const name    = admBkName.value.trim();
-    const contact = admBkContact.value.trim();
-    if (!name || !contact) return;
-
-    const submitBtn    = admBkForm.querySelector('.bk-submit');
-    const origLabel    = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Confirming…';
-
-    try {
-      const { date, time } = pendingAdmSlot;
-      await apiFetch('/api/admin/bookings', {
-        method: 'POST',
-        body: JSON.stringify({ date, time, name, contact }),
-      });
-      admBkForm.hidden    = true;
-      admBkSuccess.hidden = false;
-      const bookedDate = date;
-      setTimeout(async () => {
-        closeAdmModal();
-        loadBookings();
-        await loadAdmCalendar();
-        await loadDayPanel(bookedDate);
-      }, 1400);
-    } catch (err) {
-      alert(err.message === 'Already booked'     ? 'This slot is already booked.'
-          : err.message === 'Slot is in the past' ? 'This slot has already passed.'
-          :                                          'Could not save booking.');
-    } finally {
-      submitBtn.disabled    = false;
-      submitBtn.textContent = origLabel;
-    }
-  });
-
   // ── Day panel ─────────────────────────────────────────────
   async function loadDayPanel(dateKey) {
-    dayPanel.hidden       = false;
-    dayPanelTitle.textContent = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long',
-    });
-    daySlots.innerHTML = hint('Loading…');
+    dayPanel.hidden           = false;
+    dayPanelTitle.textContent = longDate(dateKey);
+    dayBookings.innerHTML     = hint('Loading…');
 
     try {
-      const { slots, dayBlocked } = await apiFetch(`/api/admin/slots/${dateKey}`);
+      const { bookings, dayBlocked } = await apiFetch(`/api/admin/day/${dateKey}`);
+      admDayTaken = new Set(bookings.map(b => b.time));
 
       blockDayBtn.textContent = dayBlocked ? 'Unblock day' : 'Block day';
       blockDayBtn.classList.toggle('adm-block-day-btn--on', dayBlocked);
-
       blockDayBtn.onclick = async () => {
         try {
           const { blocked } = await apiFetch('/api/admin/blocked-days/toggle', {
@@ -384,72 +345,138 @@
         } catch { alert('Could not update.'); }
       };
 
-      const today  = new Date(); today.setHours(0, 0, 0, 0);
-      const isPast = new Date(dateKey + 'T00:00:00') < today;
-
-      daySlots.innerHTML = '';
-      for (const slot of slots) {
-        const btn       = document.createElement('button');
-        btn.type        = 'button';
-        btn.className   = 'adm-slot-btn';
-        btn.textContent = slot.time;
-
-        if (slot.status === 'booked') {
-          btn.classList.add('adm-slot-btn--booked');
-          btn.title = `${slot.booking.name} — ${slot.booking.contact}`;
-        } else if (slot.status === 'blocked') {
-          btn.classList.add('adm-slot-btn--blocked');
+      if (!bookings.length) {
+        dayBookings.innerHTML = `<p class="day-empty">No bookings this day.</p>`;
+      } else {
+        dayBookings.innerHTML = '';
+        for (const bk of bookings) {
+          const contacts = contactLines(bk).map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('');
+          const row = document.createElement('div');
+          row.className = 'bk-item';
+          row.innerHTML = `
+            <span class="bk-item-time">${esc(bk.time)}</span>
+            <div class="bk-item-info">
+              <span class="bk-item-name">${esc(bk.name)}</span>
+              ${contacts}
+            </div>
+            <div class="bk-item-actions"><span class="bk-status bk-status--${esc(bk.status)}">${esc(bk.status)}</span></div>`;
+          dayBookings.appendChild(row);
         }
-
-        // Treat whole-past-day OR an elapsed same-day slot the same way
-        const slotIsPast = isPast || slot.status === 'past';
-        if (slotIsPast) btn.classList.add('adm-slot-btn--past');
-
-        if (!slotIsPast && slot.status !== 'booked') {
-          if (slot.status === 'available') {
-            // Click → open booking modal
-            btn.addEventListener('click', () => openAdmModal(dateKey, slot.time));
-          } else {
-            // Blocked → click to unblock
-            btn.addEventListener('click', async () => {
-              try {
-                await apiFetch('/api/admin/blocked-slots/toggle', {
-                  method: 'POST', body: JSON.stringify({ date: dateKey, time: slot.time }),
-                });
-                await loadAdmCalendar();
-                await loadDayPanel(dateKey);
-              } catch { alert('Could not update.'); }
-            });
-          }
-        }
-        daySlots.appendChild(btn);
       }
     } catch {
-      daySlots.innerHTML = hint('Could not load slots.');
+      dayBookings.innerHTML = hint('Could not load this day.');
     }
   }
+
+  addBookingBtn.addEventListener('click', () => {
+    if (admSelectedDate) openAdmModal(admSelectedDate);
+  });
+
+  // ── Admin booking modal (with wheel time picker) ──────────
+  const admOverlay   = document.getElementById('adm-bk-overlay');
+  const admBkClose   = document.getElementById('adm-bk-close');
+  const admBkSub     = document.getElementById('adm-bk-sub');
+  const admBkForm    = document.getElementById('adm-bk-form');
+  const admBkName    = document.getElementById('adm-bk-name');
+  const admBkEmail   = document.getElementById('adm-bk-email');
+  const admBkPhone   = document.getElementById('adm-bk-phone');
+  const admBkWarning = document.getElementById('adm-bk-warning');
+  const admBkSuccess = document.getElementById('adm-bk-success');
+  const admPickerEl  = document.getElementById('adm-time-picker');
+
+  let admModalDate = null;
+  let admChosen    = null;
+  let admPicker    = null;
+
+  function openAdmModal(dateKey) {
+    admModalDate         = dateKey;
+    admBkSub.textContent = longDate(dateKey);
+    admBkForm.hidden     = false;
+    admBkSuccess.hidden  = true;
+    admBkName.value      = '';
+    admBkEmail.value     = '';
+    admBkPhone.value     = '';
+    admBkForm.querySelector('.bk-submit').disabled = false;
+
+    const initial = defaultTime(dateKey, admDayTaken);
+    admChosen = initial;
+    if (!admPicker) {
+      admPicker = RedaTimePicker.create(admPickerEl, { initial, onChange: v => { admChosen = v; validateAdm(); } });
+    } else {
+      admPicker.setValue(initial);
+    }
+    validateAdm();
+
+    admOverlay.hidden = false;
+    admBkName.focus();
+  }
+
+  function validateAdm() {
+    const msg = admDayTaken.has(admChosen) ? 'That time already has a booking.' : '';
+    admBkWarning.textContent = msg;
+    admBkWarning.hidden      = !msg;
+    admBkForm.querySelector('.bk-submit').disabled = !!msg;
+    return !msg;
+  }
+
+  function closeAdmModal() { admOverlay.hidden = true; }
+
+  admBkClose.addEventListener('click', closeAdmModal);
+  admOverlay.addEventListener('click', e => { if (e.target === admOverlay) closeAdmModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !admOverlay.hidden) closeAdmModal(); });
+
+  admBkForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = admBkName.value.trim();
+    if (!name || !validateAdm()) return;
+
+    const submitBtn    = admBkForm.querySelector('.bk-submit');
+    const origLabel    = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
+
+    try {
+      await apiFetch('/api/admin/bookings', {
+        method: 'POST',
+        body: JSON.stringify({
+          date: admModalDate, time: admChosen, name,
+          email: admBkEmail.value.trim(), phone: admBkPhone.value.trim(),
+        }),
+      });
+      admBkForm.hidden    = true;
+      admBkSuccess.hidden = false;
+      const date = admModalDate;
+      setTimeout(async () => {
+        closeAdmModal();
+        loadBookings();
+        await loadAdmCalendar();
+        await loadDayPanel(date);
+      }, 1300);
+    } catch (err) {
+      alert(err.message === 'Already booked'     ? 'That time already has a booking.'
+          : err.message === 'Slot is in the past' ? 'That time has already passed.'
+          :                                          'Could not save booking.');
+    } finally {
+      submitBtn.disabled    = false;
+      submitBtn.textContent = origLabel;
+    }
+  });
 
   // ── Push notifications ────────────────────────────────────
   async function subscribeToPush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-
     try {
       const { key } = await fetch('/api/vapid-public-key').then(r => r.json());
-      if (!key) return; // VAPID not configured on server
-
+      if (!key) return;
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return;
-
       const reg = await navigator.serviceWorker.ready;
-      const existing = await reg.pushManager.getSubscription();
-      const sub = existing || await reg.pushManager.subscribe({
+      const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(key),
       });
-
       await apiFetch('/api/admin/push-subscribe', {
-        method: 'POST',
-        body: JSON.stringify({ subscription: sub }),
+        method: 'POST', body: JSON.stringify({ subscription: sub }),
       });
     } catch (err) {
       console.warn('Push setup failed:', err.message);

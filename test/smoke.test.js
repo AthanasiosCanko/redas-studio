@@ -4,7 +4,7 @@
  * Dependency-free smoke tests — no DB, no network, no browser.
  * Guards against the failures that actually break this static site:
  * syntax errors, malformed JSON, and front-end ↔ back-end contract drift
- * (DOM ids the scripts query, API paths, the SLOTS source of truth).
+ * (DOM ids the scripts query, API paths, the booking-time rules).
  */
 
 const { test } = require('node:test');
@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {
@@ -43,8 +43,8 @@ test('index.html exposes every DOM hook booking.js relies on', () => {
   const html = read('index.html');
   for (const id of [
     'cal-prev', 'cal-next', 'cal-month-label', 'cal-grid',
-    'slots-wrap', 'slots-date-label', 'slots-grid',
-    'bk-overlay', 'bk-close', 'bk-form', 'bk-name', 'bk-contact', 'bk-success',
+    'slots-wrap', 'slots-date-label', 'time-picker', 'choose-time-btn',
+    'bk-overlay', 'bk-close', 'bk-form', 'bk-name', 'bk-email', 'bk-phone', 'bk-success',
   ]) {
     assert.ok(html.includes(`id="${id}"`), `index.html missing #${id}`);
   }
@@ -54,10 +54,10 @@ test('admin.html exposes every DOM hook admin.js relies on', () => {
   const html = read('admin.html');
   for (const id of [
     'login-screen', 'login-form', 'login-pw', 'login-error',
-    'dashboard', 'logout-btn', 'bookings-list', 'bookings-empty',
+    'dashboard', 'logout-btn', 'bookings-list',
     'adm-cal-prev', 'adm-cal-next', 'adm-cal-month', 'adm-cal-grid',
-    'day-panel', 'day-panel-title', 'adm-block-day-btn', 'day-panel-slots',
-    'adm-bk-overlay', 'adm-bk-form', 'adm-bk-name', 'adm-bk-contact', 'adm-bk-block',
+    'day-panel', 'day-panel-title', 'adm-block-day-btn', 'day-panel-bookings', 'adm-add-booking',
+    'adm-bk-overlay', 'adm-bk-form', 'adm-time-picker', 'adm-bk-name', 'adm-bk-email', 'adm-bk-phone',
   ]) {
     assert.ok(html.includes(`id="${id}"`), `admin.html missing #${id}`);
   }
@@ -75,14 +75,26 @@ test('service-worker precache lists only files that exist', () => {
   }
 });
 
-test('SLOTS are defined once in server.js and consumed by every booking path', () => {
+test('server enforces the 09:00–20:00 / 5-minute booking window', () => {
   const server = read('server.js');
-  const match = server.match(/const SLOTS\s*=\s*\[([^\]]*)\]/);
-  assert.ok(match, 'SLOTS array not found in server.js');
-  const slots = [...match[1].matchAll(/'(\d{2}:\d{2})'/g)].map((m) => m[1]);
-  assert.ok(slots.length >= 1, 'SLOTS is empty');
-  // Times must be sorted and unique — the calendar renders them in order.
-  assert.deepEqual(slots, [...new Set(slots)].sort(), 'SLOTS must be unique and sorted');
+  assert.ok(/BOOK_START_MIN\s*=\s*9\s*\*\s*60/.test(server), 'BOOK_START_MIN must be 09:00');
+  assert.ok(/BOOK_END_MIN\s*=\s*20\s*\*\s*60/.test(server), 'BOOK_END_MIN must be 20:00');
+  assert.ok(/SLOT_STEP_MIN\s*=\s*5/.test(server), 'SLOT_STEP_MIN must be 5');
+  assert.ok(server.includes('function isValidTime'), 'server must validate the time format/range');
+});
+
+test('booking status transitions cover accept, deny and cancel', () => {
+  const server = read('server.js');
+  for (const action of ['accept', 'deny', 'cancel']) {
+    assert.ok(server.includes(`${action}:`), `STATUS_TRANSITIONS missing "${action}"`);
+  }
+  assert.ok(server.includes("'/api/admin/bookings/status'"), 'status endpoint missing');
+});
+
+test('the time picker exposes RedaTimePicker.create', () => {
+  const tp = read('timepicker.js');
+  assert.ok(tp.includes('window.RedaTimePicker'), 'timepicker must attach RedaTimePicker to window');
+  assert.ok(/create\s*\(/.test(tp), 'timepicker must expose a create()');
 });
 
 test('every requireAdmin route also references a JWT check', () => {

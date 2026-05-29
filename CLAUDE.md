@@ -11,7 +11,8 @@ category headings, leader-free service rows).
 - **Backend** — Node.js + Express (`server.js`) serving static files and REST API
 - **Database** — PostgreSQL on Neon (serverless); `DATABASE_URL` set manually in Render
 - **Auth** — Admin JWT via `POST /api/admin/login`, token stored in `sessionStorage`
-- **PWA** — installable; service worker (`sw.js`) + Web Push notifications to admin on new bookings
+- **PWA** — installable; service worker (`sw.js`) + Web Push notifications to admin on new booking requests
+- **Booking flow** — clients pick any time 09:00–20:00 (5-min steps) via a wheel picker and submit a *request*; the admin accepts or denies it
 
 ## Project structure
 
@@ -19,10 +20,11 @@ category headings, leader-free service rows).
 index.html          — public landing page (hero, price list, booking calendar)
 admin.html          — admin dashboard (bookings view + availability management)
 styles.css          — design tokens, hero, and price-list styles
-booking.css         — calendar, time slots, and booking-modal styles
+booking.css         — calendar, wheel time picker, and booking-modal styles
 admin.css           — admin-only styles
-booking.js          — public booking calendar (fetch-based, no localStorage)
+booking.js          — public booking calendar + request flow (fetch-based)
 admin.js            — admin dashboard logic (JWT auth, push subscribe, all API calls)
+timepicker.js       — shared iOS-style wheel time picker (RedaTimePicker.create)
 server.js           — Express server: static serving + REST API + DB bootstrap
 sw.js               — service worker (network-first nav, cache-first assets, push)
 manifest.json       — PWA manifest for the public site (start_url "/")
@@ -55,8 +57,9 @@ npm test          # node --test — runs test/smoke.test.js
 
 The suite needs no database or browser. It verifies: every JS file parses, all JSON is
 valid, manifest `start_url`s are correct, the DOM ids `booking.js`/`admin.js` query all
-exist, the service-worker precache references only real files, and `SLOTS` stays the
-single sorted/unique source of truth.
+exist, the service-worker precache references only real files, the 09:00–20:00 / 5-min
+booking window and the accept/deny/cancel status transitions are present in `server.js`,
+and `RedaTimePicker.create` is exported.
 
 ## Deploying to Render
 
@@ -72,15 +75,22 @@ Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`).
 
 Visit `/admin` (alias for `/admin.html`). Password is set via `ADMIN_PASSWORD`.
 
-- **Bookings tab** — view upcoming / past / all bookings; cancel any booking
-- **Availability tab** — block/unblock entire days or individual slots; create a booking
-  directly from a free slot; past days are still viewable
-- On login the admin browser subscribes to Web Push; new public bookings fire a
-  notification (`New booking · <name> · <date> · <time>`)
+- **Bookings tab** — filter by Requests (pending) / Upcoming / Past / All.
+  Pending requests show **Accept** and **Deny**; confirmed bookings show **Cancel**.
+- **Availability tab** — click a day to see its bookings, **Add a booking** (auto-accepted,
+  with the same wheel time picker), or block/unblock the whole day.
+- On login the admin browser subscribes to Web Push; new public requests fire a
+  notification (`Booking request · <name> · <date> · <time>`).
 
 For the admin PWA on iOS, add to home screen **from the `/admin` URL** in Safari so the
 app launches the dashboard rather than the landing page.
 
-## Time slots
+## Booking window & request lifecycle
 
-`10:00 · 11:30 · 13:00 · 14:30 · 16:00 · 17:30 · 19:00` (defined once in `server.js` → `SLOTS`)
+- Clients may request any time from **09:00 to 20:00** in **5-minute** steps (20:00 is the
+  last bookable start). Enforced in `server.js` (`isValidTime`) and the time picker.
+- A request is created as **pending** and locks that exact time so no one else can take it.
+- The admin transitions it: `pending → accepted` (accept), `pending → denied` (deny), or
+  `accepted → cancelled` (cancel). Denied/cancelled rows are **kept as records** (visible
+  under the *All* filter) and free the time up again.
+- Same-day times already past in Albania local time (`Europe/Tirane`) cannot be requested.

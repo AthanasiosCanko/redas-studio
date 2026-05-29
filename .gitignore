@@ -4,3 +4,6 @@ node_modules/
 .DS_Store
 assets/hero-photo.jpg
 assets/nail-art.jpg
+
+# Local preview config
+.claude/

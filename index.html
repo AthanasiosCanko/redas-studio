@@ -112,7 +112,16 @@
 
       <div class="slots-wrap" id="slots-wrap" hidden>
         <p class="slots-date-label" id="slots-date-label"></p>
-        <div class="slots-grid" id="slots-grid"></div>
+
+        <div class="time-pick-wrap" id="time-pick-wrap">
+          <p class="time-pick-hint">Choose a time — we’re open 9:00 to 20:00</p>
+          <div id="time-picker"></div>
+          <p class="slot-warning" id="slot-warning" hidden></p>
+          <div class="taken-times" id="taken-times"></div>
+          <button class="bk-submit time-choose-btn" id="choose-time-btn" type="button">Request this time</button>
+        </div>
+
+        <p class="day-unavailable" id="day-unavailable" hidden>This day isn’t available for booking.</p>
       </div>
     </div>
 
@@ -120,31 +129,36 @@
     <div class="bk-overlay" id="bk-overlay" hidden>
       <div class="bk-modal" role="dialog" aria-modal="true" aria-labelledby="bk-modal-title">
         <button class="bk-close" id="bk-close" aria-label="Close">&times;</button>
-        <h3 class="bk-modal-title" id="bk-modal-title">Reserve a slot</h3>
+        <h3 class="bk-modal-title" id="bk-modal-title">Request an appointment</h3>
         <p class="bk-modal-sub" id="bk-modal-sub"></p>
         <form class="bk-form" id="bk-form" novalidate>
           <label class="bk-label">
-            Your name
+            Full name
             <input class="bk-input" id="bk-name" type="text" placeholder="e.g. Eda Hasani" required autocomplete="name">
           </label>
           <label class="bk-label">
-            Phone or e-mail
-            <input class="bk-input" id="bk-contact" type="text" placeholder="+355 69 …  or  you@mail.com" required autocomplete="tel">
+            Email
+            <input class="bk-input" id="bk-email" type="email" placeholder="you@mail.com" required autocomplete="email">
           </label>
-          <button class="bk-submit" type="submit">Confirm booking</button>
+          <label class="bk-label">
+            Phone number
+            <input class="bk-input" id="bk-phone" type="tel" placeholder="+355 69 …" required autocomplete="tel">
+          </label>
+          <button class="bk-submit" type="submit">Send request</button>
         </form>
         <div class="bk-success" id="bk-success" hidden>
           <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
             <path d="M12 20.5l5.5 5.5 10-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <p>Booked! See you soon.</p>
+          <p>Request sent — we’ll confirm shortly.</p>
         </div>
       </div>
     </div>
 
   </section>
 
+  <script src="timepicker.js"></script>
   <script src="booking.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

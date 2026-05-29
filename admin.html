@@ -58,12 +58,12 @@
     <section id="tab-bookings" class="adm-section">
       <div class="adm-inner">
         <div class="adm-filter-row">
-          <button class="adm-filter adm-filter--active" data-filter="upcoming">Upcoming</button>
+          <button class="adm-filter adm-filter--active" data-filter="requests">Requests</button>
+          <button class="adm-filter" data-filter="upcoming">Upcoming</button>
           <button class="adm-filter" data-filter="past">Past</button>
           <button class="adm-filter" data-filter="all">All</button>
         </div>
         <div id="bookings-list"></div>
-        <p id="bookings-empty" class="adm-empty" hidden>No bookings found.</p>
       </div>
     </section>
 
@@ -71,7 +71,7 @@
     <section id="tab-availability" class="adm-section" hidden>
       <div class="adm-inner">
 
-        <p class="adm-section-hint">Click any day to manage its slots or block it entirely.</p>
+        <p class="adm-section-hint">Click any day to see its bookings, add one, or block it.</p>
 
         <div class="cal-wrap adm-cal-wrap">
           <div class="cal-nav">
@@ -95,18 +95,8 @@
             <h3 class="day-panel-title" id="day-panel-title"></h3>
             <button class="adm-block-day-btn" id="adm-block-day-btn"></button>
           </div>
-          <div id="day-panel-slots" class="day-panel-slots"></div>
-          <div class="adm-slot-legend">
-            <span class="adm-legend-item">
-              <span class="adm-legend-dot adm-legend-dot--available"></span> Available
-            </span>
-            <span class="adm-legend-item">
-              <span class="adm-legend-dot adm-legend-dot--blocked"></span> Blocked by you
-            </span>
-            <span class="adm-legend-item">
-              <span class="adm-legend-dot adm-legend-dot--booked"></span> Customer booking
-            </span>
-          </div>
+          <div id="day-panel-bookings" class="day-panel-bookings"></div>
+          <button class="bk-submit adm-add-booking-btn" id="adm-add-booking" type="button">Add a booking</button>
         </div>
 
       </div>
@@ -121,16 +111,22 @@
       <h3 class="bk-modal-title" id="adm-bk-title">New booking</h3>
       <p class="bk-modal-sub" id="adm-bk-sub"></p>
       <form class="bk-form" id="adm-bk-form" novalidate>
+        <p class="time-pick-hint">Time — open 9:00 to 20:00</p>
+        <div id="adm-time-picker"></div>
+        <p class="slot-warning" id="adm-bk-warning" hidden></p>
         <label class="bk-label">
           Client name
           <input class="bk-input" id="adm-bk-name" type="text" placeholder="e.g. Eda Hasani" required autocomplete="off">
         </label>
         <label class="bk-label">
-          Phone or e-mail
-          <input class="bk-input" id="adm-bk-contact" type="text" placeholder="+355 69 …  or  you@mail.com" required autocomplete="off">
+          Email <span class="bk-optional">(optional)</span>
+          <input class="bk-input" id="adm-bk-email" type="email" placeholder="you@mail.com" autocomplete="off">
+        </label>
+        <label class="bk-label">
+          Phone number <span class="bk-optional">(optional)</span>
+          <input class="bk-input" id="adm-bk-phone" type="tel" placeholder="+355 69 …" autocomplete="off">
         </label>
         <button class="bk-submit" type="submit">Confirm booking</button>
-        <button class="adm-block-slot-btn" id="adm-bk-block" type="button">Block this slot instead</button>
       </form>
       <div class="bk-success" id="adm-bk-success" hidden>
         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -142,6 +138,7 @@
     </div>
   </div>
 
+  <script src="timepicker.js"></script>
   <script src="admin.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

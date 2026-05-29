@@ -1,11 +1,12 @@
 /* ── R-EDA'S STUDIO — Service Worker ───────────────────── */
-const CACHE = 'redas-v1';
+const CACHE = 'redas-v2';
 const PRECACHE = [
   '/',
   '/index.html',
   '/styles.css',
   '/booking.css',
   '/booking.js',
+  '/timepicker.js',
   '/assets/logo.svg',
   '/assets/icon-192.png',
   '/assets/icon-512.png',

@@ -151,10 +151,11 @@
   background: rgba(255,255,255,0.6);
 }
 
-/* ── Time slots ────────────────────────────────────────── */
+/* ── Time selection ────────────────────────────────────── */
 .slots-wrap {
   max-width: 520px;
   margin: 4px auto 0;
+  text-align: center;
 }
 
 .slots-date-label {
@@ -164,41 +165,141 @@
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--brown-mid);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.slots-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+.time-pick-wrap[hidden],
+.day-unavailable[hidden] { display: none; }
 
-.slot-btn {
+.time-pick-hint {
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  color: var(--brown);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brown-mid);
+  margin-bottom: 6px;
+}
+
+.day-unavailable {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--brown-mid);
+  padding: 24px 0;
+}
+
+/* ── Wheel time picker ─────────────────────────────────── */
+.time-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 200px;            /* 5 rows × 40px — keep in sync with timepicker.js */
+  margin: 0 auto 6px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 32%, #000 68%, transparent);
+          mask-image: linear-gradient(180deg, transparent, #000 32%, #000 68%, transparent);
+}
+
+.tp-wheel {
+  height: 200px;
+  width: 88px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tp-wheel::-webkit-scrollbar { display: none; }
+
+.tp-spacer { height: 80px; }   /* 2 rows so first/last option can centre */
+
+.tp-opt {
+  height: 40px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  color: rgba(92, 37, 32, 0.35);
   background: none;
-  border: 1px solid var(--brown-faint);
-  padding: 10px 18px;
-  border-radius: 2px;
+  border: none;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition: color 0.15s, transform 0.15s;
 }
 
-.slot-btn:hover:not(:disabled) {
-  background: var(--brown);
-  color: var(--white);
-  border-color: var(--brown);
+.tp-opt--active { color: var(--brown); font-weight: 400; transform: scale(1.05); }
+
+.tp-colon {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.4rem;
+  color: var(--brown);
+  padding-bottom: 2px;
 }
 
-.slot-btn:disabled {
-  color: rgba(92, 37, 32, 0.3);
-  border-color: rgba(92, 37, 32, 0.12);
-  cursor: not-allowed;
+/* centre selection band */
+.tp-highlight {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 42px;
+  border-top: 1px solid var(--brown-faint);
+  border-bottom: 1px solid var(--brown-faint);
+  pointer-events: none;
+}
+
+.slot-warning {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: #9b2c2c;
+  margin: 4px 0 10px;
+}
+
+.slot-warning[hidden] { display: none; }
+
+.taken-times {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 18px;
+}
+
+.taken-times[hidden] { display: none; }
+
+.taken-label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brown-mid);
+  margin-right: 2px;
+}
+
+.taken-chip {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: rgba(92, 37, 32, 0.45);
+  border: 1px solid var(--brown-faint);
+  border-radius: 20px;
+  padding: 3px 9px;
   text-decoration: line-through;
 }
+
+.time-choose-btn { width: 100%; max-width: 280px; }
+.time-choose-btn:disabled { cursor: not-allowed; }
 
 /* ── Modal overlay ─────────────────────────────────────── */
 .bk-overlay {
@@ -345,22 +446,6 @@
   .cal-day-name { font-size: 0.58rem; letter-spacing: 0.1em; }
   .cal-cell { font-size: 0.78rem; }
 
-  /* Slots grid — even columns on mobile */
-  .slots-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-
-  .slot-btn {
-    padding: 12px 8px;
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    min-height: 44px;
-    text-align: center;
-    width: 100%;
-  }
-
   /* Modal */
   .bk-overlay { padding: 16px; align-items: flex-end; }
   .bk-modal {
@@ -377,8 +462,4 @@
   /* Match the price list's tighter gutter so the brand strip stays aligned */
   .booking-inner { padding-left: 16px; padding-right: 16px; }
   .cal-wrap { padding: 12px; }
-
-  /* 2-col slots grid on very small phones */
-  .slots-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .slot-btn { font-size: 0.62rem; padding: 12px 6px; }
 }
