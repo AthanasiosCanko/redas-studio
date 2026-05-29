@@ -23,7 +23,9 @@ services:
         sync: false   # optional SMS — Infobip API key
       - key: INFOBIP_SENDER
         sync: false   # optional SMS — sender ID, e.g. REDAS STUDIO
-      - key: RESEND_API_KEY
-        sync: false   # optional email — Resend API key
+      - key: GMAIL_USER
+        sync: false   # optional email — the Gmail address that sends notifications
+      - key: GMAIL_APP_PASSWORD
+        sync: false   # optional email — Gmail app password (16 chars, no spaces)
       - key: EMAIL_FROM
-        sync: false   # optional email — verified sender, e.g. R-EDA'S STUDIO <bookings@redas-studio.com>
+        sync: false   # optional — display sender; defaults to "R-EDA'S STUDIO <GMAIL_USER>"

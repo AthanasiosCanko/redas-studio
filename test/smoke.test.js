@@ -93,7 +93,7 @@ test('booking status transitions cover accept, deny and cancel', () => {
 
 test('client emails cover all four booking events', () => {
   const server = read('server.js');
-  assert.ok(server.includes('api.resend.com'), 'email must go through Resend');
+  assert.ok(server.includes('nodemailer'), 'email must use nodemailer (Gmail SMTP)');
   for (const kind of ['received', 'accepted', 'denied', 'cancelled']) {
     assert.ok(server.includes(`${kind}:`), `bookingEmail COPY missing "${kind}"`);
   }

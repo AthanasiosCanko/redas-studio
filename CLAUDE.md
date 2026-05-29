@@ -46,8 +46,9 @@ assets/             — logo, PWA icons, photos
 | `INFOBIP_BASE_URL` | no       | Infobip account base URL (e.g. `xxxxx.api.infobip.com`); SMS off unless all three set |
 | `INFOBIP_API_KEY`  | no       | Infobip API key                                              |
 | `INFOBIP_SENDER`   | no       | Sender ID shown on the text (e.g. `REDAS STUDIO`)            |
-| `RESEND_API_KEY`   | no       | Resend API key; email disabled unless both email vars set    |
-| `EMAIL_FROM`       | no       | Verified sender (e.g. `R-EDA'S STUDIO <bookings@redas-studio.com>`) |
+| `GMAIL_USER`       | no       | Gmail address that sends mail; email disabled unless both Gmail vars set |
+| `GMAIL_APP_PASSWORD`| no      | Gmail app password (16 chars)                                |
+| `EMAIL_FROM`       | no       | Display sender; defaults to `R-EDA'S STUDIO <GMAIL_USER>`     |
 | `PORT`             | no       | HTTP port (default 3000; Render sets this)                   |
 
 The server exits on startup if `DATABASE_URL` is missing. SSL is enabled unless the
@@ -70,19 +71,19 @@ npm dependency). Messages fire on: **request received**, **accepted**, **denied*
 `sendSms` strips the number to digits (e.g. `+355 69…` → `35569…`) before sending. Until
 the keys are set, every booking still works — the SMS step is simply skipped.
 
-## Email notifications (Resend)
+## Email notifications (Gmail SMTP)
 
-The client is emailed (the address they entered) on the same four events via Resend
-(`sendEmail`/`bookingEmail` in `server.js`, `POST https://api.resend.com/emails` — no extra
-npm dependency). Both a plain-text and a lightly branded HTML body are sent. To enable:
+The client is emailed (the address they entered) on the same four events via Gmail SMTP
+(`nodemailer`; `sendEmail`/`bookingEmail` in `server.js`). Both a plain-text and a lightly
+branded HTML body are sent. To enable:
 
-1. Create a Resend account and **verify your sending domain** (add the DNS records Resend
-   shows). For quick testing you can use Resend's `onboarding@resend.dev` sender.
-2. Create an **API key**.
-3. Set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `R-EDA'S STUDIO <bookings@redas-studio.com>`,
-   matching the verified domain) in the Render dashboard.
+1. On the Google account, turn on **2-Step Verification**, then create an **App Password**
+   (Google Account → Security → App passwords). It's a 16-character code.
+2. Set `GMAIL_USER` (the address) and `GMAIL_APP_PASSWORD` in the Render dashboard.
+   Optionally set `EMAIL_FROM` for the display name (defaults to `R-EDA'S STUDIO <GMAIL_USER>`).
 
-Until both are set, bookings work normally — the email step is simply skipped.
+Gmail sends as the authenticated address; free Gmail allows ~500 recipients/day (Workspace
+~2,000). Until both vars are set, bookings work normally — email is simply skipped.
 
 ## Tests
 

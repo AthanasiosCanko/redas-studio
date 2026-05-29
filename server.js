@@ -1,10 +1,11 @@
 'use strict';
 
-const express  = require('express');
-const path     = require('path');
-const { Pool } = require('pg');
-const jwt      = require('jsonwebtoken');
-const webpush  = require('web-push');
+const express    = require('express');
+const path       = require('path');
+const { Pool }   = require('pg');
+const jwt        = require('jsonwebtoken');
+const webpush    = require('web-push');
+const nodemailer = require('nodemailer');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -34,10 +35,14 @@ const INFOBIP_API_KEY  = process.env.INFOBIP_API_KEY;
 const INFOBIP_SENDER   = process.env.INFOBIP_SENDER;   // sender ID, e.g. "REDAS STUDIO"
 const SMS_READY        = !!(INFOBIP_BASE_URL && INFOBIP_API_KEY && INFOBIP_SENDER);
 
-// Resend email (optional — a no-op until both env vars are set)
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM     = process.env.EMAIL_FROM;         // e.g. "R-EDA'S STUDIO <bookings@redas-studio.com>"
-const EMAIL_READY    = !!(RESEND_API_KEY && EMAIL_FROM);
+// Gmail SMTP email (optional — a no-op until the Gmail vars are set)
+const GMAIL_USER         = process.env.GMAIL_USER;          // the Gmail address
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;  // 16-char app password
+const EMAIL_FROM         = process.env.EMAIL_FROM || (GMAIL_USER ? `R-EDA'S STUDIO <${GMAIL_USER}>` : null);
+const EMAIL_READY        = !!(GMAIL_USER && GMAIL_APP_PASSWORD);
+const mailer = EMAIL_READY
+  ? nodemailer.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD } })
+  : null;
 
 // ── Booking window ───────────────────────────────────────
 // Clients may request any time from 09:00 to 20:00 in 5-minute steps.
@@ -211,16 +216,11 @@ function longDate(date) {
   });
 }
 
-// Send a transactional email via Resend (graceful no-op when not configured).
+// Send an email via Gmail SMTP (graceful no-op when not configured).
 async function sendEmail(to, subject, text, html) {
-  if (!EMAIL_READY || !to) return;
+  if (!mailer || !to) return;
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: EMAIL_FROM, to, subject, text, html }),
-    });
-    if (!res.ok) console.error('Email failed:', res.status, await res.text());
+    await mailer.sendMail({ from: EMAIL_FROM, to, subject, text, html });
   } catch (err) {
     console.error('Email error:', err.message);
   }
