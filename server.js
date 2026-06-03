@@ -343,7 +343,7 @@ app.get('/api/availability/:date', async (req, res) => {
 // Create a booking request (status: pending)
 app.post('/api/bookings', async (req, res) => {
   const { date, time, name, email, phone } = req.body;
-  if (!date || !time || !name?.trim() || !email?.trim() || !phone?.trim()) {
+  if (!date || !time || !name?.trim() || !phone?.trim()) {   // email is optional
     return res.status(400).json({ error: 'Missing fields' });
   }
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
@@ -360,10 +360,11 @@ app.post('/api/bookings', async (req, res) => {
     if (blockedRes.rows.length) return res.status(409).json({ error: 'Day not available' });
     if (takenRes.rows.length)   return res.status(409).json({ error: 'Already booked' });
 
+    const cleanEmail = email?.trim() || null;
     await pool.query(
       `INSERT INTO bookings (date, time, name, email, phone, status)
        VALUES ($1, $2, $3, $4, $5, 'pending')`,
-      [date, time, name.trim(), email.trim(), phone.trim()]
+      [date, time, name.trim(), cleanEmail, phone.trim()]
     );
 
     notifyAdmin({
@@ -371,7 +372,7 @@ app.post('/api/bookings', async (req, res) => {
       body:  `${name.trim()} · ${friendlyDate(date)} · ${time}`,
     });
     sendSms(phone, `R-EDA'S STUDIO — we received your request for ${friendlyDate(date)} at ${time}. We'll confirm shortly.`);
-    bookingEmail('received', { to: email.trim(), name: name.trim(), date, time });
+    bookingEmail('received', { to: cleanEmail, name: name.trim(), date, time });  // no-op when no email
 
     res.json({ ok: true });
   } catch (err) {

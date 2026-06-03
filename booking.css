@@ -375,6 +375,13 @@
   gap: 7px;
 }
 
+.bk-optional {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 0.92em;
+  opacity: 0.6;
+}
+
 .bk-input {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1rem;

@@ -236,9 +236,9 @@
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const name  = nameInput.value.trim();
-    const email = emailInput.value.trim();
+    const email = emailInput.value.trim();   // optional
     const local = phoneInput.value.trim();
-    if (!name || !email || !local) return;
+    if (!name || !local) return;             // name + phone required
     const phone = '+355 ' + local.replace(/^0+/, '');  // Albanian prefix
 
     const submitBtn    = form.querySelector('.bk-submit');
