@@ -1,3 +1,8 @@
+# Render Blueprint — service definition only.
+# All secrets/config (DATABASE_URL, ADMIN_PASSWORD, VAPID_*, INFOBIP_*, GMAIL_*,
+# EMAIL_FROM) are set directly in the Render dashboard → Environment, and are
+# documented in CLAUDE.md. Keeping them out of this file avoids blueprint-sync
+# prompts; removing them here does NOT delete the values already set in Render.
 services:
   - type: web
     name: redas-studio
@@ -7,25 +12,5 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        sync: false   # paste your existing Render PostgreSQL "Internal Database URL" here
       - key: JWT_SECRET
         generateValue: true
-      - key: ADMIN_PASSWORD
-        sync: false   # set your admin panel password here
-      - key: VAPID_PUBLIC_KEY
-        sync: false   # from: npx web-push generate-vapid-keys
-      - key: VAPID_PRIVATE_KEY
-        sync: false   # from: npx web-push generate-vapid-keys
-      - key: INFOBIP_BASE_URL
-        sync: false   # optional SMS — your Infobip base URL (xxxxx.api.infobip.com)
-      - key: INFOBIP_API_KEY
-        sync: false   # optional SMS — Infobip API key
-      - key: INFOBIP_SENDER
-        sync: false   # optional SMS — sender ID, e.g. REDAS STUDIO
-      - key: GMAIL_USER
-        sync: false   # optional email — the Gmail address that sends notifications
-      - key: GMAIL_APP_PASSWORD
-        sync: false   # optional email — Gmail app password (16 chars, no spaces)
-      - key: EMAIL_FROM
-        sync: false   # optional — display sender; defaults to "R-EDA'S STUDIO <GMAIL_USER>"
