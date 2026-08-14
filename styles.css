@@ -328,11 +328,6 @@ address { font-style: normal; }
   color: var(--brown);
 }
 
-.prices--end {
-  padding-top: var(--sp-block);
-  padding-bottom: var(--sp-section);
-}
-
 /* ── Pinned horizontal category scroll ─────────────────── */
 /* Desktop: the section is 280vh tall; a sticky 100svh pin holds a 300vw
    flex track that hero.js translates with scroll progress (2 of 3 panels
@@ -360,6 +355,15 @@ address { font-style: normal; }
   padding-bottom: var(--sp-block);
 }
 
+/* Closing strip pinned to the bottom of the same viewport, so it frames the
+   categories the whole way through instead of appearing only at the end. */
+.ps-foot {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: var(--sp-block);
+  padding-bottom: var(--sp-section);
+}
+
 .ps-track {
   flex: 1 1 auto;
   min-height: 0;
@@ -377,7 +381,7 @@ address { font-style: normal; }
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: var(--sp-block) var(--sp-gutter) var(--sp-section);
+  padding: var(--sp-block) var(--sp-gutter);
   border-left: 1px solid var(--brown-faint);
 }
 
@@ -469,6 +473,7 @@ address { font-style: normal; }
     display: block;
   }
   .ps-head { padding-bottom: 0; }
+  .ps-foot { padding-top: var(--sp-block); }
   .ps-track {
     display: block;
     width: auto;
