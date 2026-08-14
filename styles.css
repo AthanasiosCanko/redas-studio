@@ -349,17 +349,23 @@ address { font-style: normal; }
   flex-direction: column;
 }
 
-.ps-head {
-  flex: 0 0 auto;
-  width: 100%;
-  padding-bottom: var(--sp-block);
-}
-
-/* Closing strip pinned to the bottom of the same viewport, so it frames the
-   categories the whole way through instead of appearing only at the end. */
+/* Head and foot are identical wrappers: flex items that must NOT shrink to
+   their content (Safari does exactly that for an item that is also a flex
+   container with auto margins), each holding a block-level strip child. */
+.ps-head,
 .ps-foot {
   flex: 0 0 auto;
+  align-self: stretch;
   width: 100%;
+  max-width: 780px;
+  margin-inline: auto;
+}
+
+.ps-head { padding-bottom: var(--sp-block); }
+
+/* Closing strip sits at the bottom of the same viewport, so it frames the
+   categories the whole way through instead of appearing only at the end. */
+.ps-foot {
   padding-top: var(--sp-block);
   padding-bottom: var(--sp-section);
 }

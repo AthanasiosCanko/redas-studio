@@ -105,10 +105,15 @@
 
       </div>
 
-      <footer class="prices ps-foot prices-footer rv">
-        <span><span class="dot-mark"></span> R&#x2011;EDA'S</span>
-        <span>STUDIO <span class="dot-mark"></span></span>
-      </footer>
+      <!-- Mirrors .ps-head exactly: wrapper is the flex item, the strip is a
+           block child. Merging both roles onto one element shrink-to-fits
+           in Safari, which collapsed the strip to the centre. -->
+      <div class="prices ps-foot">
+        <footer class="prices-footer rv">
+          <span><span class="dot-mark"></span> R&#x2011;EDA'S</span>
+          <span>STUDIO <span class="dot-mark"></span></span>
+        </footer>
+      </div>
 
     </div>
   </section>
