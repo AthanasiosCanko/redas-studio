@@ -10,6 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#5c2520">
   <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="preload" as="image" href="assets/hero-poster.jpg">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="booking.css">
 </head>
@@ -17,7 +18,18 @@
 
   <!-- ─── HERO ─────────────────────────────────────────── -->
   <section class="hero">
+
+    <!-- Full-bleed video layer. Sources are injected by hero.js only when the
+         connection and motion preferences allow it — the poster renders otherwise. -->
+    <div class="hero-media" aria-hidden="true">
+      <video class="hero-video" id="hero-video" autoplay muted loop playsinline
+             preload="metadata" poster="assets/hero-poster.jpg"
+             width="1920" height="1080"></video>
+    </div>
+    <div class="hero-veil" aria-hidden="true"></div>
+
     <img src="assets/logo.svg" class="hero-logo" alt="R-EDA'S STUDIO — Nails &amp; Make-Up">
+    <p class="hero-tag">Manikyr. Pedikyr. <em>Make-up.</em></p>
     <div class="hero-rule"></div>
 
     <div class="hero-contact">
@@ -27,6 +39,8 @@
         Kompleksi Kadiu, H1, Ap 01104<br>Ali Demi, Tiran&#235;
       </address>
     </div>
+
+    <a href="#booking" class="hero-cta">Rezervo nj&#235; orar</a>
   </section>
 
   <!-- ─── PRICE LIST ────────────────────────────────────── -->
@@ -161,6 +175,7 @@
 
   </section>
 
+  <script src="hero.js"></script>
   <script src="timepicker.js"></script>
   <script src="booking.js"></script>
   <script>

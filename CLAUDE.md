@@ -17,22 +17,36 @@ category headings, leader-free service rows).
 ## Project structure
 
 ```
-index.html          — public landing page (hero, price list, booking calendar)
+index.html          — public landing page (video hero, price list, booking calendar)
 admin.html          — admin dashboard (bookings view + availability management)
-styles.css          — design tokens, hero, and price-list styles
+styles.css          — design tokens, video-hero, and price-list styles
 booking.css         — calendar, wheel time picker, and booking-modal styles
 admin.css           — admin-only styles
 booking.js          — public booking calendar + request flow (fetch-based)
 admin.js            — admin dashboard logic (JWT auth, push subscribe, all API calls)
 timepicker.js       — shared iOS-style wheel time picker (RedaTimePicker.create)
+hero.js             — hero video loader (saveData/2g + reduced-motion gates) & slow parallax
 server.js           — Express server: static serving + REST API + DB bootstrap
 sw.js               — service worker (network-first nav, cache-first assets, push)
 manifest.json       — PWA manifest for the public site (start_url "/")
 manifest-admin.json — PWA manifest for the admin app (start_url "/admin")
 render.yaml         — Render Blueprint (web service only; DB is external Neon)
 test/smoke.test.js  — dependency-free smoke tests (no DB/network/browser)
-assets/             — logo, PWA icons, photos
+assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster (jpg/webp)
 ```
+
+## Hero video conventions
+
+- `hero.js` injects the video `<source>`s only when allowed: never on `saveData`/2g
+  connections and never under `prefers-reduced-motion` — the poster (both the `poster`
+  attribute and a CSS background on `.hero-media`) renders in every other case, so the
+  hero is never blank. Hero visibility is never gated on an animation.
+- `--motion` (`:root`, 1 / 0.25 under reduced motion) scales the parallax amplitude.
+  `?motion=1` forces full motion for testing (this Mac has OS Reduce Motion ON).
+- `sw.js` deliberately bypasses `.mp4`/`.webm` — intercepting media Range requests
+  breaks iOS playback, and multi-MB media must not enter the SW cache.
+- The clip is loop-crossfaded at encode time (first frame == last frame); regenerate
+  with the same xfade recipe if the footage is ever replaced.
 
 ## Environment variables
 

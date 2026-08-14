@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js', 'hero.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {

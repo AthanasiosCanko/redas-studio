@@ -1,5 +1,5 @@
 /* ── R-EDA'S STUDIO — Service Worker ───────────────────── */
-const CACHE = 'redas-v2';
+const CACHE = 'redas-v3';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -7,7 +7,9 @@ const PRECACHE = [
   '/booking.css',
   '/booking.js',
   '/timepicker.js',
+  '/hero.js',
   '/assets/logo.svg',
+  '/assets/hero-poster.jpg',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/manifest.json',
@@ -35,6 +37,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return; // never cache API
+  // Video streams: hands-off — the browser must manage Range requests
+  // natively (intercepting them breaks iOS playback), and multi-MB media
+  // has no business in the cache.
+  if (/\.(mp4|webm)(\?|$)/.test(e.request.url)) return;
 
   // Navigation requests (page loads) — always network-first so iOS
   // PWA launches open the correct URL, not a cached one
