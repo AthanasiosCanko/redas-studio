@@ -96,10 +96,21 @@ address { font-style: normal; }
   z-index: 2;
 }
 
+/* logo.svg is a square canvas but the artwork only occupies y 28.3%–59.3%
+   of it and sits ~2% left of centre. Collapse the transparent bands with
+   negative margins computed from the element's own width (the SVG is
+   square, so height == --logo-w) — percentage margins would resolve
+   against the container, not the element, so calc() on a length is used.
+   Without this the empty canvas pushes the copy far below the mark. */
 .hero-logo {
-  width: clamp(280px, 62vw, 480px);
-  height: auto;
+  --logo-w: clamp(280px, 62vw, 480px);
+  width: var(--logo-w);
+  height: var(--logo-w);
   display: block;
+  margin-top:    calc(var(--logo-w) * -0.278);
+  margin-bottom: calc(var(--logo-w) * -0.400);
+  margin-left:   calc(var(--logo-w) *  0.0196);   /* optical centring */
+  margin-right:  calc(var(--logo-w) * -0.0196);
 }
 
 .hero-tag {
@@ -108,7 +119,7 @@ address { font-style: normal; }
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--brown);
-  margin-top: clamp(12px, 2.5vw, 20px);
+  margin-top: clamp(14px, 2.2vw, 22px);
 }
 
 .hero-tag em {
@@ -128,8 +139,8 @@ address { font-style: normal; }
   border: 1px solid var(--brown);
   padding: 14px 28px;
   border-radius: 2px;
-  margin-top: clamp(24px, 4vw, 36px);
-  transition: background 0.15s, color 0.15s;
+  margin-top: clamp(14px, 2.2vw, 22px);
+  transition: background 0.15s, color 0.15s, transform 160ms var(--ease-out-strong);
 }
 
 .hero-cta:hover {
@@ -195,7 +206,7 @@ address { font-style: normal; }
   width: 36px;
   height: 1px;
   background: var(--brown-faint);
-  margin: clamp(24px, 4vw, 40px) auto;
+  margin: clamp(16px, 2.4vw, 24px) auto;
 }
 
 /* ── PRICE LIST ────────────────────────────────────────── */
@@ -459,8 +470,8 @@ address { font-style: normal; }
 
 @media (max-width: 600px) {
   /* Hero */
-  .hero-logo { width: clamp(220px, 72vw, 340px); }
-  .hero-rule  { margin: 20px auto; }
+  .hero-logo { --logo-w: clamp(220px, 72vw, 340px); }
+  .hero-rule  { margin: 16px auto; }
   .hero-tag   { font-size: 1.05rem; }
   .hero-cta   { padding: 14px 22px; letter-spacing: 0.32em; }
   /* Portrait crop: bias toward the hands/brush at frame centre */
