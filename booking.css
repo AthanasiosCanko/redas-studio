@@ -1,7 +1,7 @@
 /* ── Booking section ───────────────────────────────────── */
 .booking {
   background: var(--white);
-  padding: clamp(40px, 7vw, 80px) 0 clamp(56px, 9vw, 112px);
+  padding: var(--sp-section) 0;
 }
 
 /* Mirrors the .prices box exactly so the R-EDA'S / STUDIO strip and the
@@ -9,7 +9,7 @@
 .booking-inner {
   max-width: 780px;
   margin: 0 auto;
-  padding: 0 clamp(20px, 6vw, 96px);
+  padding: 0 var(--sp-gutter);
 }
 
 .booking-title {
@@ -17,7 +17,7 @@
   line-height: 1.05;
   color: var(--brown);
   text-align: center;
-  margin-bottom: clamp(28px, 5vw, 48px);
+  margin-bottom: var(--sp-block);
 }
 
 .booking-title em {
