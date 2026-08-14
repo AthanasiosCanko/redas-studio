@@ -1,154 +1,23 @@
 # R-EDA'S STUDIO
 
-Static landing page + booking system for a nail & make-up salon in Tirana, Albania.
-The landing page's price list is a faithful web rendering of the studio's printed
-A4 price list (stacked "Price / list." logotype, circular PRICE LIST badge, roman
-category headings, leader-free service rows).
+Booking site for a nail & make-up salon in Tirana, Albania (r-edas.al). Clients request a
+time on a wheel picker; the admin accepts or denies it, and the client is notified by
+**Infobip** SMS and **Gmail** email. Plain HTML/CSS/JS with no build step, on **Render**
+against **Neon** Postgres.
 
-## Stack
+## Docs — read the relevant one before working
 
-- **Frontend** — plain HTML/CSS/JS (no build step)
-- **Backend** — Node.js + Express (`server.js`) serving static files and REST API
-- **Database** — PostgreSQL on Neon (serverless); `DATABASE_URL` set manually in Render
-- **Auth** — Admin JWT via `POST /api/admin/login`, token stored in `sessionStorage`
-- **PWA** — installable; service worker (`sw.js`) + Web Push notifications to admin on new booking requests
-- **Booking flow** — clients pick any time 09:00–20:00 (5-min steps) via a wheel picker and submit a *request*; the admin accepts or denies it
+| File | Read it when |
+|---|---|
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Touching code — stack, file layout, booking lifecycle, motion/CSS conventions |
+| [docs/OPERATIONS.md](./docs/OPERATIONS.md) | Deploying, running tests, using the admin panel, enabling SMS/email/push |
+| [docs/GOTCHAS.md](./docs/GOTCHAS.md) | Touching the service worker or hero video, or chasing a missing notification |
+| [docs/DECISIONS.md](./docs/DECISIONS.md) | Something looks wrong — check before "fixing" it |
 
-## Project structure
+## Non-obvious things worth knowing up front
 
-```
-index.html          — public landing page (video hero, price list, booking calendar)
-admin.html          — admin dashboard (bookings view + availability management)
-styles.css          — design tokens, video-hero, and price-list styles
-booking.css         — calendar, wheel time picker, and booking-modal styles
-admin.css           — admin-only styles
-booking.js          — public booking calendar + request flow (fetch-based)
-admin.js            — admin dashboard logic (JWT auth, push subscribe, all API calls)
-timepicker.js       — shared iOS-style wheel time picker (RedaTimePicker.create)
-hero.js             — hero video loader (saveData/2g + reduced-motion gates) & slow parallax
-server.js           — Express server: static serving + REST API + DB bootstrap
-sw.js               — service worker (network-first nav, cache-first assets, push)
-manifest.json       — PWA manifest for the public site (start_url "/")
-manifest-admin.json — PWA manifest for the admin app (start_url "/admin")
-render.yaml         — Render Blueprint (web service only; DB is external Neon)
-test/smoke.test.js  — dependency-free smoke tests (no DB/network/browser)
-assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster (jpg/webp)
-```
-
-## Hero video & motion conventions
-
-- **Motion is intentionally NOT gated on `prefers-reduced-motion`** — the owner
-  explicitly decided (2026-08-14) that animations and the hero video run for everyone.
-  Do not reintroduce reduced-motion gates without asking.
-- `hero.js` injects the video `<source>`s unless the connection is constrained
-  (`saveData`/2g) — the poster (both the `poster` attribute and a CSS background on
-  `.hero-media`) renders in every other case, so the hero is never blank. Hero
-  visibility is never gated on an animation.
-- `--motion` (`:root`) scales the parallax amplitude; `--ease-out-strong`
-  (`cubic-bezier(0.23,1,0.32,1)`) is the shared entrance easing.
-- Entrances: the hero children stagger in on load (`hero-rise`, fill-mode `backwards`
-  so `:active`/hover styles are not overridden after the animation). Below the fold,
-  `.rv` elements reveal on scroll via an IntersectionObserver in `hero.js`
-  (`.rv--in`; price-list rows cascade via nth-child transition-delays). The hidden
-  state applies only under `html.rv-ready`, so content stays visible without JS.
-- `sw.js` deliberately bypasses `.mp4`/`.webm` — intercepting media Range requests
-  breaks iOS playback, and multi-MB media must not enter the SW cache.
-- The clip is loop-crossfaded at encode time (first frame == last frame); regenerate
-  with the same xfade recipe if the footage is ever replaced.
-
-## Environment variables
-
-| Variable           | Required | Description                                                  |
-|--------------------|----------|--------------------------------------------------------------|
-| `DATABASE_URL`     | yes      | Neon PostgreSQL connection string (set manually in Render)   |
-| `ADMIN_PASSWORD`   | yes      | Admin login password (set in Render dashboard)               |
-| `JWT_SECRET`       | yes      | Secret for signing admin tokens (auto-generated by Render)   |
-| `VAPID_PUBLIC_KEY` | no       | Web Push public key; push is disabled if unset               |
-| `VAPID_PRIVATE_KEY`| no       | Web Push private key; push is disabled if unset              |
-| `INFOBIP_BASE_URL` | no       | Infobip account base URL (e.g. `xxxxx.api.infobip.com`); SMS off unless all three set |
-| `INFOBIP_API_KEY`  | no       | Infobip API key                                              |
-| `INFOBIP_SENDER`   | no       | Sender ID shown on the text (e.g. `REDAS STUDIO`)            |
-| `GMAIL_USER`       | no       | Gmail address that sends mail; email disabled unless both Gmail vars set |
-| `GMAIL_APP_PASSWORD`| no      | Gmail app password (16 chars)                                |
-| `EMAIL_FROM`       | no       | Display sender; defaults to `R-EDA'S STUDIO <GMAIL_USER>`     |
-| `PORT`             | no       | HTTP port (default 3000; Render sets this)                   |
-
-The server exits on startup if `DATABASE_URL` is missing. SSL is enabled unless the
-connection string points at `localhost`. Push notifications, SMS, and email are each a
-graceful no-op when their keys are absent.
-
-## SMS notifications (Infobip)
-
-Clients enter an Albanian number (the form prepends `+355`), so the server can text them
-via Infobip's REST API (`sendSms` in `server.js`, `POST /sms/2/text/advanced` — no extra
-npm dependency). Messages fire on: **request received**, **accepted**, **denied**, and
-**cancelled**. To enable:
-
-1. Create an Infobip account; from the dashboard note your **Base URL**
-   (`xxxxx.api.infobip.com`) and create an **API key**.
-2. Register/choose a **sender ID** (alphanumeric like `REDAS STUDIO` may need approval for
-   Albania; a number works without it).
-3. Set `INFOBIP_BASE_URL`, `INFOBIP_API_KEY`, `INFOBIP_SENDER` in the Render dashboard.
-
-`sendSms` strips the number to digits (e.g. `+355 69…` → `35569…`) before sending. Until
-the keys are set, every booking still works — the SMS step is simply skipped.
-
-## Email notifications (Gmail SMTP)
-
-The client is emailed (the address they entered) on the same four events via Gmail SMTP
-(`nodemailer`; `sendEmail`/`bookingEmail` in `server.js`). Both a plain-text and a lightly
-branded HTML body are sent. To enable:
-
-1. On the Google account, turn on **2-Step Verification**, then create an **App Password**
-   (Google Account → Security → App passwords). It's a 16-character code.
-2. Set `GMAIL_USER` (the address) and `GMAIL_APP_PASSWORD` in the Render dashboard.
-   Optionally set `EMAIL_FROM` for the display name (defaults to `R-EDA'S STUDIO <GMAIL_USER>`).
-
-Gmail sends as the authenticated address; free Gmail allows ~500 recipients/day (Workspace
-~2,000). Until both vars are set, bookings work normally — email is simply skipped.
-
-## Tests
-
-```bash
-npm test          # node --test — runs test/smoke.test.js
-```
-
-The suite needs no database or browser. It verifies: every JS file parses, all JSON is
-valid, manifest `start_url`s are correct, the DOM ids `booking.js`/`admin.js` query all
-exist, the service-worker precache references only real files, the 09:00–20:00 / 5-min
-booking window and the accept/deny/cancel status transitions are present in `server.js`,
-and `RedaTimePicker.create` is exported.
-
-## Deploying to Render
-
-Changes go to GitHub, which auto-deploys to Render. (Do not run locally — push straight to Render.)
-
-1. Push to GitHub (`AthanasiosCanko/redas-studio`)
-2. Render's `render.yaml` configures the web service
-3. Set `DATABASE_URL`, `ADMIN_PASSWORD`, and the VAPID keys in the Render dashboard
-
-Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`).
-
-## Admin panel
-
-Visit `/admin` (alias for `/admin.html`). Password is set via `ADMIN_PASSWORD`.
-
-- **Bookings tab** — filter by Requests (pending) / Upcoming / Past / All.
-  Pending requests show **Accept** and **Deny**; confirmed bookings show **Cancel**.
-- **Availability tab** — click a day to see its bookings, **Add a booking** (auto-accepted,
-  with the same wheel time picker), or block/unblock the whole day.
-- On login the admin browser subscribes to Web Push; new public requests fire a
-  notification (`Booking request · <name> · <date> · <time>`).
-
-For the admin PWA on iOS, add to home screen **from the `/admin` URL** in Safari so the
-app launches the dashboard rather than the landing page.
-
-## Booking window & request lifecycle
-
-- Clients may request any time from **09:00 to 20:00** in **5-minute** steps (20:00 is the
-  last bookable start). Enforced in `server.js` (`isValidTime`) and the time picker.
-- A request is created as **pending** and locks that exact time so no one else can take it.
-- The admin transitions it: `pending → accepted` (accept), `pending → denied` (deny), or
-  `accepted → cancelled` (cancel). Denied/cancelled rows are **kept as records** (visible
-  under the *All* filter) and free the time up again.
-- Same-day times already past in Albania local time (`Europe/Tirane`) cannot be requested.
+- **Deploy by pushing; do not run the app locally** — no local database exists.
+- **Notifications fail silently without their env vars** — the booking still succeeds.
+- **Motion is deliberately not gated on `prefers-reduced-motion`** — do not reintroduce it.
+- **`sw.js` must keep bypassing `.mp4`/`.webm`** — otherwise iOS playback breaks.
+- **Install the admin PWA from the `/admin` URL on iOS**, or it opens the landing page.
