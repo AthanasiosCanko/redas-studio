@@ -152,15 +152,13 @@ address { font-style: normal; }
 .hero-logo,
 .hero-tag,
 .hero-rule,
-.hero-contact,
 .hero-cta {
   animation: hero-rise 700ms var(--ease-out-strong) backwards;
 }
 
-.hero-tag     { animation-delay: 90ms; }
-.hero-rule    { animation-delay: 160ms; }
-.hero-contact { animation-delay: 230ms; }
-.hero-cta     { animation-delay: 320ms; }
+.hero-tag  { animation-delay: 90ms; }
+.hero-rule { animation-delay: 160ms; }
+.hero-cta  { animation-delay: 230ms; }
 
 /* ── Scroll reveals (.rv → .rv--in, driven by hero.js) ─── */
 /* Hidden state only under .rv-ready so content is never lost without JS. */
@@ -198,35 +196,6 @@ address { font-style: normal; }
   height: 1px;
   background: var(--brown-faint);
   margin: clamp(24px, 4vw, 40px) auto;
-}
-
-.hero-contact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.hero-cl {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--brown);
-  transition: color 0.2s;
-}
-
-.hero-cl:hover { color: var(--brown-mid); }
-
-.hero-addr {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(0.9rem, 2.2vw, 1.05rem);
-  /* --brown (not --brown-mid): over the video veil the mid tone can only
-     reach ~2.3:1 in the worst frame; the full ink holds ≥4.5:1. */
-  color: var(--brown);
-  line-height: 1.7;
-  text-align: center;
-  margin-top: 4px;
 }
 
 /* ── PRICE LIST ────────────────────────────────────────── */
@@ -492,8 +461,6 @@ address { font-style: normal; }
   /* Hero */
   .hero-logo { width: clamp(220px, 72vw, 340px); }
   .hero-rule  { margin: 20px auto; }
-  .hero-cl    { font-size: 1.05rem; }
-  .hero-addr  { font-size: 0.92rem; }
   .hero-tag   { font-size: 1.05rem; }
   .hero-cta   { padding: 14px 22px; letter-spacing: 0.32em; }
   /* Portrait crop: bias toward the hands/brush at frame centre */
