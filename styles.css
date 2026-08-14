@@ -343,17 +343,28 @@ address { font-style: normal; }
   background: var(--beige);
 }
 
+/* Column: the head (brand strip + title) is fixed at the top of the pin;
+   the track fills the remaining height and slides horizontally under it. */
 .ps-pin {
   position: sticky;
   top: 0;
   height: 100svh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-head {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-bottom: var(--sp-block);
 }
 
 .ps-track {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   width: 300vw;
-  height: 100%;
   will-change: transform;
 }
 
@@ -366,7 +377,7 @@ address { font-style: normal; }
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: var(--sp-section) var(--sp-gutter);
+  padding: var(--sp-block) var(--sp-gutter) var(--sp-section);
   border-left: 1px solid var(--brown-faint);
 }
 
@@ -455,7 +466,9 @@ address { font-style: normal; }
     position: static;
     height: auto;
     overflow: visible;
+    display: block;
   }
+  .ps-head { padding-bottom: 0; }
   .ps-track {
     display: block;
     width: auto;
