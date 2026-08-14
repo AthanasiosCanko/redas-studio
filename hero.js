@@ -64,6 +64,34 @@
     apply();
   }
 
+  // ── Pinned horizontal price scroll ───────────────────────
+  // Mirrors the CheaperTeam "how it works" drive: scroll progress through
+  // the 280vh section translates the 300vw track by up to -66.666% (2 of 3
+  // panels). ≤760px the CSS unpins the section and this becomes a no-op.
+  const psSection = document.querySelector('.prices-scroll');
+  const psTrack   = document.getElementById('ps-track');
+
+  if (psSection && psTrack) {
+    const mq = matchMedia('(min-width: 761px)');
+    let psTicking = false;
+
+    const psApply = () => {
+      psTicking = false;
+      if (!mq.matches) { psTrack.style.transform = ''; return; }
+      const total = psSection.offsetHeight - window.innerHeight;
+      if (total <= 0) return;
+      const p = Math.min(1, Math.max(0, -psSection.getBoundingClientRect().top / total));
+      psTrack.style.transform = `translate3d(${(-p * 66.666).toFixed(3)}%, 0, 0)`;
+    };
+
+    addEventListener('scroll', () => {
+      if (!psTicking) { psTicking = true; requestAnimationFrame(psApply); }
+    }, { passive: true });
+    addEventListener('resize', psApply);
+    mq.addEventListener('change', psApply);
+    psApply();
+  }
+
   // ── Scroll reveals ───────────────────────────────────────
   // The hidden state is applied only under .rv-ready, so content stays
   // visible if this script never runs.
