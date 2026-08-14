@@ -124,6 +124,7 @@ address { font-style: normal; }
 
 .hero-tag {
   font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
   font-size: clamp(1.05rem, 2.6vw, 1.35rem);
   font-weight: 400;
   letter-spacing: 0.04em;
