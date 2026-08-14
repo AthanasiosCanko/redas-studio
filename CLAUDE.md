@@ -35,14 +35,22 @@ test/smoke.test.js  — dependency-free smoke tests (no DB/network/browser)
 assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster (jpg/webp)
 ```
 
-## Hero video conventions
+## Hero video & motion conventions
 
-- `hero.js` injects the video `<source>`s only when allowed: never on `saveData`/2g
-  connections and never under `prefers-reduced-motion` — the poster (both the `poster`
-  attribute and a CSS background on `.hero-media`) renders in every other case, so the
-  hero is never blank. Hero visibility is never gated on an animation.
-- `--motion` (`:root`, 1 / 0.25 under reduced motion) scales the parallax amplitude.
-  `?motion=1` forces full motion for testing (this Mac has OS Reduce Motion ON).
+- **Motion is intentionally NOT gated on `prefers-reduced-motion`** — the owner
+  explicitly decided (2026-08-14) that animations and the hero video run for everyone.
+  Do not reintroduce reduced-motion gates without asking.
+- `hero.js` injects the video `<source>`s unless the connection is constrained
+  (`saveData`/2g) — the poster (both the `poster` attribute and a CSS background on
+  `.hero-media`) renders in every other case, so the hero is never blank. Hero
+  visibility is never gated on an animation.
+- `--motion` (`:root`) scales the parallax amplitude; `--ease-out-strong`
+  (`cubic-bezier(0.23,1,0.32,1)`) is the shared entrance easing.
+- Entrances: the hero children stagger in on load (`hero-rise`, fill-mode `backwards`
+  so `:active`/hover styles are not overridden after the animation). Below the fold,
+  `.rv` elements reveal on scroll via an IntersectionObserver in `hero.js`
+  (`.rv--in`; price-list rows cascade via nth-child transition-delays). The hidden
+  state applies only under `html.rv-ready`, so content stays visible without JS.
 - `sw.js` deliberately bypasses `.mp4`/`.webm` — intercepting media Range requests
   breaks iOS playback, and multi-MB media must not enter the SW cache.
 - The clip is loop-crossfaded at encode time (first frame == last frame); regenerate

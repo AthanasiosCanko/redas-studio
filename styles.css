@@ -6,12 +6,13 @@
   --beige:       #f0e8dc;
   --white:       #faf8f4;
   --hero-bg:     #f5ede3;
-  --motion:      1;        /* parallax amplitude; 0.25 under reduced motion */
+  --motion:      1;        /* parallax amplitude */
+  /* Strong ease-out — built-in CSS easings are too weak for entrances */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :root { --motion: 0.25; }
-}
+/* Motion is intentionally NOT gated on prefers-reduced-motion — owner's
+   explicit decision: animations run for everyone. */
 
 /* ── Reset ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -135,6 +136,62 @@ address { font-style: normal; }
   background: transparent;
   color: var(--brown);
 }
+
+.hero-cta:active { transform: scale(0.97); }
+
+/* ── Hero entrance stagger ─────────────────────────────── */
+/* fill-mode backwards (not both): elements hold the from-state during
+   their delay, then release to natural styles afterwards so :active
+   transforms and hover transitions aren't overridden by a filling
+   animation. */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hero-logo,
+.hero-tag,
+.hero-rule,
+.hero-contact,
+.hero-cta {
+  animation: hero-rise 700ms var(--ease-out-strong) backwards;
+}
+
+.hero-tag     { animation-delay: 90ms; }
+.hero-rule    { animation-delay: 160ms; }
+.hero-contact { animation-delay: 230ms; }
+.hero-cta     { animation-delay: 320ms; }
+
+/* ── Scroll reveals (.rv → .rv--in, driven by hero.js) ─── */
+/* Hidden state only under .rv-ready so content is never lost without JS. */
+.rv-ready .rv {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 650ms var(--ease-out-strong), transform 650ms var(--ease-out-strong);
+}
+
+.rv-ready .rv.rv--in {
+  opacity: 1;
+  transform: none;
+}
+
+.rv-ready .rv.rv-d1 { transition-delay: 90ms; }
+
+/* Price rows cascade in after their category reveals */
+.rv-ready .category.rv .service-row {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 550ms var(--ease-out-strong), transform 550ms var(--ease-out-strong);
+}
+
+.rv-ready .category.rv--in .service-row { opacity: 1; transform: none; }
+
+.rv-ready .category.rv--in .service-row:nth-child(1) { transition-delay: 70ms; }
+.rv-ready .category.rv--in .service-row:nth-child(2) { transition-delay: 115ms; }
+.rv-ready .category.rv--in .service-row:nth-child(3) { transition-delay: 160ms; }
+.rv-ready .category.rv--in .service-row:nth-child(4) { transition-delay: 205ms; }
+.rv-ready .category.rv--in .service-row:nth-child(5) { transition-delay: 250ms; }
+.rv-ready .category.rv--in .service-row:nth-child(6) { transition-delay: 295ms; }
 
 .hero-rule {
   width: 36px;

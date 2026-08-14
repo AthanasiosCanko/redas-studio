@@ -19,8 +19,8 @@
   <!-- ─── HERO ─────────────────────────────────────────── -->
   <section class="hero">
 
-    <!-- Full-bleed video layer. Sources are injected by hero.js only when the
-         connection and motion preferences allow it — the poster renders otherwise. -->
+    <!-- Full-bleed video layer. Sources are injected by hero.js unless the
+         connection is constrained (saveData/2g) — the poster renders otherwise. -->
     <div class="hero-media" aria-hidden="true">
       <video class="hero-video" id="hero-video" autoplay muted loop playsinline
              preload="metadata" poster="assets/hero-poster.jpg"
@@ -46,12 +46,12 @@
   <!-- ─── PRICE LIST ────────────────────────────────────── -->
   <section class="prices">
 
-    <div class="prices-header">
+    <div class="prices-header rv">
       <span class="prices-header-left"><span class="dot-mark"></span> R&#x2011;EDA'S</span>
       <span class="prices-header-right">STUDIO <span class="dot-mark"></span></span>
     </div>
 
-    <div class="prices-title-wrap">
+    <div class="prices-title-wrap rv rv-d1">
       <h2 class="prices-title">
         <span class="title-price">Price</span>
         <em class="title-list">list.</em>
@@ -59,7 +59,7 @@
     </div>
 
     <!-- MANIKYR -->
-    <div class="category">
+    <div class="category rv">
       <h3 class="category-name">Manikyr</h3>
       <ul class="service-list">
         <li class="service-row"><span class="service-name">RIMBUSHJE XHELI</span><span class="service-rule"></span><span class="service-price">1200</span></li>
@@ -72,7 +72,7 @@
     </div>
 
     <!-- PEDIKYR -->
-    <div class="category">
+    <div class="category rv">
       <h3 class="category-name">Pedikyr</h3>
       <ul class="service-list">
         <li class="service-row"><span class="service-name">MANIKYR XHEL</span><span class="service-rule"></span><span class="service-price">1200</span></li>
@@ -84,7 +84,7 @@
     </div>
 
     <!-- MAKE-UP -->
-    <div class="category">
+    <div class="category rv">
       <h3 class="category-name">Make-Up</h3>
       <ul class="service-list">
         <li class="service-row"><span class="service-name">NATURAL MAKE-UP</span><span class="service-rule"></span><span class="service-price">2000&#x2013;3000</span></li>
@@ -94,7 +94,7 @@
       </ul>
     </div>
 
-    <footer class="prices-footer">
+    <footer class="prices-footer rv">
       <span><span class="dot-mark"></span> R&#x2011;EDA'S</span>
       <span>STUDIO <span class="dot-mark"></span></span>
     </footer>
@@ -105,9 +105,9 @@
   <section class="booking" id="booking">
 
     <div class="booking-inner">
-      <h2 class="booking-title"><em>Book an</em><span class="title-plain"> appointment.</span></h2>
+      <h2 class="booking-title rv"><em>Book an</em><span class="title-plain"> appointment.</span></h2>
 
-      <div class="cal-wrap">
+      <div class="cal-wrap rv rv-d1">
         <div class="cal-nav">
           <button class="cal-nav-btn" id="cal-prev" aria-label="Previous month">&#8592;</button>
           <span class="cal-month-label" id="cal-month-label"></span>
