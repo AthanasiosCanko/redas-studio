@@ -72,7 +72,9 @@
   const psTrack   = document.getElementById('ps-track');
 
   if (psSection && psTrack) {
-    const mq = matchMedia('(min-width: 761px)');
+    // Must mirror the unpin media query in styles.css — the pinned layout only
+    // fits when the viewport is both wide enough and tall enough.
+    const mq = matchMedia('(min-width: 761px) and (min-height: 641px)');
     let psTicking = false;
 
     const psApply = () => {
