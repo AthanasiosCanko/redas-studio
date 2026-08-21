@@ -246,6 +246,12 @@ address { font-style: normal; }
   background: var(--brown);
   vertical-align: middle;
   margin: 0 4px;
+  /* `middle` centres the dot on the x-height, but every strip using it is
+     all-caps, so it reads ~0.9px low. Lift it by half the cap/x-height
+     difference — measured 0.084em for Montserrat — onto the caps' optical
+     centre. Expressed in em so it holds as the strip's font-size clamps. */
+  position: relative;
+  top: -0.084em;
 }
 
 /* "Price list." stacked logotype */
