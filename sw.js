@@ -1,5 +1,5 @@
 /* ── R-EDA'S STUDIO — Service Worker ───────────────────── */
-const CACHE = 'redas-v3';
+const CACHE = 'redas-v4';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -51,7 +51,25 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Static assets — cache-first
+  // App shell (CSS/JS) — network-first, cache as offline fallback. Serving
+  // these cache-first means a deploy is invisible until CACHE is bumped, and
+  // forgetting that bump ships a stale stylesheet to every returning visitor.
+  if (/\.(css|js)(\?|$)/.test(e.request.url)) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Everything else (images, icons, fonts, manifest) — cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       const network = fetch(e.request).then(res => {

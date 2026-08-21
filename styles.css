@@ -466,11 +466,12 @@ address { font-style: normal; }
 
 /* ── Responsive ────────────────────────────────────────── */
 /* Unpin the horizontal price scroll — categories stack vertically.
-   Narrow (≤760px) OR short (≤640px tall): the pin needs ~570px of height for
-   head + tallest category + foot, so a landscape phone (e.g. 844×390) would
-   otherwise overlap the brand strips with the price rows.
+   Narrow (≤760px) OR short (≤760px tall). Measured: the pinned layout only
+   clears the brand strips from 761px of viewport height (17px clearance at
+   761, 44px at 820); at 700px it overlaps by 11px and at 641px by 38px. So
+   landscape phones AND tablet/laptop landscape with browser chrome stack.
    Keep this condition in sync with the matchMedia() in hero.js. */
-@media (max-width: 760px), (max-height: 640px) {
+@media (max-width: 760px), (max-height: 760px) {
   .prices-scroll { height: auto; }
   .ps-pin {
     position: static;

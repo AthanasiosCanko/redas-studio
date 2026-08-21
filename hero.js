@@ -74,7 +74,7 @@
   if (psSection && psTrack) {
     // Must mirror the unpin media query in styles.css — the pinned layout only
     // fits when the viewport is both wide enough and tall enough.
-    const mq = matchMedia('(min-width: 761px) and (min-height: 641px)');
+    const mq = matchMedia('(min-width: 761px) and (min-height: 761px)');
     let psTicking = false;
 
     const psApply = () => {
