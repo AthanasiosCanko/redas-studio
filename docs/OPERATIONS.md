@@ -15,6 +15,10 @@
 | `GMAIL_USER`       | no       | Sending Gmail address; email needs both                      |
 | `GMAIL_APP_PASSWORD`| no      | Gmail app password (16 chars)                                |
 | `EMAIL_FROM`       | no       | Display sender; defaults to `R-EDA'S STUDIO <GMAIL_USER>`     |
+| `GOOGLE_SA_EMAIL`  | no       | Service-account address; calendar off unless all three set    |
+| `GOOGLE_SA_PRIVATE_KEY`| no   | Service-account private key (PEM; `\n` escapes are unescaped) |
+| `GOOGLE_CALENDAR_ID`| no      | Target calendar id (often the Google account address)         |
+| `APPOINTMENT_MINUTES`| no     | Event length in minutes (default 60)                          |
 | `PORT`             | no       | HTTP port (Render sets this)                                 |
 
 The server exits on startup if `DATABASE_URL` is missing. SSL is enabled unless the
@@ -71,3 +75,23 @@ The client is emailed on the same four events via `sendEmail`/`bookingEmail` in 
    `EMAIL_FROM` for the display name.
 
 Free Gmail allows ~500 recipients/day (Workspace ~2,000).
+
+## Enabling Google Calendar
+
+Accepted appointments are mirrored onto a Google Calendar: accepting creates the event,
+cancelling deletes it, denying does nothing (it was never created). Uses a service account
+signed with `jsonwebtoken` — no OAuth flow and no extra npm dependency.
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project and
+   enable the **Google Calendar API**.
+2. Create a **service account**, then add a **JSON key** and download it.
+3. In Google Calendar → the target calendar → *Settings and sharing* → **Share with
+   specific people**, add the service account's `client_email` with **"Make changes to
+   events"**.
+4. In the Render dashboard set `GOOGLE_SA_EMAIL` (the `client_email`),
+   `GOOGLE_SA_PRIVATE_KEY` (the `private_key`, `\n` escapes are fine) and
+   `GOOGLE_CALENDAR_ID` (usually the calendar's address). Optionally set
+   `APPOINTMENT_MINUTES` — events default to 60 minutes.
+
+The service account has no attendees and sends no invitations; it only writes to the
+shared calendar. Clients are told about their appointment by SMS and email instead.

@@ -40,6 +40,17 @@ const GMAIL_USER         = process.env.GMAIL_USER;          // the Gmail address
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;  // 16-char app password
 const EMAIL_FROM         = process.env.EMAIL_FROM || (GMAIL_USER ? `R-EDA'S STUDIO <${GMAIL_USER}>` : null);
 const EMAIL_READY        = !!(GMAIL_USER && GMAIL_APP_PASSWORD);
+
+// Google Calendar (optional — a no-op until all three vars are set).
+// Service account + a calendar shared with it: no OAuth dance, no refresh
+// tokens, and no new npm dependency (the JWT is signed with `jsonwebtoken`,
+// which is already here for admin auth).
+const GCAL_SA_EMAIL   = process.env.GOOGLE_SA_EMAIL;
+const GCAL_SA_KEY     = (process.env.GOOGLE_SA_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+const GCAL_ID         = process.env.GOOGLE_CALENDAR_ID;
+const GCAL_READY      = !!(GCAL_SA_EMAIL && GCAL_SA_KEY && GCAL_ID);
+// A booking stores only a start time; a calendar event needs an end.
+const APPT_MINUTES    = parseInt(process.env.APPOINTMENT_MINUTES, 10) || 60;
 const mailer = EMAIL_READY
   ? nodemailer.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD } })
   : null;
@@ -118,6 +129,7 @@ async function initDb() {
       ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone   VARCHAR(255);
       ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contact VARCHAR(255);
       ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status  VARCHAR(12);
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS google_event_id VARCHAR(255);
       ALTER TABLE bookings ADD COLUMN IF NOT EXISTS id      SERIAL;
       UPDATE bookings SET status = 'accepted' WHERE status IS NULL;
       ALTER TABLE bookings ALTER COLUMN status  SET DEFAULT 'pending';
@@ -207,6 +219,96 @@ async function sendSms(to, body) {
     if (!res.ok) console.error('SMS failed:', res.status, await res.text());
   } catch (err) {
     console.error('SMS error:', err.message);
+  }
+}
+
+// ── Google Calendar ───────────────────────────────────────
+// Access tokens last an hour; cache and refresh a minute early.
+let gcalToken = { value: null, expires: 0 };
+
+async function googleAccessToken() {
+  if (gcalToken.value && Date.now() < gcalToken.expires) return gcalToken.value;
+  const now = Math.floor(Date.now() / 1000);
+  const assertion = jwt.sign({
+    iss:   GCAL_SA_EMAIL,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    aud:   'https://oauth2.googleapis.com/token',
+    iat:   now,
+    exp:   now + 3600,
+  }, GCAL_SA_KEY, { algorithm: 'RS256' });
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  if (!res.ok) throw new Error(`token ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  gcalToken = { value: data.access_token, expires: Date.now() + (data.expires_in - 60) * 1000 };
+  return gcalToken.value;
+}
+
+// Add `mins` to a (date, time) pair, rolling the date over if needed.
+function addMinutes(date, time, mins) {
+  const [h, m] = time.split(':').map(Number);
+  const total  = h * 60 + m + mins;
+  const dayShift = Math.floor(total / 1440);
+  const rem = ((total % 1440) + 1440) % 1440;
+  const d = new Date(date + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + dayShift);
+  return {
+    date: d.toISOString().slice(0, 10),
+    time: `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(rem % 60).padStart(2, '0')}`,
+  };
+}
+
+// Creates the event and returns its id, or null when disabled/failed.
+// Local wall time + timeZone lets Google handle DST — no UTC maths here.
+async function calendarCreate({ date, time, name, email, phone }) {
+  if (!GCAL_READY) return null;
+  const end = addMinutes(date, time, APPT_MINUTES);
+  const details = [email, phone].filter(Boolean).join(' · ');
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GCAL_ID)}/events`,
+      {
+        method:  'POST',
+        headers: {
+          Authorization: `Bearer ${await googleAccessToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          summary:     name,
+          description: details || undefined,
+          start: { dateTime: `${date}T${time}:00`,         timeZone: ALBANIA_TZ },
+          end:   { dateTime: `${end.date}T${end.time}:00`, timeZone: ALBANIA_TZ },
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    return (await res.json()).id;
+  } catch (err) {
+    console.error('Calendar create failed:', err.message);
+    return null;   // never block a booking on the calendar
+  }
+}
+
+async function calendarDelete(eventId) {
+  if (!GCAL_READY || !eventId) return;
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GCAL_ID)}/events/${encodeURIComponent(eventId)}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${await googleAccessToken()}` } }
+    );
+    // 410 = already gone, which is the desired end state
+    if (!res.ok && res.status !== 410 && res.status !== 404) {
+      throw new Error(`${res.status}: ${await res.text()}`);
+    }
+  } catch (err) {
+    console.error('Calendar delete failed:', err.message);
   }
 }
 
@@ -471,12 +573,12 @@ app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
-       RETURNING name, email, phone`,
+       RETURNING id, name, email, phone, google_event_id`,
       [tr.to, date, time, tr.from]
     );
     if (!result.rowCount) return res.status(409).json({ error: 'Not in expected state' });
 
-    const { name, email, phone } = result.rows[0];
+    const { id, name, email, phone, google_event_id: eventId } = result.rows[0];
     const fd = friendlyDate(date);
     if (action === 'accept')      sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} is confirmed. See you soon!`);
     else if (action === 'deny')   sendSms(phone, `R-EDA'S STUDIO — sorry, we couldn't confirm your request for ${fd} at ${time}. Please try another time or contact us.`);
@@ -484,6 +586,18 @@ app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
 
     // status value (accepted|denied|cancelled) matches the email kind
     bookingEmail(tr.to, { to: email, name, date, time });
+
+    // Calendar mirrors confirmed appointments only: accepting puts the event
+    // on the salon calendar, cancelling takes it off. A denied request was
+    // never on there. Failures are logged, never surfaced to the admin.
+    if (action === 'accept') {
+      calendarCreate({ date, time, name, email, phone }).then(newId => {
+        if (newId) pool.query(`UPDATE bookings SET google_event_id = $1 WHERE id = $2`, [newId, id])
+          .catch(e => console.error('Calendar id save failed:', e.message));
+      });
+    } else if (action === 'cancel') {
+      calendarDelete(eventId);
+    }
 
     res.json({ ok: true, status: tr.to });
   } catch (err) {
@@ -509,13 +623,20 @@ app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
 
     const cleanPhone = phone?.trim() || null;
     const cleanEmail = email?.trim() || null;
-    await pool.query(
+    const ins = await pool.query(
       `INSERT INTO bookings (date, time, name, email, phone, status)
-       VALUES ($1, $2, $3, $4, $5, 'accepted')`,
+       VALUES ($1, $2, $3, $4, $5, 'accepted') RETURNING id`,
       [date, time, name.trim(), cleanEmail, cleanPhone]
     );
     sendSms(cleanPhone, `R-EDA'S STUDIO — your appointment on ${friendlyDate(date)} at ${time} is confirmed. See you soon!`);
     bookingEmail('accepted', { to: cleanEmail, name: name.trim(), date, time });
+
+    // Admin-created bookings are already accepted, so they go on the calendar too
+    calendarCreate({ date, time, name: name.trim(), email: cleanEmail, phone: cleanPhone })
+      .then(newId => {
+        if (newId) pool.query(`UPDATE bookings SET google_event_id = $1 WHERE id = $2`, [newId, ins.rows[0].id])
+          .catch(e => console.error('Calendar id save failed:', e.message));
+      });
     res.json({ ok: true });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });

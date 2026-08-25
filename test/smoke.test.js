@@ -111,3 +111,29 @@ test('every requireAdmin route also references a JWT check', () => {
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');
   assert.ok(server.includes('Bearer '), 'requireAdmin must parse a Bearer token');
 });
+
+test('Google Calendar sync is wired to accept, admin-create and cancel', () => {
+  const server = read('server.js');
+  assert.ok(server.includes('oauth2.googleapis.com/token'), 'service-account token exchange missing');
+  assert.ok(server.includes('calendar/v3/calendars'), 'Calendar API call missing');
+  assert.ok(/GCAL_READY\s*=\s*!!\(/.test(server), 'calendar must be gated behind a READY flag');
+  assert.ok(server.includes('google_event_id'), 'event id must be persisted for later deletion');
+  assert.ok(server.includes('calendarDelete(eventId)'), 'cancel must remove the event');
+  // RS256 is required for Google service-account JWTs
+  assert.ok(server.includes("algorithm: 'RS256'"), 'service-account JWT must be RS256');
+});
+
+test('appointment end time rolls the date over correctly', () => {
+  const server = read('server.js');
+  const m = server.match(/function addMinutes\([\s\S]*?\n}/);
+  assert.ok(m, 'addMinutes not found');
+  const addMinutes = new Function(`${m[0]}; return addMinutes;`)();
+
+  assert.deepEqual(addMinutes('2026-08-25', '14:30', 60), { date: '2026-08-25', time: '15:30' });
+  assert.deepEqual(addMinutes('2026-08-25', '09:05', 25), { date: '2026-08-25', time: '09:30' });
+  // 20:00 is the last bookable start; a long treatment must not silently
+  // land on the wrong day
+  assert.deepEqual(addMinutes('2026-08-25', '20:00', 240), { date: '2026-08-26', time: '00:00' });
+  assert.deepEqual(addMinutes('2026-08-31', '23:30', 60), { date: '2026-09-01', time: '00:30' });
+  assert.deepEqual(addMinutes('2026-12-31', '23:00', 120), { date: '2027-01-01', time: '01:00' });
+});
