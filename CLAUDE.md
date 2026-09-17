@@ -10,7 +10,7 @@ against **Neon** Postgres.
 | File | Read it when |
 |---|---|
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Touching code — stack, file layout, booking lifecycle, motion/CSS conventions |
-| [docs/OPERATIONS.md](./docs/OPERATIONS.md) | Deploying, running tests, using the admin panel, enabling SMS/email/push |
+| [docs/OPERATIONS.md](./docs/OPERATIONS.md) | Deploying, running tests, using the admin panel, enabling SMS/email/push/calendar |
 | [docs/GOTCHAS.md](./docs/GOTCHAS.md) | Touching the service worker or hero video, or chasing a missing notification |
 | [docs/DECISIONS.md](./docs/DECISIONS.md) | Something looks wrong — check before "fixing" it |
 

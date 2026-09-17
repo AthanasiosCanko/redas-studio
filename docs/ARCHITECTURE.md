@@ -22,7 +22,8 @@ timepicker.js       — shared wheel time picker (RedaTimePicker.create)
 hero.js             — hero video loader (saveData/2g gate), parallax, scroll reveals,
                       pinned horizontal price-category scroll
 server.js           — Express: static serving + REST API + DB bootstrap
-sw.js               — service worker (network-first nav, cache-first assets, push)
+sw.js               — service worker (network-first nav + CSS/JS, cache-first images, push)
+sq.js               — Albanian dates and SMS copy (server-side)
 manifest.json       — PWA manifest, public site (start_url "/")
 manifest-admin.json — PWA manifest, admin app (start_url "/admin")
 render.yaml         — Render Blueprint (web service only; DB is external Neon)

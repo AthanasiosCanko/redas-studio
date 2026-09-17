@@ -40,9 +40,7 @@ Changes go to GitHub, which auto-deploys to Render.
 npm test          # node --test — runs test/smoke.test.js
 ```
 
-No database or browser required. It guards the front-end ↔ back-end contract: file
-parsing, JSON validity, manifest `start_url`s, DOM ids, service-worker precache, the
-booking window and status transitions, and the time-picker export.
+No database or browser required.
 
 ## Admin panel
 
@@ -99,4 +97,4 @@ signed with `jsonwebtoken` — no OAuth flow and no extra npm dependency.
    `APPOINTMENT_MINUTES` — events default to 60 minutes.
 
 The service account has no attendees and sends no invitations; it only writes to the
-shared calendar. Clients are told about their appointment by SMS and email instead.
+shared calendar.

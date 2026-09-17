@@ -7,5 +7,7 @@
   [OPERATIONS.md](./OPERATIONS.md).
 - **Add the admin PWA to the iOS home screen from the `/admin` URL** in Safari, so the app
   launches the dashboard rather than the landing page.
+- **The price-scroll unpin query is duplicated** in `styles.css` and `hero.js`'s
+  `matchMedia` — keep them equal or the pinned layout overlaps the brand strips.
 - **The hero clip is loop-crossfaded at encode time** (first frame == last frame);
   regenerate with the same xfade recipe if the footage is ever replaced.
