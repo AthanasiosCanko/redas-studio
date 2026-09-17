@@ -48,10 +48,13 @@ booking window and status transitions, and the time-picker export.
 
 Visit `/admin` (alias for `/admin.html`). Password is set via `ADMIN_PASSWORD`.
 
-- **Bookings tab** — filter by Requests (pending) / Upcoming / Past / All. Pending requests
-  show **Accept** and **Deny**; confirmed bookings show **Cancel**.
-- **Availability tab** — click a day to see its bookings, **Add a booking** (auto-accepted),
-  or block/unblock the whole day.
+The UI is in Albanian.
+
+- **Rezervimet** — filter by Kërkesat (pending) / Të ardhshme / Të kaluara / Të gjitha.
+  Pending requests show **Prano** (accept) and **Refuzo** (deny); confirmed bookings show
+  **Anulo** (cancel).
+- **Disponueshmëria** — click a day to see its bookings, **Shto rezervim** (auto-accepted),
+  or **Blloko ditën** to block the whole day.
 - On login the admin browser subscribes to Web Push; new public requests fire a notification.
 
 ## Enabling SMS (Infobip)
