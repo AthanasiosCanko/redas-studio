@@ -86,7 +86,7 @@ self.addEventListener('fetch', e => {
 
 // ── Push: show booking notification ──────────────────────
 self.addEventListener('push', e => {
-  const data = e.data?.json() ?? { title: 'New booking', body: 'A new booking was just made.' };
+  const data = e.data?.json() ?? { title: 'Rezervim i ri', body: 'Sapo u bë një rezervim i ri.' };
   e.waitUntil(
     self.registration.showNotification(data.title, {
       body:      data.body,

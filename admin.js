@@ -2,9 +2,18 @@
   'use strict';
 
   const MONTH_NAMES = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
+    'Janar','Shkurt','Mars','Prill','Maj','Qershor',
+    'Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'
   ];
+  // Built by hand: `sq-AL` locale data is missing or partial in some browsers.
+  const WEEKDAY_NAMES = ['E diel','E hënë','E martë','E mërkurë','E enjte','E premte','E shtunë'];
+  const STATUS_LABELS = { pending: 'Në pritje', accepted: 'Konfirmuar', denied: 'Refuzuar', cancelled: 'Anuluar' };
+  const EMPTY_LABELS  = {
+    requests: 'Nuk ka kërkesa.',
+    upcoming: 'Nuk ka rezervime të ardhshme.',
+    past:     'Nuk ka rezervime të kaluara.',
+    all:      'Nuk ka rezervime.',
+  };
 
   // ── Token helpers ────────────────────────────────────────
   const TOKEN_KEY  = 'redas_admin_token';
@@ -79,9 +88,8 @@
   }
 
   function longDate(dateKey) {
-    return new Date(dateKey + 'T00:00:00').toLocaleDateString('en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long',
-    });
+    const [y, m, d] = dateKey.split('-').map(Number);
+    return `${WEEKDAY_NAMES[new Date(y, m - 1, d).getDay()]}, ${d} ${MONTH_NAMES[m - 1].toLowerCase()}`;
   }
 
   function defaultTime(dateKey, takenSet) {
@@ -151,7 +159,7 @@
       const { bookings } = await apiFetch('/api/admin/bookings');
       renderBookings(bookings);
     } catch {
-      bookingsList.innerHTML = hint('Could not load bookings.');
+      bookingsList.innerHTML = hint('Rezervimet nuk u ngarkuan.');
     }
   }
 
@@ -182,7 +190,7 @@
     });
 
     if (!list.length) {
-      bookingsList.innerHTML = `<p class="adm-empty">No ${currentFilter === 'all' ? '' : currentFilter + ' '}bookings found.</p>`;
+      bookingsList.innerHTML = `<p class="adm-empty">${EMPTY_LABELS[currentFilter]}</p>`;
       return;
     }
 
@@ -210,12 +218,12 @@
         let actions = '';
         if (bk.status === 'pending') {
           actions = `
-            <button class="bk-act bk-act--accept" data-action="accept" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Accept</button>
-            <button class="bk-act bk-act--deny"   data-action="deny"   data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Deny</button>`;
+            <button class="bk-act bk-act--accept" data-action="accept" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Prano</button>
+            <button class="bk-act bk-act--deny"   data-action="deny"   data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Refuzo</button>`;
         } else if (bk.status === 'accepted' && !isPast) {
-          actions = `<button class="bk-act bk-act--cancel" data-action="cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Cancel</button>`;
+          actions = `<button class="bk-act bk-act--cancel" data-action="cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Anulo</button>`;
         } else {
-          actions = `<span class="bk-status bk-status--${esc(bk.status)}">${esc(bk.status)}</span>`;
+          actions = `<span class="bk-status bk-status--${esc(bk.status)}">${esc(STATUS_LABELS[bk.status] || bk.status)}</span>`;
         }
 
         row.innerHTML = `
@@ -236,8 +244,8 @@
   }
 
   async function doStatus(action, date, time) {
-    if (action === 'deny'   && !confirm('Deny this request?'))      return;
-    if (action === 'cancel' && !confirm('Cancel this booking?'))    return;
+    if (action === 'deny'   && !confirm('Ta refuzoni këtë kërkesë?'))      return;
+    if (action === 'cancel' && !confirm('Ta anuloni këtë rezervim?'))    return;
     try {
       await apiFetch('/api/admin/bookings/status', {
         method: 'POST', body: JSON.stringify({ date, time, action }),
@@ -246,7 +254,7 @@
       await loadAdmCalendar();
       if (admSelectedDate) await loadDayPanel(admSelectedDate);
     } catch {
-      alert('Could not update the booking.');
+      alert('Rezervimi nuk u përditësua.');
     }
   }
 
@@ -325,28 +333,28 @@
   async function loadDayPanel(dateKey) {
     dayPanel.hidden           = false;
     dayPanelTitle.textContent = longDate(dateKey);
-    dayBookings.innerHTML     = hint('Loading…');
+    dayBookings.innerHTML     = hint('Duke u ngarkuar…');
 
     try {
       const { bookings, dayBlocked } = await apiFetch(`/api/admin/day/${dateKey}`);
       admDayTaken = new Set(bookings.map(b => b.time));
 
-      blockDayBtn.textContent = dayBlocked ? 'Unblock day' : 'Block day';
+      blockDayBtn.textContent = dayBlocked ? 'Zhblloko ditën' : 'Blloko ditën';
       blockDayBtn.classList.toggle('adm-block-day-btn--on', dayBlocked);
       blockDayBtn.onclick = async () => {
         try {
           const { blocked } = await apiFetch('/api/admin/blocked-days/toggle', {
             method: 'POST', body: JSON.stringify({ date: dateKey }),
           });
-          blockDayBtn.textContent = blocked ? 'Unblock day' : 'Block day';
+          blockDayBtn.textContent = blocked ? 'Zhblloko ditën' : 'Blloko ditën';
           blockDayBtn.classList.toggle('adm-block-day-btn--on', blocked);
           await loadAdmCalendar();
           await loadDayPanel(dateKey);
-        } catch { alert('Could not update.'); }
+        } catch { alert('Nuk u përditësua.'); }
       };
 
       if (!bookings.length) {
-        dayBookings.innerHTML = `<p class="day-empty">No bookings this day.</p>`;
+        dayBookings.innerHTML = `<p class="day-empty">Nuk ka rezervime këtë ditë.</p>`;
       } else {
         dayBookings.innerHTML = '';
         for (const bk of bookings) {
@@ -359,12 +367,12 @@
               <span class="bk-item-name">${esc(bk.name)}</span>
               ${contacts}
             </div>
-            <div class="bk-item-actions"><span class="bk-status bk-status--${esc(bk.status)}">${esc(bk.status)}</span></div>`;
+            <div class="bk-item-actions"><span class="bk-status bk-status--${esc(bk.status)}">${esc(STATUS_LABELS[bk.status] || bk.status)}</span></div>`;
           dayBookings.appendChild(row);
         }
       }
     } catch {
-      dayBookings.innerHTML = hint('Could not load this day.');
+      dayBookings.innerHTML = hint('Kjo ditë nuk u ngarkua.');
     }
   }
 
@@ -412,7 +420,7 @@
   }
 
   function validateAdm() {
-    const msg = admDayTaken.has(admChosen) ? 'That time already has a booking.' : '';
+    const msg = admDayTaken.has(admChosen) ? 'Ky orar ka tashmë një rezervim.' : '';
     admBkWarning.textContent = msg;
     admBkWarning.hidden      = !msg;
     admBkForm.querySelector('.bk-submit').disabled = !!msg;
@@ -433,7 +441,7 @@
     const submitBtn    = admBkForm.querySelector('.bk-submit');
     const origLabel    = submitBtn.textContent;
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Saving…';
+    submitBtn.textContent = 'Duke ruajtur…';
 
     try {
       const localPhone = admBkPhone.value.trim();
@@ -455,9 +463,9 @@
         await loadDayPanel(date);
       }, 1300);
     } catch (err) {
-      alert(err.message === 'Already booked'     ? 'That time already has a booking.'
-          : err.message === 'Slot is in the past' ? 'That time has already passed.'
-          :                                          'Could not save booking.');
+      alert(err.message === 'Already booked'     ? 'Ky orar ka tashmë një rezervim.'
+          : err.message === 'Slot is in the past' ? 'Ky orar ka kaluar.'
+          :                                          'Rezervimi nuk u ruajt.');
     } finally {
       submitBtn.disabled    = false;
       submitBtn.textContent = origLabel;

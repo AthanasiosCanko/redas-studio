@@ -58,6 +58,8 @@ Visit `/admin` (alias for `/admin.html`). Password is set via `ADMIN_PASSWORD`.
 
 The client is texted on all four events (received / accepted / denied / cancelled) via
 `sendSms` in `server.js` (`POST /sms/2/text/advanced`), which strips the number to digits.
+Copy lives in `sq.js`, written in Albanian **without diacritics** — one `ë`/`ç` forces UCS-2
+encoding (70 chars/segment instead of 160); a test keeps every message GSM-7 and one segment.
 
 1. Create an Infobip account; note your **Base URL** (`xxxxx.api.infobip.com`) and create an
    **API key**.

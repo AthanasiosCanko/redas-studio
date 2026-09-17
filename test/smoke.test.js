@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js', 'hero.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {
@@ -136,4 +136,30 @@ test('appointment end time rolls the date over correctly', () => {
   assert.deepEqual(addMinutes('2026-08-25', '20:00', 240), { date: '2026-08-26', time: '00:00' });
   assert.deepEqual(addMinutes('2026-08-31', '23:30', 60), { date: '2026-09-01', time: '00:30' });
   assert.deepEqual(addMinutes('2026-12-31', '23:00', 120), { date: '2027-01-01', time: '01:00' });
+});
+
+test('Albanian dates name the right weekday regardless of server timezone', () => {
+  const { sqDate } = require('../sq');
+  assert.equal(sqDate('2026-09-17'), 'e enjte, 17 shtator');                 // Thursday
+  assert.equal(sqDate('2026-09-30', { year: true }), 'e mërkurë, 30 shtator 2026');
+  assert.equal(sqDate('2027-01-03'), 'e diel, 3 janar');                     // Sunday
+  assert.equal(sqDate('2026-11-28'), 'e shtunë, 28 nëntor');                 // Saturday
+});
+
+test('every client SMS is pure GSM-7 and fits one 160-char segment', () => {
+  const { smsText } = require('../sq');
+  // GSM 03.38 basic character set (no escape table — those cost 2 chars each)
+  const GSM7 = new Set(
+    "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?" +
+    "¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà"
+  );
+  // 30 Dec 2026 = Wednesday: longest weekday ("e merkure") + longest month
+  // name + two-digit day — the worst case for length.
+  for (const kind of ['received', 'accepted', 'denied', 'cancelled']) {
+    const text = smsText(kind, '2026-12-30', '19:55');
+    assert.ok(text, `no SMS for ${kind}`);
+    const bad = [...text].filter(ch => !GSM7.has(ch));
+    assert.deepEqual(bad, [], `${kind} SMS has non-GSM-7 chars (forces UCS-2): ${bad.join('')}`);
+    assert.ok(text.length <= 160, `${kind} SMS is ${text.length} chars — over one segment`);
+  }
 });

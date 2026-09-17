@@ -6,6 +6,7 @@ const { Pool }   = require('pg');
 const jwt        = require('jsonwebtoken');
 const webpush    = require('web-push');
 const nodemailer = require('nodemailer');
+const { sqDate, sqDayMonth, sqWeekday, smsText } = require('./sq');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -193,9 +194,7 @@ async function notifyAdmin(payload) {
 }
 
 function friendlyDate(date) {
-  return new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
-    weekday: 'short', day: 'numeric', month: 'short',
-  });
+  return sqDate(date);
 }
 
 // Send an SMS via Infobip's REST API (graceful no-op when not configured).
@@ -312,10 +311,9 @@ async function calendarDelete(eventId) {
   }
 }
 
+// "më 30 dhjetor 2026 (e mërkurë)" — reads naturally mid-sentence in emails
 function longDate(date) {
-  return new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
+  return `${sqDayMonth(date, { year: true })} (${sqWeekday(date)})`;
 }
 
 // Send an email via Gmail SMTP (graceful no-op when not configured).
@@ -333,17 +331,17 @@ async function sendEmail(to, subject, text, html) {
 function bookingEmail(kind, { to, name, date, time }) {
   if (!to) return;
   const fd    = longDate(date);
-  const greet = `Hi ${name || 'there'},`;
+  const greet = name ? `Përshëndetje ${name},` : 'Përshëndetje,';
 
   const COPY = {
-    received:  ['We received your booking request',
-                `We've received your request for <strong>${fd}</strong> at <strong>${time}</strong>. We'll confirm it shortly — you'll get another email once it's approved.`],
-    accepted:  ['Your appointment is confirmed',
-                `Your appointment on <strong>${fd}</strong> at <strong>${time}</strong> is confirmed. We look forward to seeing you!`],
-    denied:    ['About your booking request',
-                `Unfortunately we couldn't confirm your request for <strong>${fd}</strong> at <strong>${time}</strong>. Please try another time, or reply to this email and we'll help you find one.`],
-    cancelled: ['Your appointment has been cancelled',
-                `Your appointment on <strong>${fd}</strong> at <strong>${time}</strong> has been cancelled. Please contact us to rebook.`],
+    received:  ['E morëm kërkesën tuaj për rezervim',
+                `E morëm kërkesën tuaj për takim më <strong>${fd}</strong>, ora <strong>${time}</strong>. Do ta konfirmojmë së shpejti — do të merrni një email tjetër sapo të miratohet.`],
+    accepted:  ['Takimi juaj u konfirmua',
+                `Takimi juaj më <strong>${fd}</strong>, ora <strong>${time}</strong>, u konfirmua. Mezi presim t'ju shohim!`],
+    denied:    ['Rreth kërkesës suaj për rezervim',
+                `Na vjen keq, nuk mundëm ta konfirmojmë takimin më <strong>${fd}</strong>, ora <strong>${time}</strong>. Ju lutem zgjidhni një orar tjetër, ose përgjigjuni këtij emaili dhe do t'ju ndihmojmë të gjeni një.`],
+    cancelled: ['Takimi juaj u anulua',
+                `Takimi juaj më <strong>${fd}</strong>, ora <strong>${time}</strong>, u anulua. Ju lutem na kontaktoni për ta rirezervuar.`],
   };
   const entry = COPY[kind];
   if (!entry) return;
@@ -470,10 +468,10 @@ app.post('/api/bookings', async (req, res) => {
     );
 
     notifyAdmin({
-      title: 'Booking request',
+      title: 'Kërkesë e re për rezervim',
       body:  `${name.trim()} · ${friendlyDate(date)} · ${time}`,
     });
-    sendSms(phone, `R-EDA'S STUDIO — we received your request for ${friendlyDate(date)} at ${time}. We'll confirm shortly.`);
+    sendSms(phone, smsText('received', date, time));
     bookingEmail('received', { to: cleanEmail, name: name.trim(), date, time });  // no-op when no email
 
     res.json({ ok: true });
@@ -579,12 +577,8 @@ app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
     if (!result.rowCount) return res.status(409).json({ error: 'Not in expected state' });
 
     const { id, name, email, phone, google_event_id: eventId } = result.rows[0];
-    const fd = friendlyDate(date);
-    if (action === 'accept')      sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} is confirmed. See you soon!`);
-    else if (action === 'deny')   sendSms(phone, `R-EDA'S STUDIO — sorry, we couldn't confirm your request for ${fd} at ${time}. Please try another time or contact us.`);
-    else if (action === 'cancel') sendSms(phone, `R-EDA'S STUDIO — your appointment on ${fd} at ${time} has been cancelled. Please contact us to rebook.`);
-
-    // status value (accepted|denied|cancelled) matches the email kind
+    // status value (accepted|denied|cancelled) matches the SMS/email kind
+    sendSms(phone, smsText(tr.to, date, time));
     bookingEmail(tr.to, { to: email, name, date, time });
 
     // Calendar mirrors confirmed appointments only: accepting puts the event
@@ -628,7 +622,7 @@ app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, 'accepted') RETURNING id`,
       [date, time, name.trim(), cleanEmail, cleanPhone]
     );
-    sendSms(cleanPhone, `R-EDA'S STUDIO — your appointment on ${friendlyDate(date)} at ${time} is confirmed. See you soon!`);
+    sendSms(cleanPhone, smsText('accepted', date, time));
     bookingEmail('accepted', { to: cleanEmail, name: name.trim(), date, time });
 
     // Admin-created bookings are already accepted, so they go on the calendar too
