@@ -2,9 +2,11 @@
   'use strict';
 
   const MONTH_NAMES = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
+    'Janar','Shkurt','Mars','Prill','Maj','Qershor',
+    'Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'
   ];
+  // Built by hand: `sq-AL` locale data is missing or partial in some browsers.
+  const WEEKDAY_NAMES = ['E diel','E hënë','E martë','E mërkurë','E enjte','E premte','E shtunë'];
 
   const BOOK_START = 9 * 60;   // 09:00
   const BOOK_END   = 20 * 60;  // 20:00
@@ -75,9 +77,8 @@
 
   function friendlyDate(dateKey) {
     const [y, m, d] = dateKey.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
+    const wd = new Date(y, m - 1, d).getDay();
+    return `${WEEKDAY_NAMES[wd]}, ${d} ${MONTH_NAMES[m - 1].toLowerCase()} ${y}`;
   }
 
   // First 5-minute time that is in range, not taken, and not already past.
@@ -193,7 +194,7 @@
     const times = [...takenSet].sort();
     if (!times.length) { takenEl.hidden = true; takenEl.innerHTML = ''; return; }
     takenEl.hidden = false;
-    takenEl.innerHTML = `<span class="taken-label">Unavailable</span>` +
+    takenEl.innerHTML = `<span class="taken-label">E zënë</span>` +
       times.map(t => `<span class="taken-chip">${t}</span>`).join('');
   }
 
@@ -205,8 +206,8 @@
   // Returns true if the chosen time can be requested; updates the warning + button.
   function validateChosen() {
     let msg = '';
-    if (takenSet.has(chosenTime))                  msg = 'That time is already taken — please pick another.';
-    else if (isPastTime(selectedDate, chosenTime)) msg = 'That time has already passed — please pick another.';
+    if (takenSet.has(chosenTime))                  msg = 'Ky orar është i zënë — ju lutem zgjidhni një tjetër.';
+    else if (isPastTime(selectedDate, chosenTime)) msg = 'Ky orar ka kaluar — ju lutem zgjidhni një tjetër.';
     warningEl.textContent   = msg;
     warningEl.hidden        = !msg;
     chooseBtn.disabled      = !!msg;
@@ -253,10 +254,10 @@
 
       if (!res.ok) {
         const { error } = await res.json();
-        alert(error === 'Already booked'      ? 'Sorry, that time was just taken. Please pick another.'
-            : error === 'Slot is in the past' ? 'Sorry, that time has already passed. Please pick another.'
-            : error === 'Day not available'   ? 'Sorry, that day isn’t available. Please pick another.'
-            :                                   'Could not send your request — please try again.');
+        alert(error === 'Already booked'      ? 'Na vjen keq, ky orar sapo u zu. Ju lutem zgjidhni një tjetër.'
+            : error === 'Slot is in the past' ? 'Na vjen keq, ky orar ka kaluar. Ju lutem zgjidhni një tjetër.'
+            : error === 'Day not available'   ? 'Na vjen keq, kjo ditë nuk është e disponueshme. Ju lutem zgjidhni një tjetër.'
+            :                                   'Kërkesa nuk u dërgua — ju lutem provoni përsëri.');
         submitBtn.disabled = false;
         if (error === 'Already booked' || error === 'Slot is in the past') {
           closeModal();
@@ -273,7 +274,7 @@
         if (selectedDate) await loadDay(selectedDate);
       }, 2000);
     } catch {
-      alert('Network error. Please try again.');
+      alert('Gabim në lidhje. Ju lutem provoni përsëri.');
       submitBtn.disabled = false;
     }
   });

@@ -122,22 +122,23 @@
   <section class="booking" id="booking">
 
     <div class="booking-inner">
-      <h2 class="booking-title rv"><em>Book an</em><span class="title-plain"> appointment.</span></h2>
+      <h2 class="booking-title rv"><em>Rezervo</em><span class="title-plain"> një orar.</span></h2>
+      <p class="booking-note rv">Nëse keni makinë, çdo rezervim përfshin parkim falas.</p>
 
       <div class="cal-wrap rv rv-d1">
         <div class="cal-nav">
-          <button class="cal-nav-btn" id="cal-prev" aria-label="Previous month">&#8592;</button>
+          <button class="cal-nav-btn" id="cal-prev" aria-label="Muaji i kaluar">&#8592;</button>
           <span class="cal-month-label" id="cal-month-label"></span>
-          <button class="cal-nav-btn" id="cal-next" aria-label="Next month">&#8594;</button>
+          <button class="cal-nav-btn" id="cal-next" aria-label="Muaji tjetër">&#8594;</button>
         </div>
         <div class="cal-grid" id="cal-grid">
-          <span class="cal-day-name">Sun</span>
-          <span class="cal-day-name">Mon</span>
-          <span class="cal-day-name">Tue</span>
-          <span class="cal-day-name">Wed</span>
-          <span class="cal-day-name">Thu</span>
-          <span class="cal-day-name">Fri</span>
-          <span class="cal-day-name">Sat</span>
+          <span class="cal-day-name">Die</span>
+          <span class="cal-day-name">Hën</span>
+          <span class="cal-day-name">Mar</span>
+          <span class="cal-day-name">Mër</span>
+          <span class="cal-day-name">Enj</span>
+          <span class="cal-day-name">Pre</span>
+          <span class="cal-day-name">Sht</span>
         </div>
       </div>
 
@@ -145,47 +146,47 @@
         <p class="slots-date-label" id="slots-date-label"></p>
 
         <div class="time-pick-wrap" id="time-pick-wrap">
-          <p class="time-pick-hint">Choose a time — we’re open 9:00 to 20:00</p>
+          <p class="time-pick-hint">Zgjidhni orarin — jemi të hapur 9:00 – 20:00</p>
           <div id="time-picker"></div>
           <p class="slot-warning" id="slot-warning" hidden></p>
           <div class="taken-times" id="taken-times"></div>
-          <button class="bk-submit time-choose-btn" id="choose-time-btn" type="button">Request this time</button>
+          <button class="bk-submit time-choose-btn" id="choose-time-btn" type="button">Kërko këtë orar</button>
         </div>
 
-        <p class="day-unavailable" id="day-unavailable" hidden>This day isn’t available for booking.</p>
+        <p class="day-unavailable" id="day-unavailable" hidden>Kjo ditë nuk është e disponueshme për rezervim.</p>
       </div>
     </div>
 
     <!-- Modal -->
     <div class="bk-overlay" id="bk-overlay" hidden>
       <div class="bk-modal" role="dialog" aria-modal="true" aria-labelledby="bk-modal-title">
-        <button class="bk-close" id="bk-close" aria-label="Close">&times;</button>
-        <h3 class="bk-modal-title" id="bk-modal-title">Request an appointment</h3>
+        <button class="bk-close" id="bk-close" aria-label="Mbyll">&times;</button>
+        <h3 class="bk-modal-title" id="bk-modal-title">Kërko një takim</h3>
         <p class="bk-modal-sub" id="bk-modal-sub"></p>
         <form class="bk-form" id="bk-form" novalidate>
           <label class="bk-label">
-            Full name
-            <input class="bk-input" id="bk-name" type="text" placeholder="e.g. Eda Hasani" required autocomplete="name">
+            Emri i plotë
+            <input class="bk-input" id="bk-name" type="text" placeholder="p.sh. Eda Hasani" required autocomplete="name">
           </label>
           <label class="bk-label">
-            <span>Email <span class="bk-optional">(optional)</span></span>
-            <input class="bk-input" id="bk-email" type="email" placeholder="you@mail.com" autocomplete="email">
+            <span>Email <span class="bk-optional">(opsionale)</span></span>
+            <input class="bk-input" id="bk-email" type="email" placeholder="ju@mail.com" autocomplete="email">
           </label>
           <label class="bk-label">
-            Phone number
+            Numri i telefonit
             <span class="bk-phone-field">
               <span class="bk-phone-prefix">+355</span>
               <input class="bk-input" id="bk-phone" type="tel" inputmode="numeric" placeholder="69 123 4567" required autocomplete="tel">
             </span>
           </label>
-          <button class="bk-submit" type="submit">Send request</button>
+          <button class="bk-submit" type="submit">Dërgo kërkesën</button>
         </form>
         <div class="bk-success" id="bk-success" hidden>
           <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
             <path d="M12 20.5l5.5 5.5 10-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <p>Request sent — we’ll confirm shortly.</p>
+          <p>Kërkesa u dërgua — do t’ju konfirmojmë së shpejti.</p>
         </div>
       </div>
     </div>

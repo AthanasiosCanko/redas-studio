@@ -26,6 +26,20 @@
   font-weight: 300;
 }
 
+/* Small parking disclaimer tucked under the heading — pulls the title's
+   block gap up so the two read as one unit above the calendar. */
+.booking-title:has(+ .booking-note) { margin-bottom: 10px; }
+
+.booking-note {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  color: var(--brown-mid);
+  text-align: center;
+  max-width: 60ch;
+  margin: 0 auto var(--sp-block);
+}
+
 .booking-title .title-plain {
   font-style: normal;
   font-weight: 400;
