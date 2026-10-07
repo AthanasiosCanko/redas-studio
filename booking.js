@@ -38,7 +38,6 @@
   const modalSub    = document.getElementById('bk-modal-sub');
   const form        = document.getElementById('bk-form');
   const nameInput   = document.getElementById('bk-name');
-  const emailInput  = document.getElementById('bk-email');
   const phoneInput  = document.getElementById('bk-phone');
   const successDiv  = document.getElementById('bk-success');
 
@@ -225,7 +224,6 @@
     form.hidden          = false;
     successDiv.hidden    = true;
     nameInput.value      = '';
-    emailInput.value     = '';
     phoneInput.value     = '';
     form.querySelector('.bk-submit').disabled = false;
     overlay.hidden       = false;
@@ -237,7 +235,6 @@
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const name  = nameInput.value.trim();
-    const email = emailInput.value.trim();   // optional
     const local = phoneInput.value.trim();
     if (!name || !local) return;             // name + phone required
     const phone = '+355 ' + local.replace(/^0+/, '');  // Albanian prefix
@@ -249,7 +246,7 @@
       const res = await fetch('/api/bookings', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ date: selectedDate, time: chosenTime, name, email, phone }),
+        body:    JSON.stringify({ date: selectedDate, time: chosenTime, name, phone }),
       });
 
       if (!res.ok) {

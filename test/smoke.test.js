@@ -44,7 +44,7 @@ test('index.html exposes every DOM hook booking.js relies on', () => {
   for (const id of [
     'cal-prev', 'cal-next', 'cal-month-label', 'cal-grid',
     'slots-wrap', 'slots-date-label', 'time-picker', 'choose-time-btn',
-    'bk-overlay', 'bk-close', 'bk-form', 'bk-name', 'bk-email', 'bk-phone', 'bk-success',
+    'bk-overlay', 'bk-close', 'bk-form', 'bk-name', 'bk-phone', 'bk-success',
   ]) {
     assert.ok(html.includes(`id="${id}"`), `index.html missing #${id}`);
   }
