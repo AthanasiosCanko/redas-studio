@@ -6,7 +6,6 @@
   --beige:       #f0e8dc;
   --white:       #faf8f4;
   --hero-bg:     #f5ede3;
-  --motion:      1;        /* parallax amplitude */
   /* Strong ease-out — built-in CSS easings are too weak for entrances */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
@@ -34,6 +33,8 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 address { font-style: normal; }
+/* Components set their own display, which would otherwise beat [hidden] */
+[hidden] { display: none !important; }
 
 /* ── HERO (full-bleed video) ───────────────────────────── */
 /* The section keeps its own min-height, so the layout is settled before any
@@ -132,6 +133,13 @@ address { font-style: normal; }
   margin-top: clamp(14px, 2.2vw, 22px);
 }
 
+.hero-rule {
+  width: 36px;
+  height: 1px;
+  background: var(--brown-faint);
+  margin: clamp(16px, 2.4vw, 24px) auto;
+}
+
 .hero-cta {
   display: inline-block;
   font-family: 'Montserrat', sans-serif;
@@ -207,25 +215,10 @@ address { font-style: normal; }
 .rv-ready .category.rv--in .service-row:nth-child(5) { transition-delay: 250ms; }
 .rv-ready .category.rv--in .service-row:nth-child(6) { transition-delay: 295ms; }
 
-.hero-rule {
-  width: 36px;
-  height: 1px;
-  background: var(--brown-faint);
-  margin: clamp(16px, 2.4vw, 24px) auto;
-}
-
 /* ── PRICE LIST ────────────────────────────────────────── */
-/* Title block only — the categories live in .prices-scroll below, so the
-   bottom padding is a block gap, not a section edge. */
-.prices {
-  background: var(--beige);
-  padding: var(--sp-section) var(--sp-gutter) var(--sp-block);
-  max-width: 780px;
-  margin: 0 auto;
-}
-
-/* top row: R-EDA'S • ••• • STUDIO */
-.prices-header {
+/* Brand strips framing the price list: • R-EDA'S ······ STUDIO • */
+.prices-header,
+.prices-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -235,8 +228,9 @@ address { font-style: normal; }
   letter-spacing: 0.5em;
   text-transform: uppercase;
   color: var(--brown);
-  margin-bottom: var(--sp-block);
 }
+
+.prices-header { margin-bottom: var(--sp-block); }
 
 .dot-mark {
   display: inline-block;
@@ -254,11 +248,6 @@ address { font-style: normal; }
   top: -0.084em;
 }
 
-/* "Price list." stacked logotype */
-.prices-title-wrap {
-  margin: 0 auto;
-}
-
 .prices-title {
   font-weight: 400;
   color: var(--brown);
@@ -267,18 +256,15 @@ address { font-style: normal; }
   line-height: 1;
 }
 
-.title-price { font-style: normal; font-weight: 400; }
-.title-list  { font-style: italic; font-weight: 300; }
-
+.prices-title em { font-weight: 300; }
 
 /* ── Category ──────────────────────────────────────────── */
-.category { margin-bottom: clamp(28px, 5vw, 48px); }
+.category { width: min(560px, 100%); }
 
 .category-name {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: normal;
   font-weight: 400;
-  font-size: clamp(1.4rem, 4vw, 1.9rem);
+  font-size: clamp(1.8rem, 4vw, 3rem);
   color: var(--brown);
   padding-bottom: 10px;
   border-bottom: 1px solid var(--brown-faint);
@@ -318,22 +304,10 @@ address { font-style: normal; }
   white-space: nowrap;
 }
 
-/* ── Footer row ────────────────────────────────────────── */
-.prices-footer {
-  display: flex;
-  justify-content: space-between;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 300;
-  font-size: clamp(0.5rem, 1.4vw, 0.65rem);
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: var(--brown);
-}
-
 /* ── Pinned horizontal category scroll ─────────────────── */
-/* Desktop: the section is 280vh tall; a sticky 100svh pin holds a 300vw
+/* Desktop: the section is 240vh tall; a sticky 100svh pin holds a 300vw
    flex track that hero.js translates with scroll progress (2 of 3 panels
-   of travel). ≤760px it unpins and the categories stack vertically. */
+   of travel). Narrow or short viewports unpin it and the categories stack. */
 .prices-scroll {
   position: relative;
   height: 240vh;   /* 3 panels of travel; shorter = snappier hand-off */
@@ -361,16 +335,14 @@ address { font-style: normal; }
   width: 100%;
   max-width: 780px;
   margin-inline: auto;
+  padding-inline: var(--sp-gutter);
 }
 
-.ps-head { padding-bottom: var(--sp-block); }
+.ps-head { padding-block: var(--sp-section) var(--sp-block); }
 
 /* Closing strip sits at the bottom of the same viewport, so it frames the
    categories the whole way through instead of appearing only at the end. */
-.ps-foot {
-  padding-top: var(--sp-block);
-  padding-bottom: var(--sp-section);
-}
+.ps-foot { padding-block: var(--sp-block) var(--sp-section); }
 
 .ps-track {
   flex: 1 1 auto;
@@ -388,7 +360,6 @@ address { font-style: normal; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
   padding: var(--sp-block) var(--sp-gutter);
   border-left: 1px solid var(--brown-faint);
 }
@@ -410,14 +381,6 @@ address { font-style: normal; }
   user-select: none;
   pointer-events: none;
 }
-
-.ps-panel .category {
-  width: min(560px, 100%);
-  margin-bottom: 0;
-  position: relative;
-}
-
-.ps-panel .category-name { font-size: clamp(1.8rem, 4vw, 3rem); }
 
 /* ── Site footer (contact) ─────────────────────────────── */
 .site-footer {
@@ -486,24 +449,20 @@ address { font-style: normal; }
     display: block;
   }
   .ps-head { padding-bottom: 0; }
-  .ps-foot { padding-top: var(--sp-block); }
   .ps-track {
     display: block;
     width: auto;
-    height: auto;
     transform: none !important;
   }
   .ps-panel {
     width: auto;
     height: auto;
     border-left: none;
-    padding: var(--sp-block) var(--sp-gutter);
   }
   .ps-numeral {
     font-size: 2.8rem;
     margin-bottom: 4px;
   }
-  .ps-panel .category { margin: 0 auto; }
 }
 
 @media (max-width: 600px) {
@@ -530,14 +489,14 @@ address { font-style: normal; }
     letter-spacing: 0.16em;
   }
   .service-row   { padding-left: clamp(14px, 7vw, 40px); gap: 12px; }
-  .category-name { font-size: 1.45rem; }
 
   .prices-title { font-size: clamp(2.4rem, 13vw, 3.2rem); }
 }
 
 @media (max-width: 420px) {
   /* Keep every section on the same 16px gutter */
-  .prices,
+  .ps-head,
+  .ps-foot,
   .ps-panel,
   .site-footer  { padding-left: 16px; padding-right: 16px; }
   .service-row  { padding-left: 14px; }

@@ -6,6 +6,7 @@ const PRECACHE = [
   '/styles.css',
   '/booking.css',
   '/booking.js',
+  '/calendar.js',
   '/timepicker.js',
   '/hero.js',
   '/assets/logo.svg',
@@ -33,7 +34,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ── Fetch: smart caching strategy ────────────────────────
+// Fetch from the network and refresh the cached copy on success
+function fetchAndCache(request) {
+  return fetch(request).then(res => {
+    if (res.ok) {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(request, clone));
+    }
+    return res;
+  });
+}
+
+// ── Fetch: caching strategy per request type ─────────────
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return; // never cache API
@@ -55,30 +67,15 @@ self.addEventListener('fetch', e => {
   // these cache-first means a deploy is invisible until CACHE is bumped, and
   // forgetting that bump ships a stale stylesheet to every returning visitor.
   if (/\.(css|js)(\?|$)/.test(e.request.url)) {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE).then(c => c.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() => caches.match(e.request))
-    );
+    e.respondWith(fetchAndCache(e.request).catch(() => caches.match(e.request)));
     return;
   }
 
-  // Everything else (images, icons, fonts, manifest) — cache-first
+  // Everything else (images, icons, fonts, manifest) — answer from the cache
+  // when possible and refresh it in the background
   e.respondWith(
     caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return res;
-      });
+      const network = fetchAndCache(e.request);
       return cached || network;
     })
   );

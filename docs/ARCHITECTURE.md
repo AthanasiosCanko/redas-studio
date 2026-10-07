@@ -18,6 +18,7 @@ booking.css         — calendar, wheel time picker, booking modal
 admin.css           — admin-only styles
 booking.js          — public booking calendar + request flow
 admin.js            — admin logic (JWT auth, push subscribe, API calls)
+calendar.js         — shared by both: Albania time, date labels, month grid (RedaCalendar)
 timepicker.js       — shared wheel time picker (RedaTimePicker.create)
 hero.js             — hero video loader (saveData/2g gate), parallax, scroll reveals,
                       pinned horizontal price-category scroll
@@ -48,8 +49,9 @@ Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`).
 - `hero.js` injects the video `<source>`s unless the connection is constrained
   (`saveData`/2g); otherwise the poster renders (both the `poster` attribute and a CSS
   background on `.hero-media`), so the hero is never blank, and never gated on an animation.
-- `--motion` (`:root`) scales parallax amplitude; `--ease-out-strong`
-  (`cubic-bezier(0.23,1,0.32,1)`) is the shared entrance easing.
+- `--ease-out-strong` (`cubic-bezier(0.23,1,0.32,1)`) is the shared entrance easing.
+- A global `[hidden] { display: none !important }` (styles.css) is what hides
+  components that set their own `display` — no per-component `[hidden]` rules.
 - Hero children stagger in on load (`hero-rise`, fill-mode `backwards` so `:active`/hover
   styles survive). Below the fold, `.rv` elements reveal via IntersectionObserver
   (`.rv--in`; price rows cascade with nth-child delays). The hidden state applies only

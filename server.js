@@ -41,6 +41,9 @@ const GMAIL_USER         = process.env.GMAIL_USER;          // the Gmail address
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;  // 16-char app password
 const EMAIL_FROM         = process.env.EMAIL_FROM || (GMAIL_USER ? `R-EDA'S STUDIO <${GMAIL_USER}>` : null);
 const EMAIL_READY        = !!(GMAIL_USER && GMAIL_APP_PASSWORD);
+const mailer = EMAIL_READY
+  ? nodemailer.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD } })
+  : null;
 
 // Google Calendar (optional — a no-op until all three vars are set).
 // Service account + a calendar shared with it: no OAuth dance, no refresh
@@ -52,9 +55,6 @@ const GCAL_ID         = process.env.GOOGLE_CALENDAR_ID;
 const GCAL_READY      = !!(GCAL_SA_EMAIL && GCAL_SA_KEY && GCAL_ID);
 // A booking stores only a start time; a calendar event needs an end.
 const APPT_MINUTES    = parseInt(process.env.APPOINTMENT_MINUTES, 10) || 60;
-const mailer = EMAIL_READY
-  ? nodemailer.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD } })
-  : null;
 
 // ── Booking window ───────────────────────────────────────
 // Clients may request any time from 09:00 to 20:00 in 5-minute steps.
@@ -64,7 +64,7 @@ const BOOK_END_MIN   = 20 * 60;  // 20:00
 const SLOT_STEP_MIN  = 5;
 
 // A booking is "active" (occupies its time) while pending or accepted.
-const ACTIVE_STATUSES = ['pending', 'accepted'];
+const ACTIVE = `status IN ('pending', 'accepted')`;
 
 function isValidTime(time) {
   if (typeof time !== 'string' || !/^\d{2}:\d{2}$/.test(time)) return false;
@@ -97,81 +97,49 @@ function isSlotPast(date, time) {
   return (h * 60 + m) < now.totalMins;
 }
 
-// ── DB bootstrap & migration ─────────────────────────────
+// ── DB bootstrap ─────────────────────────────────────────
 async function initDb() {
-  const client = await pool.connect();
-  try {
-    // Fresh installs get the full schema; existing installs are migrated below.
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
-        id         SERIAL       PRIMARY KEY,
-        date       DATE         NOT NULL,
-        time       VARCHAR(5)   NOT NULL,
-        name       VARCHAR(255) NOT NULL,
-        email      VARCHAR(255),
-        phone      VARCHAR(255),
-        contact    VARCHAR(255),
-        status     VARCHAR(12)  NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMPTZ  DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS blocked_days (
-        date DATE PRIMARY KEY
-      );
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id           SERIAL      PRIMARY KEY,
-        subscription JSONB       NOT NULL UNIQUE,
-        created_at   TIMESTAMPTZ DEFAULT NOW()
-      );
-    `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS bookings (
+      id              SERIAL       PRIMARY KEY,
+      date            DATE         NOT NULL,
+      time            VARCHAR(5)   NOT NULL,
+      name            VARCHAR(255) NOT NULL,
+      email           VARCHAR(255),
+      phone           VARCHAR(255),
+      contact         VARCHAR(255),   -- legacy rows only (before email/phone)
+      status          VARCHAR(12)  NOT NULL DEFAULT 'pending',
+      google_event_id VARCHAR(255),
+      created_at      TIMESTAMPTZ  DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS blocked_days (
+      date DATE PRIMARY KEY
+    );
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id           SERIAL      PRIMARY KEY,
+      subscription JSONB       NOT NULL UNIQUE,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+    -- Lock a time only while a booking there is active; freed/denied times reopen.
+    CREATE UNIQUE INDEX IF NOT EXISTS bookings_active_slot
+      ON bookings (date, time) WHERE ${ACTIVE};
+  `);
+}
 
-    // Migrate a legacy bookings table (PK (date,time); name+contact only).
-    await client.query(`
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email   VARCHAR(255);
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS phone   VARCHAR(255);
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contact VARCHAR(255);
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status  VARCHAR(12);
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS google_event_id VARCHAR(255);
-      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS id      SERIAL;
-      UPDATE bookings SET status = 'accepted' WHERE status IS NULL;
-      ALTER TABLE bookings ALTER COLUMN status  SET DEFAULT 'pending';
-      ALTER TABLE bookings ALTER COLUMN status  SET NOT NULL;
-      ALTER TABLE bookings ALTER COLUMN contact DROP NOT NULL;
-    `);
+const isDayBlocked = async date =>
+  (await pool.query(`SELECT 1 FROM blocked_days WHERE date = $1`, [date])).rowCount > 0;
 
-    // Ensure the primary key is id (legacy tables were keyed on (date,time)).
-    // Idempotent: only touches the PK when it isn't already exactly (id).
-    await client.query(`
-      DO $$
-      DECLARE
-        pk_cols text;
-        pk_name text;
-      BEGIN
-        SELECT c.conname,
-               string_agg(a.attname, ',' ORDER BY array_position(c.conkey, a.attnum))
-          INTO pk_name, pk_cols
-        FROM pg_constraint c
-        JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
-        WHERE c.conrelid = 'bookings'::regclass AND c.contype = 'p'
-        GROUP BY c.conname;
+const isSlotTaken = async (date, time) =>
+  (await pool.query(`SELECT 1 FROM bookings WHERE date = $1 AND time = $2 AND ${ACTIVE}`, [date, time]))
+    .rowCount > 0;
 
-        IF pk_cols IS DISTINCT FROM 'id' THEN
-          IF pk_name IS NOT NULL THEN
-            EXECUTE 'ALTER TABLE bookings DROP CONSTRAINT ' || quote_ident(pk_name);
-          END IF;
-          ALTER TABLE bookings ADD PRIMARY KEY (id);
-        END IF;
-      END $$;
-    `);
-
-    // Lock a time only while a booking there is active; freed/denied times reopen.
-    await client.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS bookings_active_slot
-      ON bookings (date, time)
-      WHERE status IN ('pending', 'accepted')
-    `);
-  } finally {
-    client.release();
-  }
+async function insertBooking({ date, time, name, email, phone }, status) {
+  const { rows } = await pool.query(
+    `INSERT INTO bookings (date, time, name, email, phone, status)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [date, time, name, email, phone, status]
+  );
+  return rows[0].id;
 }
 
 // ── Push helper ───────────────────────────────────────────
@@ -191,10 +159,6 @@ async function notifyAdmin(payload) {
   } catch (err) {
     console.error('Push error:', err.message);
   }
-}
-
-function friendlyDate(date) {
-  return sqDate(date);
 }
 
 // Send an SMS via Infobip's REST API (graceful no-op when not configured).
@@ -311,6 +275,16 @@ async function calendarDelete(eventId) {
   }
 }
 
+// Put an accepted booking on the salon calendar and keep the event id so a
+// later cancel can remove it. Never awaited: the calendar must not slow
+// down or fail a booking.
+function addToCalendar(id, booking) {
+  calendarCreate(booking).then(eventId => {
+    if (eventId) pool.query(`UPDATE bookings SET google_event_id = $1 WHERE id = $2`, [eventId, id])
+      .catch(e => console.error('Calendar id save failed:', e.message));
+  });
+}
+
 // "më 30 dhjetor 2026 (e mërkurë)" — reads naturally mid-sentence in emails
 function longDate(date) {
   return `${sqDayMonth(date, { year: true })} (${sqWeekday(date)})`;
@@ -357,6 +331,13 @@ function bookingEmail(kind, { to, name, date, time }) {
   sendEmail(to, subject, text, html);
 }
 
+// Text and email the client about a booking event; each channel no-ops
+// when unconfigured or when the booking has no number/address for it.
+function notifyClient(kind, { date, time, name, email, phone }) {
+  sendSms(phone, smsText(kind, date, time));
+  bookingEmail(kind, { to: email, name, date, time });
+}
+
 // ── Middleware ───────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -373,6 +354,19 @@ function requireAdmin(req, res, next) {
   }
 }
 
+// Express 4 doesn't catch rejected promises, so async routes go through this.
+// The only unique constraint a route can trip is the active-slot index, so a
+// 23505 always means someone else just took that time.
+const handle = fn => async (req, res) => {
+  try {
+    await fn(req, res);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });
+    console.error(err);
+    res.status(500).json({ error: 'DB error' });
+  }
+};
+
 // ── Public routes ─────────────────────────────────────────
 
 app.get('/admin', (req, res) => {
@@ -384,64 +378,33 @@ app.get('/api/vapid-public-key', (req, res) => {
 });
 
 // Calendar month data: blocked days + active-booking dot counts
-app.get('/api/calendar/:year/:month', async (req, res) => {
+app.get('/api/calendar/:year/:month', handle(async (req, res) => {
   const { year, month } = req.params;
-  try {
-    const [bkRes, bdRes] = await Promise.all([
-      pool.query(
-        `SELECT date FROM bookings
-         WHERE status IN ('pending','accepted')
-           AND EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2`,
-        [year, month]
-      ),
-      pool.query(
-        `SELECT date FROM blocked_days
-         WHERE EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2`,
-        [year, month]
-      ),
-    ]);
+  const inMonth = `EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2`;
+  const [bkRes, bdRes] = await Promise.all([
+    pool.query(`SELECT date FROM bookings WHERE ${ACTIVE} AND ${inMonth}`, [year, month]),
+    pool.query(`SELECT date FROM blocked_days WHERE ${inMonth}`, [year, month]),
+  ]);
 
-    const days = {};
-    for (const row of bkRes.rows) {
-      const key = row.date.toISOString().slice(0, 10);
-      if (!days[key]) days[key] = { blocked: false, bookingCount: 0 };
-      days[key].bookingCount++;
-    }
-    for (const row of bdRes.rows) {
-      const key = row.date.toISOString().slice(0, 10);
-      if (!days[key]) days[key] = { blocked: false, bookingCount: 0 };
-      days[key].blocked = true;
-    }
-    res.json({ days });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  const days = {};
+  const day  = row => (days[row.date.toISOString().slice(0, 10)] ||= { blocked: false, bookingCount: 0 });
+  for (const row of bkRes.rows) day(row).bookingCount++;
+  for (const row of bdRes.rows) day(row).blocked = true;
+  res.json({ days });
+}));
 
 // Availability for one day (public — only the taken times, no personal info)
-app.get('/api/availability/:date', async (req, res) => {
+app.get('/api/availability/:date', handle(async (req, res) => {
   const { date } = req.params;
-  try {
-    const [bkRes, bdRes] = await Promise.all([
-      pool.query(
-        `SELECT time FROM bookings WHERE date = $1 AND status IN ('pending','accepted') ORDER BY time`,
-        [date]
-      ),
-      pool.query(`SELECT 1 FROM blocked_days WHERE date = $1`, [date]),
-    ]);
-    res.json({
-      taken:      bkRes.rows.map(r => r.time),
-      dayBlocked: bdRes.rows.length > 0,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  const [bkRes, dayBlocked] = await Promise.all([
+    pool.query(`SELECT time FROM bookings WHERE date = $1 AND ${ACTIVE} ORDER BY time`, [date]),
+    isDayBlocked(date),
+  ]);
+  res.json({ taken: bkRes.rows.map(r => r.time), dayBlocked });
+}));
 
 // Create a booking request (status: pending)
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', handle(async (req, res) => {
   const { date, time, name, email, phone } = req.body;
   if (!date || !time || !name?.trim() || !phone?.trim()) {   // email is optional
     return res.status(400).json({ error: 'Missing fields' });
@@ -449,38 +412,21 @@ app.post('/api/bookings', async (req, res) => {
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
   if (isSlotPast(date, time)) return res.status(409).json({ error: 'Slot is in the past' });
 
-  try {
-    const [blockedRes, takenRes] = await Promise.all([
-      pool.query(`SELECT 1 FROM blocked_days WHERE date = $1`, [date]),
-      pool.query(
-        `SELECT 1 FROM bookings WHERE date = $1 AND time = $2 AND status IN ('pending','accepted')`,
-        [date, time]
-      ),
-    ]);
-    if (blockedRes.rows.length) return res.status(409).json({ error: 'Day not available' });
-    if (takenRes.rows.length)   return res.status(409).json({ error: 'Already booked' });
+  const [blocked, taken] = await Promise.all([isDayBlocked(date), isSlotTaken(date, time)]);
+  if (blocked) return res.status(409).json({ error: 'Day not available' });
+  if (taken)   return res.status(409).json({ error: 'Already booked' });
 
-    const cleanEmail = email?.trim() || null;
-    await pool.query(
-      `INSERT INTO bookings (date, time, name, email, phone, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')`,
-      [date, time, name.trim(), cleanEmail, phone.trim()]
-    );
+  const booking = { date, time, name: name.trim(), email: email?.trim() || null, phone: phone.trim() };
+  await insertBooking(booking, 'pending');
 
-    notifyAdmin({
-      title: 'Kërkesë e re për rezervim',
-      body:  `${name.trim()} · ${friendlyDate(date)} · ${time}`,
-    });
-    sendSms(phone, smsText('received', date, time));
-    bookingEmail('received', { to: cleanEmail, name: name.trim(), date, time });  // no-op when no email
+  notifyAdmin({
+    title: 'Kërkesë e re për rezervim',
+    body:  `${booking.name} · ${sqDate(date)} · ${time}`,
+  });
+  notifyClient('received', booking);
 
-    res.json({ ok: true });
-  } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  res.json({ ok: true });
+}));
 
 // ── Admin routes ─────────────────────────────────────────
 
@@ -492,21 +438,18 @@ app.post('/api/admin/login', (req, res) => {
   res.json({ token });
 });
 
-app.post('/api/admin/push-subscribe', requireAdmin, async (req, res) => {
+app.post('/api/admin/push-subscribe', requireAdmin, handle(async (req, res) => {
   const { subscription } = req.body;
   if (!subscription) return res.status(400).json({ error: 'Missing subscription' });
-  try {
-    await pool.query(
-      `INSERT INTO push_subscriptions (subscription) VALUES ($1)
-       ON CONFLICT (subscription) DO NOTHING`,
-      [JSON.stringify(subscription)]
-    );
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  await pool.query(
+    `INSERT INTO push_subscriptions (subscription) VALUES ($1)
+     ON CONFLICT (subscription) DO NOTHING`,
+    [JSON.stringify(subscription)]
+  );
+  res.json({ ok: true });
+}));
+
+const BOOKING_COLS = 'date, time, name, email, phone, contact, status, created_at';
 
 function mapBooking(r) {
   return {
@@ -522,40 +465,20 @@ function mapBooking(r) {
 }
 
 // All bookings (every status) — the client filters by status
-app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT date, time, name, email, phone, contact, status, created_at
-       FROM bookings ORDER BY date, time`
-    );
-    res.json({ bookings: result.rows.map(mapBooking) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+app.get('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
+  const { rows } = await pool.query(`SELECT ${BOOKING_COLS} FROM bookings ORDER BY date, time`);
+  res.json({ bookings: rows.map(mapBooking) });
+}));
 
 // One day's active bookings + blocked state (for the availability panel)
-app.get('/api/admin/day/:date', requireAdmin, async (req, res) => {
+app.get('/api/admin/day/:date', requireAdmin, handle(async (req, res) => {
   const { date } = req.params;
-  try {
-    const [bkRes, bdRes] = await Promise.all([
-      pool.query(
-        `SELECT date, time, name, email, phone, contact, status, created_at
-         FROM bookings WHERE date = $1 AND status IN ('pending','accepted') ORDER BY time`,
-        [date]
-      ),
-      pool.query(`SELECT 1 FROM blocked_days WHERE date = $1`, [date]),
-    ]);
-    res.json({
-      bookings:   bkRes.rows.map(mapBooking),
-      dayBlocked: bdRes.rows.length > 0,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  const [bkRes, dayBlocked] = await Promise.all([
+    pool.query(`SELECT ${BOOKING_COLS} FROM bookings WHERE date = $1 AND ${ACTIVE} ORDER BY time`, [date]),
+    isDayBlocked(date),
+  ]);
+  res.json({ bookings: bkRes.rows.map(mapBooking), dayBlocked });
+}));
 
 // Accept / deny / cancel a booking (status transition; nothing is deleted)
 const STATUS_TRANSITIONS = {
@@ -564,98 +487,61 @@ const STATUS_TRANSITIONS = {
   cancel: { to: 'cancelled', from: 'accepted' },
 };
 
-app.post('/api/admin/bookings/status', requireAdmin, async (req, res) => {
+app.post('/api/admin/bookings/status', requireAdmin, handle(async (req, res) => {
   const { date, time, action } = req.body;
   const tr = STATUS_TRANSITIONS[action];
   if (!date || !time || !tr) return res.status(400).json({ error: 'Bad request' });
-  try {
-    const result = await pool.query(
-      `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
-       RETURNING id, name, email, phone, google_event_id`,
-      [tr.to, date, time, tr.from]
-    );
-    if (!result.rowCount) return res.status(409).json({ error: 'Not in expected state' });
 
-    const { id, name, email, phone, google_event_id: eventId } = result.rows[0];
-    // status value (accepted|denied|cancelled) matches the SMS/email kind
-    sendSms(phone, smsText(tr.to, date, time));
-    bookingEmail(tr.to, { to: email, name, date, time });
+  const { rows } = await pool.query(
+    `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
+     RETURNING id, name, email, phone, google_event_id`,
+    [tr.to, date, time, tr.from]
+  );
+  if (!rows.length) return res.status(409).json({ error: 'Not in expected state' });
 
-    // Calendar mirrors confirmed appointments only: accepting puts the event
-    // on the salon calendar, cancelling takes it off. A denied request was
-    // never on there. Failures are logged, never surfaced to the admin.
-    if (action === 'accept') {
-      calendarCreate({ date, time, name, email, phone }).then(newId => {
-        if (newId) pool.query(`UPDATE bookings SET google_event_id = $1 WHERE id = $2`, [newId, id])
-          .catch(e => console.error('Calendar id save failed:', e.message));
-      });
-    } else if (action === 'cancel') {
-      calendarDelete(eventId);
-    }
+  const { id, google_event_id: eventId, ...contact } = rows[0];
+  const booking = { date, time, ...contact };
+  // status value (accepted|denied|cancelled) matches the SMS/email kind
+  notifyClient(tr.to, booking);
 
-    res.json({ ok: true, status: tr.to });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+  // Calendar mirrors confirmed appointments only: accepting puts the event
+  // on the salon calendar, cancelling takes it off. A denied request was
+  // never on there. Failures are logged, never surfaced to the admin.
+  if (action === 'accept')      addToCalendar(id, booking);
+  else if (action === 'cancel') calendarDelete(eventId);
+
+  res.json({ ok: true, status: tr.to });
+}));
 
 // Admin creates a booking directly (auto-accepted; bypasses day-block, not the time cutoff)
-app.post('/api/admin/bookings', requireAdmin, async (req, res) => {
+app.post('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
   const { date, time, name, email, phone } = req.body;
   if (!date || !time || !name?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
   }
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
   if (isSlotPast(date, time)) return res.status(409).json({ error: 'Slot is in the past' });
-  try {
-    const taken = await pool.query(
-      `SELECT 1 FROM bookings WHERE date = $1 AND time = $2 AND status IN ('pending','accepted')`,
-      [date, time]
-    );
-    if (taken.rows.length) return res.status(409).json({ error: 'Already booked' });
+  if (await isSlotTaken(date, time)) return res.status(409).json({ error: 'Already booked' });
 
-    const cleanPhone = phone?.trim() || null;
-    const cleanEmail = email?.trim() || null;
-    const ins = await pool.query(
-      `INSERT INTO bookings (date, time, name, email, phone, status)
-       VALUES ($1, $2, $3, $4, $5, 'accepted') RETURNING id`,
-      [date, time, name.trim(), cleanEmail, cleanPhone]
-    );
-    sendSms(cleanPhone, smsText('accepted', date, time));
-    bookingEmail('accepted', { to: cleanEmail, name: name.trim(), date, time });
+  const booking = {
+    date, time, name: name.trim(), email: email?.trim() || null, phone: phone?.trim() || null,
+  };
+  const id = await insertBooking(booking, 'accepted');
+  notifyClient('accepted', booking);
+  addToCalendar(id, booking);   // already accepted, so it goes on the calendar too
+  res.json({ ok: true });
+}));
 
-    // Admin-created bookings are already accepted, so they go on the calendar too
-    calendarCreate({ date, time, name: name.trim(), email: cleanEmail, phone: cleanPhone })
-      .then(newId => {
-        if (newId) pool.query(`UPDATE bookings SET google_event_id = $1 WHERE id = $2`, [newId, ins.rows[0].id])
-          .catch(e => console.error('Calendar id save failed:', e.message));
-      });
-    res.json({ ok: true });
-  } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'Already booked' });
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.post('/api/admin/blocked-days/toggle', requireAdmin, async (req, res) => {
+// Delete the block if there is one, otherwise add it
+app.post('/api/admin/blocked-days/toggle', requireAdmin, handle(async (req, res) => {
   const { date } = req.body;
   if (!date) return res.status(400).json({ error: 'Missing date' });
-  try {
-    const existing = await pool.query(`SELECT 1 FROM blocked_days WHERE date = $1`, [date]);
-    if (existing.rows.length) {
-      await pool.query(`DELETE FROM blocked_days WHERE date = $1`, [date]);
-      res.json({ blocked: false });
-    } else {
-      await pool.query(`INSERT INTO blocked_days (date) VALUES ($1) ON CONFLICT DO NOTHING`, [date]);
-      res.json({ blocked: true });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
+  const { rowCount } = await pool.query(`DELETE FROM blocked_days WHERE date = $1`, [date]);
+  if (!rowCount) {
+    await pool.query(`INSERT INTO blocked_days (date) VALUES ($1) ON CONFLICT DO NOTHING`, [date]);
   }
-});
+  res.json({ blocked: !rowCount });
+}));
 
 // ── Start ────────────────────────────────────────────────
 initDb()

@@ -1,12 +1,9 @@
 (() => {
   'use strict';
 
-  const MONTH_NAMES = [
-    'Janar','Shkurt','Mars','Prill','Maj','Qershor',
-    'Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'
-  ];
-  // Built by hand: `sq-AL` locale data is missing or partial in some browsers.
-  const WEEKDAY_NAMES = ['E diel','E hënë','E martë','E mërkurë','E enjte','E premte','E shtunë'];
+  const { MONTHS, albaniaNow, formatDate, firstFreeTime, shiftMonth, isCurrentMonth, renderMonth } =
+    window.RedaCalendar;
+
   const STATUS_LABELS = { pending: 'Në pritje', accepted: 'Konfirmuar', denied: 'Refuzuar', cancelled: 'Anuluar' };
   const EMPTY_LABELS  = {
     requests: 'Nuk ka kërkesa.',
@@ -35,6 +32,8 @@
     if (!res.ok) throw Object.assign(new Error(data.error || 'API error'), { status: res.status });
     return data;
   }
+
+  const post = (url, body) => apiFetch(url, { method: 'POST', body: JSON.stringify(body) });
 
   // ── DOM refs ─────────────────────────────────────────────
   const loginScreen   = document.getElementById('login-screen');
@@ -70,38 +69,34 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function hint(text) {
-    return `<span style="font-family:'Montserrat',sans-serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--brown-mid)">${text}</span>`;
+  const hint = text => `<span class="adm-hint">${text}</span>`;
+
+  const statusBadge = status =>
+    `<span class="bk-status bk-status--${esc(status)}">${esc(STATUS_LABELS[status] || status)}</span>`;
+
+  // One booking row: time, name + contact lines, and the actions column
+  function bookingRow(bk, actionsHtml, extraClass = '') {
+    // Legacy rows predate the email/phone split and only carry `contact`
+    const contacts = [bk.email, bk.phone].filter(Boolean);
+    if (!contacts.length && bk.contact) contacts.push(bk.contact);
+
+    const row = document.createElement('div');
+    row.className = `bk-item${extraClass}`;
+    row.innerHTML = `
+      <span class="bk-item-time">${esc(bk.time)}</span>
+      <div class="bk-item-info">
+        <span class="bk-item-name">${esc(bk.name)}</span>
+        ${contacts.map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('')}
+      </div>
+      <div class="bk-item-actions">${actionsHtml}</div>`;
+    return row;
   }
 
-  function albaniaNow() {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Europe/Tirane',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(new Date());
-    const get = t => parts.find(p => p.type === t).value;
-    return {
-      date:      `${get('year')}-${get('month')}-${get('day')}`,
-      totalMins: parseInt(get('hour')) * 60 + parseInt(get('minute')),
-    };
-  }
-
-  function longDate(dateKey) {
-    const [y, m, d] = dateKey.split('-').map(Number);
-    return `${WEEKDAY_NAMES[new Date(y, m - 1, d).getDay()]}, ${d} ${MONTH_NAMES[m - 1].toLowerCase()}`;
-  }
-
-  function defaultTime(dateKey, takenSet) {
-    const now = albaniaNow();
-    let start = 9 * 60;
-    if (dateKey === now.date) start = Math.max(start, Math.ceil(now.totalMins / 5) * 5);
-    for (let t = start; t <= 20 * 60; t += 5) {
-      const hh = String(Math.floor(t / 60)).padStart(2, '0');
-      const mm = String(t % 60).padStart(2, '0');
-      if (!takenSet.has(`${hh}:${mm}`)) return `${hh}:${mm}`;
-    }
-    return '10:00';
+  // Bookings list, calendar dots and the open day panel all show the same data
+  async function refreshAll() {
+    loadBookings();
+    await loadAdmCalendar();
+    if (admSelectedDate) await loadDayPanel(admSelectedDate);
   }
 
   // ── Session ───────────────────────────────────────────────
@@ -128,11 +123,8 @@
   loginForm.addEventListener('submit', async e => {
     e.preventDefault();
     loginError.hidden = true;
-    const pw = document.getElementById('login-pw').value;
     try {
-      const { token } = await apiFetch('/api/admin/login', {
-        method: 'POST', body: JSON.stringify({ password: pw }),
-      });
+      const { token } = await post('/api/admin/login', { password: document.getElementById('login-pw').value });
       setToken(token);
       showDashboard();
     } catch {
@@ -146,9 +138,8 @@
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.toggle('adm-tab--active', b === btn));
-      const target = btn.dataset.tab;
       document.querySelectorAll('.adm-section[id^="tab-"]').forEach(s => {
-        s.hidden = (s.id !== `tab-${target}`);
+        s.hidden = (s.id !== `tab-${btn.dataset.tab}`);
       });
     });
   });
@@ -171,23 +162,24 @@
     });
   });
 
-  function contactLines(bk) {
-    const lines = [];
-    if (bk.email) lines.push(bk.email);
-    if (bk.phone) lines.push(bk.phone);
-    if (!lines.length && bk.contact) lines.push(bk.contact);
-    return lines;
+  const FILTERS = {
+    requests: (bk)        => bk.status === 'pending',
+    upcoming: (bk, today) => bk.status === 'accepted' && bk.date >= today,
+    past:     (bk, today) => bk.status === 'accepted' && bk.date <  today,
+    all:      ()          => true,
+  };
+
+  function actionButtons(bk, isPast) {
+    const btn = (action, label) =>
+      `<button class="bk-act bk-act--${action}" data-action="${action}" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">${label}</button>`;
+    if (bk.status === 'pending')               return btn('accept', 'Prano') + btn('deny', 'Refuzo');
+    if (bk.status === 'accepted' && !isPast)   return btn('cancel', 'Anulo');
+    return statusBadge(bk.status);
   }
 
   function renderBookings(all) {
     const today = albaniaNow().date;
-
-    const list = all.filter(bk => {
-      if (currentFilter === 'requests') return bk.status === 'pending';
-      if (currentFilter === 'upcoming') return bk.status === 'accepted' && bk.date >= today;
-      if (currentFilter === 'past')     return bk.status === 'accepted' && bk.date <  today;
-      return true; // all
-    });
+    const list  = all.filter(bk => FILTERS[currentFilter](bk, today));
 
     if (!list.length) {
       bookingsList.innerHTML = `<p class="adm-empty">${EMPTY_LABELS[currentFilter]}</p>`;
@@ -206,34 +198,12 @@
 
       const label       = document.createElement('p');
       label.className   = 'bk-group-date';
-      label.textContent = longDate(date);
+      label.textContent = formatDate(date);
       group.appendChild(label);
 
       for (const bk of groups[date].sort((a, b) => a.time.localeCompare(b.time))) {
-        const row = document.createElement('div');
-        row.className = 'bk-item' + (isPast || bk.status !== 'accepted' && bk.status !== 'pending' ? ' bk-item--past' : '');
-
-        const contacts = contactLines(bk).map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('');
-
-        let actions = '';
-        if (bk.status === 'pending') {
-          actions = `
-            <button class="bk-act bk-act--accept" data-action="accept" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Prano</button>
-            <button class="bk-act bk-act--deny"   data-action="deny"   data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Refuzo</button>`;
-        } else if (bk.status === 'accepted' && !isPast) {
-          actions = `<button class="bk-act bk-act--cancel" data-action="cancel" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">Anulo</button>`;
-        } else {
-          actions = `<span class="bk-status bk-status--${esc(bk.status)}">${esc(STATUS_LABELS[bk.status] || bk.status)}</span>`;
-        }
-
-        row.innerHTML = `
-          <span class="bk-item-time">${esc(bk.time)}</span>
-          <div class="bk-item-info">
-            <span class="bk-item-name">${esc(bk.name)}</span>
-            ${contacts}
-          </div>
-          <div class="bk-item-actions">${actions}</div>`;
-        group.appendChild(row);
+        const inactive = isPast || (bk.status !== 'accepted' && bk.status !== 'pending');
+        group.appendChild(bookingRow(bk, actionButtons(bk, isPast), inactive ? ' bk-item--past' : ''));
       }
       bookingsList.appendChild(group);
     }
@@ -243,16 +213,13 @@
     });
   }
 
+  const CONFIRMS = { deny: 'Ta refuzoni këtë kërkesë?', cancel: 'Ta anuloni këtë rezervim?' };
+
   async function doStatus(action, date, time) {
-    if (action === 'deny'   && !confirm('Ta refuzoni këtë kërkesë?'))      return;
-    if (action === 'cancel' && !confirm('Ta anuloni këtë rezervim?'))    return;
+    if (CONFIRMS[action] && !confirm(CONFIRMS[action])) return;
     try {
-      await apiFetch('/api/admin/bookings/status', {
-        method: 'POST', body: JSON.stringify({ date, time, action }),
-      });
-      loadBookings();
-      await loadAdmCalendar();
-      if (admSelectedDate) await loadDayPanel(admSelectedDate);
+      await post('/api/admin/bookings/status', { date, time, action });
+      await refreshAll();
     } catch {
       alert('Rezervimi nuk u përditësua.');
     }
@@ -276,63 +243,37 @@
   }
 
   function renderAdmCalendar() {
-    admMonthLbl.textContent = `${MONTH_NAMES[admViewMonth]} ${admViewYear}`;
+    admMonthLbl.textContent = `${MONTHS[admViewMonth]} ${admViewYear}`;
+    const today = albaniaNow().date;
 
-    const headers = Array.from(admGrid.querySelectorAll('.cal-day-name'));
-    admGrid.innerHTML = '';
-    headers.forEach(h => admGrid.appendChild(h));
-
-    const firstDay    = new Date(admViewYear, admViewMonth, 1).getDay();
-    const daysInMonth = new Date(admViewYear, admViewMonth + 1, 0).getDate();
-    const today       = albaniaNow().date;
-
-    for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('span');
-      empty.className = 'cal-cell cal-cell--empty';
-      admGrid.appendChild(empty);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key  = `${admViewYear}-${String(admViewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const info = admCalData[key] || { blocked: false, bookingCount: 0 };
-
-      const cell       = document.createElement('button');
-      cell.type        = 'button';
-      cell.className   = 'cal-cell';
-      cell.textContent = d;
-
+    // Unlike the public calendar, past and blocked days stay clickable
+    renderMonth(admGrid, admViewYear, admViewMonth, (cell, key) => {
+      const info = admCalData[key] || {};
       if (info.blocked)            cell.classList.add('cal-cell--adm-blocked');
       if (key < today)             cell.classList.add('cal-cell--adm-past');
       if (key === admSelectedDate) cell.classList.add('cal-cell--selected');
       if (info.bookingCount > 0)   cell.classList.add('cal-cell--has-bookings');
-
       cell.addEventListener('click', () => {
         admSelectedDate = key;
         renderAdmCalendar();
         loadDayPanel(key);
       });
-      admGrid.appendChild(cell);
-    }
+    });
 
-    const [ty, tm] = today.split('-').map(Number);
-    admPrevBtn.disabled      = (admViewYear === ty && admViewMonth === tm - 1);
-    admPrevBtn.style.opacity = admPrevBtn.disabled ? '0.3' : '';
-    admPrevBtn.style.cursor  = admPrevBtn.disabled ? 'default' : '';
+    admPrevBtn.disabled = isCurrentMonth(admViewYear, admViewMonth);
   }
 
-  admPrevBtn.addEventListener('click', () => {
-    if (admViewMonth === 0) { admViewMonth = 11; admViewYear--; } else admViewMonth--;
+  const goAdmMonth = delta => {
+    ({ year: admViewYear, month: admViewMonth } = shiftMonth(admViewYear, admViewMonth, delta));
     loadAdmCalendar();
-  });
-  admNextBtn.addEventListener('click', () => {
-    if (admViewMonth === 11) { admViewMonth = 0; admViewYear++; } else admViewMonth++;
-    loadAdmCalendar();
-  });
+  };
+  admPrevBtn.addEventListener('click', () => goAdmMonth(-1));
+  admNextBtn.addEventListener('click', () => goAdmMonth(1));
 
   // ── Day panel ─────────────────────────────────────────────
   async function loadDayPanel(dateKey) {
     dayPanel.hidden           = false;
-    dayPanelTitle.textContent = longDate(dateKey);
+    dayPanelTitle.textContent = formatDate(dateKey);
     dayBookings.innerHTML     = hint('Duke u ngarkuar…');
 
     try {
@@ -341,40 +282,26 @@
 
       blockDayBtn.textContent = dayBlocked ? 'Zhblloko ditën' : 'Blloko ditën';
       blockDayBtn.classList.toggle('adm-block-day-btn--on', dayBlocked);
-      blockDayBtn.onclick = async () => {
-        try {
-          const { blocked } = await apiFetch('/api/admin/blocked-days/toggle', {
-            method: 'POST', body: JSON.stringify({ date: dateKey }),
-          });
-          blockDayBtn.textContent = blocked ? 'Zhblloko ditën' : 'Blloko ditën';
-          blockDayBtn.classList.toggle('adm-block-day-btn--on', blocked);
-          await loadAdmCalendar();
-          await loadDayPanel(dateKey);
-        } catch { alert('Nuk u përditësua.'); }
-      };
 
       if (!bookings.length) {
         dayBookings.innerHTML = `<p class="day-empty">Nuk ka rezervime këtë ditë.</p>`;
       } else {
         dayBookings.innerHTML = '';
-        for (const bk of bookings) {
-          const contacts = contactLines(bk).map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('');
-          const row = document.createElement('div');
-          row.className = 'bk-item';
-          row.innerHTML = `
-            <span class="bk-item-time">${esc(bk.time)}</span>
-            <div class="bk-item-info">
-              <span class="bk-item-name">${esc(bk.name)}</span>
-              ${contacts}
-            </div>
-            <div class="bk-item-actions"><span class="bk-status bk-status--${esc(bk.status)}">${esc(STATUS_LABELS[bk.status] || bk.status)}</span></div>`;
-          dayBookings.appendChild(row);
-        }
+        for (const bk of bookings) dayBookings.appendChild(bookingRow(bk, statusBadge(bk.status)));
       }
     } catch {
       dayBookings.innerHTML = hint('Kjo ditë nuk u ngarkua.');
     }
   }
+
+  // The panel always shows admSelectedDate, so one listener serves every day
+  blockDayBtn.addEventListener('click', async () => {
+    try {
+      await post('/api/admin/blocked-days/toggle', { date: admSelectedDate });
+      await loadAdmCalendar();
+      await loadDayPanel(admSelectedDate);
+    } catch { alert('Nuk u përditësua.'); }
+  });
 
   addBookingBtn.addEventListener('click', () => {
     if (admSelectedDate) openAdmModal(admSelectedDate);
@@ -385,6 +312,7 @@
   const admBkClose   = document.getElementById('adm-bk-close');
   const admBkSub     = document.getElementById('adm-bk-sub');
   const admBkForm    = document.getElementById('adm-bk-form');
+  const admBkSubmit  = admBkForm.querySelector('.bk-submit');
   const admBkName    = document.getElementById('adm-bk-name');
   const admBkEmail   = document.getElementById('adm-bk-email');
   const admBkPhone   = document.getElementById('adm-bk-phone');
@@ -398,20 +326,19 @@
 
   function openAdmModal(dateKey) {
     admModalDate         = dateKey;
-    admBkSub.textContent = longDate(dateKey);
+    admBkSub.textContent = formatDate(dateKey);
     admBkForm.hidden     = false;
     admBkSuccess.hidden  = true;
     admBkName.value      = '';
     admBkEmail.value     = '';
     admBkPhone.value     = '';
-    admBkForm.querySelector('.bk-submit').disabled = false;
+    admBkSubmit.disabled = false;
 
-    const initial = defaultTime(dateKey, admDayTaken);
-    admChosen = initial;
+    admChosen = firstFreeTime(dateKey, admDayTaken);
     if (!admPicker) {
-      admPicker = RedaTimePicker.create(admPickerEl, { initial, onChange: v => { admChosen = v; validateAdm(); } });
+      admPicker = RedaTimePicker.create(admPickerEl, { initial: admChosen, onChange: v => { admChosen = v; validateAdm(); } });
     } else {
-      admPicker.setValue(initial);
+      admPicker.setValue(admChosen);
     }
     validateAdm();
 
@@ -423,7 +350,7 @@
     const msg = admDayTaken.has(admChosen) ? 'Ky orar ka tashmë një rezervim.' : '';
     admBkWarning.textContent = msg;
     admBkWarning.hidden      = !msg;
-    admBkForm.querySelector('.bk-submit').disabled = !!msg;
+    admBkSubmit.disabled     = !!msg;
     return !msg;
   }
 
@@ -433,42 +360,35 @@
   admOverlay.addEventListener('click', e => { if (e.target === admOverlay) closeAdmModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !admOverlay.hidden) closeAdmModal(); });
 
+  const ADD_ERRORS = {
+    'Already booked':      'Ky orar ka tashmë një rezervim.',
+    'Slot is in the past': 'Ky orar ka kaluar.',
+  };
+
   admBkForm.addEventListener('submit', async e => {
     e.preventDefault();
     const name = admBkName.value.trim();
     if (!name || !validateAdm()) return;
 
-    const submitBtn    = admBkForm.querySelector('.bk-submit');
-    const origLabel    = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Duke ruajtur…';
+    const origLabel = admBkSubmit.textContent;
+    admBkSubmit.disabled    = true;
+    admBkSubmit.textContent = 'Duke ruajtur…';
 
     try {
       const localPhone = admBkPhone.value.trim();
-      await apiFetch('/api/admin/bookings', {
-        method: 'POST',
-        body: JSON.stringify({
-          date: admModalDate, time: admChosen, name,
-          email: admBkEmail.value.trim(),
-          phone: localPhone ? '+355 ' + localPhone.replace(/^0+/, '') : '',
-        }),
+      await post('/api/admin/bookings', {
+        date: admModalDate, time: admChosen, name,
+        email: admBkEmail.value.trim(),
+        phone: localPhone ? '+355 ' + localPhone.replace(/^0+/, '') : '',
       });
       admBkForm.hidden    = true;
       admBkSuccess.hidden = false;
-      const date = admModalDate;
-      setTimeout(async () => {
-        closeAdmModal();
-        loadBookings();
-        await loadAdmCalendar();
-        await loadDayPanel(date);
-      }, 1300);
+      setTimeout(() => { closeAdmModal(); refreshAll(); }, 1300);
     } catch (err) {
-      alert(err.message === 'Already booked'     ? 'Ky orar ka tashmë një rezervim.'
-          : err.message === 'Slot is in the past' ? 'Ky orar ka kaluar.'
-          :                                          'Rezervimi nuk u ruajt.');
+      alert(ADD_ERRORS[err.message] || 'Rezervimi nuk u ruajt.');
     } finally {
-      submitBtn.disabled    = false;
-      submitBtn.textContent = origLabel;
+      admBkSubmit.disabled    = false;
+      admBkSubmit.textContent = origLabel;
     }
   });
 
@@ -485,9 +405,7 @@
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(key),
       });
-      await apiFetch('/api/admin/push-subscribe', {
-        method: 'POST', body: JSON.stringify({ subscription: sub }),
-      });
+      await post('/api/admin/push-subscribe', { subscription: sub });
     } catch (err) {
       console.warn('Push setup failed:', err.message);
     }
@@ -496,8 +414,7 @@
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const raw     = atob(base64);
-    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
   }
 
   // ── Init ─────────────────────────────────────────────────

@@ -52,4 +52,4 @@ function smsText(kind, date, time) {
   return body ? toGsm(`R-EDA'S STUDIO: ${body}`) : null;
 }
 
-module.exports = { MONTHS, DAYS, sqDate, sqDayMonth, sqWeekday, toGsm, smsText };
+module.exports = { sqDate, sqDayMonth, sqWeekday, smsText };

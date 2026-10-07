@@ -4,8 +4,8 @@
   padding: var(--sp-section) 0;
 }
 
-/* Mirrors the .prices box exactly so the R-EDA'S / STUDIO strip and the
-   title line up with the price list. The calendar is constrained separately. */
+/* Same width and gutter as the price list's head, so the two titles line
+   up. The calendar is constrained separately. */
 .booking-inner {
   max-width: 780px;
   margin: 0 auto;
@@ -14,23 +14,14 @@
 
 .booking-title {
   font-weight: 400;
+  font-size: clamp(1.9rem, 6.5vw, 3.8rem);
   line-height: 1.05;
   color: var(--brown);
   text-align: center;
   margin-bottom: var(--sp-block);
 }
 
-.booking-title em {
-  font-style: italic;
-  font-size: clamp(1.9rem, 6.5vw, 3.8rem);
-  font-weight: 300;
-}
-
-.booking-title .title-plain {
-  font-style: normal;
-  font-weight: 400;
-  font-size: clamp(1.9rem, 6.5vw, 3.8rem);
-}
+.booking-title em { font-weight: 300; }
 
 /* ── Calendar shell ────────────────────────────────────── */
 .cal-wrap {
@@ -69,12 +60,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, color 0.15s, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background 0.15s, color 0.15s, transform 160ms var(--ease-out-strong);
 }
 
-.cal-nav-btn:hover {
+.cal-nav-btn:hover:not(:disabled) {
   background: var(--brown);
   color: var(--white);
+}
+
+/* Months before the current one can't be browsed */
+.cal-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 /* ── Calendar grid ─────────────────────────────────────── */
@@ -167,9 +164,6 @@
   color: var(--brown-mid);
   margin-bottom: 18px;
 }
-
-.time-pick-wrap[hidden],
-.day-unavailable[hidden] { display: none; }
 
 .time-pick-hint {
   font-family: 'Montserrat', sans-serif;
@@ -264,8 +258,6 @@
   margin: 4px 0 10px;
 }
 
-.slot-warning[hidden] { display: none; }
-
 .taken-times {
   display: flex;
   flex-wrap: wrap;
@@ -274,8 +266,6 @@
   gap: 6px;
   margin: 8px 0 18px;
 }
-
-.taken-times[hidden] { display: none; }
 
 .taken-label {
   font-family: 'Montserrat', sans-serif;
@@ -299,7 +289,7 @@
 }
 
 .time-choose-btn { width: 100%; max-width: 280px; }
-.time-choose-btn:disabled { cursor: not-allowed; }
+.time-choose-btn:disabled { cursor: not-allowed; opacity: 0.4; }
 
 /* ── Modal overlay ─────────────────────────────────────── */
 .bk-overlay {
@@ -314,8 +304,6 @@
   z-index: 100;
   padding: 24px;
 }
-
-.bk-overlay[hidden] { display: none; }
 
 .bk-modal {
   background: var(--white);
@@ -435,7 +423,7 @@
   border-radius: 2px;
   cursor: pointer;
   margin-top: 8px;
-  transition: background 0.15s, color 0.15s, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background 0.15s, color 0.15s, transform 160ms var(--ease-out-strong);
 }
 
 .bk-submit:hover {
@@ -456,8 +444,6 @@
   padding: 16px 0;
   color: var(--brown);
 }
-
-.bk-success[hidden] { display: none; }
 
 .bk-success svg {
   width: 44px;

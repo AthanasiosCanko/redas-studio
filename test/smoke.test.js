@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'calendar.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {
@@ -97,13 +97,37 @@ test('client emails cover all four booking events', () => {
   for (const kind of ['received', 'accepted', 'denied', 'cancelled']) {
     assert.ok(server.includes(`${kind}:`), `bookingEmail COPY missing "${kind}"`);
   }
-  assert.ok(server.includes("bookingEmail('received'"), 'request-received email not wired');
+  assert.ok(server.includes("notifyClient('received'"), 'request-received SMS/email not wired');
+  assert.ok(/function notifyClient[\s\S]*?bookingEmail\(kind/.test(server), 'notifyClient must send the email');
 });
 
 test('the time picker exposes RedaTimePicker.create', () => {
   const tp = read('timepicker.js');
   assert.ok(tp.includes('window.RedaTimePicker'), 'timepicker must attach RedaTimePicker to window');
   assert.ok(/create\s*\(/.test(tp), 'timepicker must expose a create()');
+});
+
+test('both pages load calendar.js before the script that uses it', () => {
+  for (const [page, script] of [['index.html', 'booking.js'], ['admin.html', 'admin.js']]) {
+    const html = read(page);
+    const at = (src) => html.indexOf(`<script src="${src}">`);
+    assert.ok(at('calendar.js') > -1, `${page} must load calendar.js`);
+    assert.ok(at('calendar.js') < at(script), `${page} must load calendar.js before ${script}`);
+  }
+});
+
+test('shared calendar helpers: Albanian labels, month roll-over, first free time', () => {
+  const window = {};
+  new Function('window', read('calendar.js'))(window);
+  const { formatDate, shiftMonth, firstFreeTime } = window.RedaCalendar;
+
+  assert.equal(formatDate('2026-10-09'), 'E premte, 9 tetor');
+  assert.equal(formatDate('2026-12-30', { year: true }), 'E mërkurë, 30 dhjetor 2026');
+  assert.deepEqual(shiftMonth(2026, 11, 1), { year: 2027, month: 0 });
+  assert.deepEqual(shiftMonth(2026, 0, -1), { year: 2025, month: 11 });
+  // A far-future day ignores the clock: first 5-minute step not already taken
+  assert.equal(firstFreeTime('2099-01-05', new Set()), '09:00');
+  assert.equal(firstFreeTime('2099-01-05', new Set(['09:00', '09:05'])), '09:10');
 });
 
 test('every requireAdmin route also references a JWT check', () => {

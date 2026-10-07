@@ -14,8 +14,6 @@
   padding: 24px;
 }
 
-.login-screen[hidden] { display: none; }
-
 .login-card {
   background: var(--white);
   border: 1px solid var(--brown-faint);
@@ -43,10 +41,7 @@
   margin-bottom: 32px;
 }
 
-.login-title em {
-  font-style: italic;
-  font-weight: 300;
-}
+.login-title em { font-weight: 300; }
 
 .login-form {
   display: flex;
@@ -64,9 +59,6 @@
   text-align: center;
   margin-top: -8px;
 }
-
-/* ── Dashboard shell ───────────────────────────────────── */
-#dashboard[hidden] { display: none; }
 
 /* ── Header ────────────────────────────────────────────── */
 .adm-header {
@@ -164,11 +156,17 @@
   padding: clamp(24px, 5vw, 48px) clamp(20px, 5vw, 48px);
 }
 
-.adm-section[hidden] { display: none; }
-
 .adm-inner {
   max-width: 600px;
   margin: 0 auto;
+}
+
+/* Loading / error line in place of a list */
+.adm-hint {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--brown-mid);
 }
 
 .adm-section-hint {
@@ -348,10 +346,7 @@
 }
 
 /* Admin past days: still clickable to view history */
-.cal-cell--adm-past {
-  color: rgba(92, 37, 32, 0.3);
-  cursor: pointer !important;
-}
+.cal-cell--adm-past { color: rgba(92, 37, 32, 0.3); }
 
 .cal-cell--adm-past:hover {
   background: rgba(92,37,32,0.04) !important;
@@ -366,8 +361,6 @@
   padding: clamp(20px, 4vw, 36px);
   margin-top: 4px;
 }
-
-.day-panel[hidden] { display: none; }
 
 .day-panel-header {
   display: flex;
@@ -469,6 +462,3 @@
   .day-panel-header { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
-@media (max-width: 420px) {
-  .adm-cal-wrap { padding: 12px; }
-}

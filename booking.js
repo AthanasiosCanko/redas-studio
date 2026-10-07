@@ -1,15 +1,8 @@
 (() => {
   'use strict';
 
-  const MONTH_NAMES = [
-    'Janar','Shkurt','Mars','Prill','Maj','Qershor',
-    'Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'
-  ];
-  // Built by hand: `sq-AL` locale data is missing or partial in some browsers.
-  const WEEKDAY_NAMES = ['E diel','E hënë','E martë','E mërkurë','E enjte','E premte','E shtunë'];
-
-  const BOOK_START = 9 * 60;   // 09:00
-  const BOOK_END   = 20 * 60;  // 20:00
+  const { MONTHS, albaniaNow, formatDate, firstFreeTime, shiftMonth, isCurrentMonth, renderMonth } =
+    window.RedaCalendar;
 
   // ── State ───────────────────────────────────────────────
   let viewYear, viewMonth;
@@ -37,60 +30,19 @@
   const closeBtn    = document.getElementById('bk-close');
   const modalSub    = document.getElementById('bk-modal-sub');
   const form        = document.getElementById('bk-form');
+  const submitBtn   = form.querySelector('.bk-submit');
   const nameInput   = document.getElementById('bk-name');
   const phoneInput  = document.getElementById('bk-phone');
   const successDiv  = document.getElementById('bk-success');
 
-  // ── Date / time helpers ──────────────────────────────────
-  const toKey = (y, m, d) =>
-    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const friendlyDate = key => formatDate(key, { year: true });
 
-  function albaniaNow() {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Europe/Tirane',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(new Date());
-    const get = t => parts.find(p => p.type === t).value;
-    return {
-      date:      `${get('year')}-${get('month')}-${get('day')}`,
-      totalMins: parseInt(get('hour')) * 60 + parseInt(get('minute')),
-    };
-  }
-
-  function isPastDay(y, m, d) {
-    return toKey(y, m, d) < albaniaNow().date;
-  }
-
-  function timeMins(time) {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
-  }
-
+  // A same-day time is past once it has elapsed in Albania local time
   function isPastTime(dateKey, time) {
     const now = albaniaNow();
-    if (dateKey < now.date) return true;
-    if (dateKey > now.date) return false;
-    return timeMins(time) < now.totalMins;
-  }
-
-  function friendlyDate(dateKey) {
-    const [y, m, d] = dateKey.split('-').map(Number);
-    const wd = new Date(y, m - 1, d).getDay();
-    return `${WEEKDAY_NAMES[wd]}, ${d} ${MONTH_NAMES[m - 1].toLowerCase()} ${y}`;
-  }
-
-  // First 5-minute time that is in range, not taken, and not already past.
-  function defaultTime(dateKey) {
-    const now = albaniaNow();
-    let start = BOOK_START;
-    if (dateKey === now.date) start = Math.max(start, Math.ceil(now.totalMins / 5) * 5);
-    for (let t = start; t <= BOOK_END; t += 5) {
-      const hh = String(Math.floor(t / 60)).padStart(2, '0');
-      const mm = String(t % 60).padStart(2, '0');
-      if (!takenSet.has(`${hh}:${mm}`)) return `${hh}:${mm}`;
-    }
-    return '10:00';
+    if (dateKey !== now.date) return dateKey < now.date;
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m < now.totalMins;
   }
 
   // ── Calendar ─────────────────────────────────────────────
@@ -106,47 +58,23 @@
   }
 
   function renderCalendar() {
-    monthLabel.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    monthLabel.textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+    const today = albaniaNow().date;
 
-    const headers = Array.from(grid.querySelectorAll('.cal-day-name'));
-    grid.innerHTML = '';
-    headers.forEach(h => grid.appendChild(h));
-
-    const firstDay    = new Date(viewYear, viewMonth, 1).getDay();
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const today       = albaniaNow().date;
-
-    for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('span');
-      empty.className = 'cal-cell cal-cell--empty';
-      grid.appendChild(empty);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const key  = toKey(viewYear, viewMonth, d);
-      const info = calendarData[key] || { blocked: false, bookingCount: 0 };
-      const cell = document.createElement('button');
-      cell.type        = 'button';
-      cell.className   = 'cal-cell';
-      cell.textContent = d;
-
-      if (isPastDay(viewYear, viewMonth, d) || info.blocked) {
+    renderMonth(grid, viewYear, viewMonth, (cell, key) => {
+      const info = calendarData[key] || {};
+      if (key < today || info.blocked) {
         cell.classList.add('cal-cell--past');
         cell.disabled = true;
-      } else {
-        if (key === today)         cell.classList.add('cal-cell--today');
-        if (key === selectedDate)  cell.classList.add('cal-cell--selected');
-        if (info.bookingCount > 0) cell.classList.add('cal-cell--has-bookings');
-        cell.addEventListener('click', () => selectDate(key));
+        return;
       }
-      grid.appendChild(cell);
-    }
+      if (key === today)         cell.classList.add('cal-cell--today');
+      if (key === selectedDate)  cell.classList.add('cal-cell--selected');
+      if (info.bookingCount > 0) cell.classList.add('cal-cell--has-bookings');
+      cell.addEventListener('click', () => selectDate(key));
+    });
 
-    const now = albaniaNow();
-    const [ty, tm] = now.date.split('-').map(Number);
-    prevBtn.disabled      = (viewYear === ty && viewMonth === tm - 1);
-    prevBtn.style.opacity = prevBtn.disabled ? '0.3' : '';
-    prevBtn.style.cursor  = prevBtn.disabled ? 'default' : '';
+    prevBtn.disabled = isCurrentMonth(viewYear, viewMonth);
   }
 
   async function selectDate(key) {
@@ -170,20 +98,15 @@
       takenSet = new Set();
     }
 
-    if (dayBlocked) {
-      pickWrap.hidden   = true;
-      dayUnavail.hidden = false;
-      return;
-    }
-    pickWrap.hidden   = false;
-    dayUnavail.hidden = true;
+    pickWrap.hidden   = dayBlocked;
+    dayUnavail.hidden = !dayBlocked;
+    if (dayBlocked) return;
 
-    const initial = defaultTime(key);
-    chosenTime = initial;
+    chosenTime = firstFreeTime(key, takenSet);
     if (!picker) {
-      picker = RedaTimePicker.create(pickerEl, { initial, onChange: onTimeChange });
+      picker = RedaTimePicker.create(pickerEl, { initial: chosenTime, onChange: onTimeChange });
     } else {
-      picker.setValue(initial);
+      picker.setValue(chosenTime);
     }
     renderTaken();
     validateChosen();
@@ -191,10 +114,10 @@
 
   function renderTaken() {
     const times = [...takenSet].sort();
-    if (!times.length) { takenEl.hidden = true; takenEl.innerHTML = ''; return; }
-    takenEl.hidden = false;
-    takenEl.innerHTML = `<span class="taken-label">E zënë</span>` +
-      times.map(t => `<span class="taken-chip">${t}</span>`).join('');
+    takenEl.hidden    = !times.length;
+    takenEl.innerHTML = times.length
+      ? `<span class="taken-label">E zënë</span>` + times.map(t => `<span class="taken-chip">${t}</span>`).join('')
+      : '';
   }
 
   function onTimeChange(value) {
@@ -207,10 +130,9 @@
     let msg = '';
     if (takenSet.has(chosenTime))                  msg = 'Ky orar është i zënë — ju lutem zgjidhni një tjetër.';
     else if (isPastTime(selectedDate, chosenTime)) msg = 'Ky orar ka kaluar — ju lutem zgjidhni një tjetër.';
-    warningEl.textContent   = msg;
-    warningEl.hidden        = !msg;
-    chooseBtn.disabled      = !!msg;
-    chooseBtn.style.opacity = msg ? '0.4' : '';
+    warningEl.textContent = msg;
+    warningEl.hidden      = !msg;
+    chooseBtn.disabled    = !!msg;
     return !msg;
   }
 
@@ -225,21 +147,26 @@
     successDiv.hidden    = true;
     nameInput.value      = '';
     phoneInput.value     = '';
-    form.querySelector('.bk-submit').disabled = false;
+    submitBtn.disabled   = false;
     overlay.hidden       = false;
     nameInput.focus();
   }
 
   function closeModal() { overlay.hidden = true; }
 
+  const ERRORS = {
+    'Already booked':      'Na vjen keq, ky orar sapo u zu. Ju lutem zgjidhni një tjetër.',
+    'Slot is in the past': 'Na vjen keq, ky orar ka kaluar. Ju lutem zgjidhni një tjetër.',
+    'Day not available':   'Na vjen keq, kjo ditë nuk është e disponueshme. Ju lutem zgjidhni një tjetër.',
+  };
+
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const name  = nameInput.value.trim();
     const local = phoneInput.value.trim();
-    if (!name || !local) return;             // name + phone required
-    const phone = '+355 ' + local.replace(/^0+/, '');  // Albanian prefix
+    if (!name || !local) return;                        // name + phone required
+    const phone = '+355 ' + local.replace(/^0+/, '');   // Albanian prefix
 
-    const submitBtn    = form.querySelector('.bk-submit');
     submitBtn.disabled = true;
 
     try {
@@ -251,10 +178,7 @@
 
       if (!res.ok) {
         const { error } = await res.json();
-        alert(error === 'Already booked'      ? 'Na vjen keq, ky orar sapo u zu. Ju lutem zgjidhni një tjetër.'
-            : error === 'Slot is in the past' ? 'Na vjen keq, ky orar ka kaluar. Ju lutem zgjidhni një tjetër.'
-            : error === 'Day not available'   ? 'Na vjen keq, kjo ditë nuk është e disponueshme. Ju lutem zgjidhni një tjetër.'
-            :                                   'Kërkesa nuk u dërgua — ju lutem provoni përsëri.');
+        alert(ERRORS[error] || 'Kërkesa nuk u dërgua — ju lutem provoni përsëri.');
         submitBtn.disabled = false;
         if (error === 'Already booked' || error === 'Slot is in the past') {
           closeModal();
@@ -277,17 +201,12 @@
   });
 
   // ── Navigation ───────────────────────────────────────────
-  prevBtn.addEventListener('click', () => {
-    let y = viewYear, m = viewMonth;
-    if (m === 0) { m = 11; y--; } else m--;
-    navigateCalendar(y, m);
-  });
-
-  nextBtn.addEventListener('click', () => {
-    let y = viewYear, m = viewMonth;
-    if (m === 11) { m = 0; y++; } else m++;
-    navigateCalendar(y, m);
-  });
+  const goMonth = delta => {
+    const { year, month } = shiftMonth(viewYear, viewMonth, delta);
+    navigateCalendar(year, month);
+  };
+  prevBtn.addEventListener('click', () => goMonth(-1));
+  nextBtn.addEventListener('click', () => goMonth(1));
 
   closeBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
