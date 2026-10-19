@@ -133,30 +133,6 @@
     <path d="M15 10L20 15L15 20L10 15Z" ${SOLID}/>`);
   const KILIM_STRIP = svg('0 0 200 30', kilimBandBody(0, 200));
 
-  // Medallion: a stepped panel with comb fringes off its points, a solid
-  // diamond core and four angular ram's-horn hooks around it.
-  function kilimMedallion() {
-    const stair = (x0, y0, x1, y1, n) => {     // stepped edge from (x0,y0) to (x1,y1)
-      let d = '';
-      const dx = (x1 - x0) / n, dy = (y1 - y0) / n;
-      for (let i = 0; i < n; i++) d += `H${f1(x0 + dx * (i + 1))}V${f1(y0 + dy * (i + 1))}`;
-      return d;
-    };
-    const panel = `M14 44V36${stair(14, 36, 40, 8, 4)}H100${stair(100, 8, 126, 36, 4)}V44`
-      + `${stair(126, 44, 100, 72, 4)}H40${stair(40, 72, 14, 44, 4)}Z`;
-    return svg('0 0 140 80', `
-      <path d="${panel}" ${TONE} stroke-width="1.3"/>
-      <path d="M2 32H14M0 40H14M2 48H14M126 32H138M126 40H140M126 48H138" stroke-width="1.3"/>
-      <g stroke-width="3.2" stroke-linecap="square" stroke-linejoin="miter">
-        <path d="M74 18L90 34L86 38L82 34"/>
-        <path d="M90 46L74 62L70 58L74 54"/>
-        <path d="M66 62L50 46L54 42L58 46"/>
-        <path d="M50 34L66 18L70 22L66 26"/>
-        <path d="M40 40H30M30 36V44M100 40H110M110 36V44"/>
-      </g>
-      <path d="M70 29L81 40L70 51L59 40Z" ${SOLID}/>`);
-  }
-
   // ── Christmas ─────────────────────────────────────────────
   function star(cx, cy, R, attrs) {
     let d = '';
@@ -211,16 +187,11 @@
       <path d="M20 12V34"/><path d="M20 12C16 5 10 7 13 10C15 12 18 12 20 12C22 12 25 12 27 10C30 7 24 5 20 12Z" ${TONE}/>`,
     bauble: `<circle cx="20" cy="23" r="12" ${TONE}/><rect x="17" y="8.5" width="6" height="3.5" rx="0.8" ${SOLID}/>
       <circle cx="20" cy="6.4" r="1.8"/><path d="${flakePath(20, 23, 7, 0)}" stroke-width="1"/>`,
-    gingerbread: `<path d="M20 4A6 6 0 0 1 20 16A6 6 0 0 1 20 4ZM14 17H26L33 21C35 22 34 25 32 24L26 21.5V27L30 35C31 37 28 38 27 36L20 29.5L13 36C12 38 9 37 10 35L14 27V21.5L8 24C6 25 5 22 7 21Z" ${TONE}/>
-      <g ${SOLID}><circle cx="18" cy="9" r="1"/><circle cx="22" cy="9" r="1"/><circle cx="20" cy="21" r="1.1"/><circle cx="20" cy="25" r="1.1"/></g>
-      <path d="M17.5 12Q20 14 22.5 12M10 22.5L11.5 21M28.5 21L30 22.5" stroke-width="1.1"/>`,
     snowman: `<circle cx="20" cy="28" r="9" ${TONE}/><circle cx="20" cy="14" r="6" ${TONE}/>
       <path d="M13.5 9H26.5M16 9V3H24V9"/><path d="M20 15L25.5 16L20 16.8Z" ${SOLID}/>
       <path d="M14.5 19Q20 22 25.5 19M23 20.5L24.5 26"/>
       <g ${SOLID}><circle cx="18" cy="13" r="0.9"/><circle cx="22" cy="13" r="0.9"/><circle cx="20" cy="26" r="1.1"/><circle cx="20" cy="30.5" r="1.1"/></g>
       <path d="M11.5 26L6 22M28.5 26L34 22" stroke-width="1.2"/>`,
-    hat: `<path d="M7 30C9 18 16 9 26 9C30 9 32 13 33 17L30 19C29 16 27 15 25 16C21 18 19 24 19 30Z" ${TONE}/>
-      <rect x="5" y="29" width="27" height="6" rx="3" ${TONE}/><circle cx="31" cy="20" r="3.4" ${TONE}/>`,
     wreath: `<circle cx="20" cy="19" r="12" stroke-width="7" stroke-opacity="0.22"/>
       <circle cx="20" cy="19" r="15.5" stroke-width="1.1"/><circle cx="20" cy="19" r="8.5" stroke-width="1.1"/>
       <g ${SOLID}><circle cx="9" cy="14" r="1.5"/><circle cx="16" cy="6.5" r="1.5"/><circle cx="27" cy="8" r="1.5"/><circle cx="32" cy="17" r="1.5"/><circle cx="8.5" cy="23" r="1.5"/></g>
@@ -240,8 +211,6 @@
     cheers: `<g transform="rotate(-14 15 34)"><path d="M11 7H19L18 17C17.6 20 16.2 21 15 21C13.8 21 12.4 20 12 17Z" ${TONE}/><path d="M15 21V32M11.5 32H18.5"/></g>
       <g transform="rotate(14 25 34)"><path d="M21 7H29L28 17C27.6 20 26.2 21 25 21C23.8 21 22.4 20 22 17Z" ${TONE}/><path d="M25 21V32M21.5 32H28.5"/></g>
       <path d="M20 1V4M16.5 2.5L18 4.5M23.5 2.5L22 4.5" stroke-width="1.2"/>`,
-    mitten: `<path d="M12 31V18C12 11 15 7 20 7C25 7 28 11 28 17V20L31 17C33 15 35 17 34 19L28 27V31Z" ${TONE}/>
-      <rect x="11" y="30" width="18" height="6.5" rx="1.5" ${TONE}/><path d="${flakePath(20, 19, 4.5, 2)}" stroke-width="0.9"/>`,
     holly: `<path d="M20 22Q17 14 13 15Q12 10 8 11Q6 6 2 8Q4 12 3 15Q7 15 8 19Q12 18 13 22Q17 20 20 22Z" ${TONE}/>
       <path d="M20 22Q23 14 27 15Q28 10 32 11Q34 6 38 8Q36 12 37 15Q33 15 32 19Q28 18 27 22Q23 20 20 22Z" ${TONE}/>
       <path d="M20 22Q11 14 4 10M20 22Q29 14 36 10" stroke-width="0.8"/>
@@ -249,9 +218,6 @@
     globe: `<circle cx="20" cy="18" r="13" ${TONE}/><path d="M10 31H30L32 37H8Z" ${TONE}/>
       <path d="M15 25V19L20 14L25 19V25Z"/><path d="M19 25V21H21V25"/>
       <g ${SOLID}><circle cx="13" cy="11" r="1"/><circle cx="27" cy="11" r="1"/><circle cx="11.5" cy="18" r="1"/><circle cx="28.5" cy="19" r="1"/><circle cx="20" cy="8" r="1"/></g>`,
-    tag: `<path d="M12 11L20 6L28 11V35H12Z" ${TONE}/><circle cx="20" cy="11" r="1.8"/><rect x="15" y="17" width="10" height="14" rx="1" stroke-width="0.9"/>
-      <path d="M20 6C17 2 13 3 15 5C16 6 18 6 20 6C22 6 24 6 25 5C27 3 23 2 20 6Z" ${TONE}/>`,
-    flake: `<path d="${flakePath(20, 20, 17, 0)}" stroke-width="1.4"/><circle cx="20" cy="20" r="2" ${SOLID}/>`,
   };
   const icon = name => svg('0 0 40 40', ICONS[name], 'stroke-width="1.5"');
 
@@ -260,10 +226,6 @@
   const hanging = (vb, items) => svg(vb, items.map(([x, len, size, name]) =>
     `<path d="M${x} 0V${len}" stroke-width="0.8"/>
      <g transform="translate(${x - size / 2} ${len - size * 0.12}) scale(${size / 40})" stroke-width="${f1(1.5 * 40 / size)}">${ICONS[name]}</g>`).join(''));
-
-  const flake = design => svg('0 0 24 24',
-    `<path d="${flakePath(12, 12, 11, design)}" stroke-width="${design === 1 ? 0.9 : 1}"/>` +
-    (design === 0 ? '<circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>' : ''));
 
   // A small winter scene on a snow line: snowman, tree and a gift
   const SNOW_SCENE = svg('0 0 160 76', `
@@ -366,21 +328,6 @@
     ].map(c => chev(...c)).join(''));
   }
 
-  // Memphis confetti: small geometric pieces scattered near corners
-  const CONFETTI = {
-    tri:    svg('0 0 20 20', '<path d="M3 17L10 3L17 17Z" stroke-width="1.5"/>'),
-    sq:     svg('0 0 20 20', '<rect x="4" y="4" width="12" height="12" rx="1.5" stroke-width="1.5"/>'),
-    circ:   svg('0 0 20 20', '<circle cx="10" cy="10" r="6.5" stroke-width="1.5"/>'),
-    x:      svg('0 0 20 20', '<path d="M4 4L16 16M16 4L4 16" stroke-width="1.6"/>'),
-    dia:    svg('0 0 20 20', '<path d="M10 2L18 10L10 18L2 10Z" fill="currentColor" stroke="none"/>'),
-    wave:   svg('0 0 60 14', '<path d="M2 7Q8 1 14 7T26 7T38 7T50 7T62 7" stroke-width="1.4"/>'),
-    dots:   svg('0 0 50 30', [0, 1, 2].map(r => [0, 1, 2, 3, 4].map(c =>
-              `<circle cx="${5 + c * 10}" cy="${5 + r * 10}" r="1.8" fill="currentColor" stroke="none"/>`).join('')).join('')),
-    pluses: svg('0 0 70 30', [0, 1].map(r => [0, 1, 2, 3, 4].map(c =>
-              `<path d="M${7 + c * 14} ${3 + r * 14}v8M${3 + c * 14} ${7 + r * 14}h8" stroke-width="1.4"/>`).join('')).join('')),
-    rings:  svg('0 0 64 16', [0, 1, 2, 3].map(c => `<circle cx="${8 + c * 16}" cy="8" r="5.5" stroke-width="1.3"/>`).join('')),
-  };
-
   // Tirana skyline in the two-tone style, Dajti mountain behind it. Left to
   // right: the pixel tower, a painted façade, the Pyramid, Tanners' Bridge,
   // Et'hem Bey mosque and the Clock Tower, Skanderbeg on horseback, the
@@ -426,6 +373,71 @@
     <path d="M651 39V33" stroke-width="1.2"/>
     <path d="M0 88H800" stroke-width="1.1"/>`);
 
+  // ── Ramadan ───────────────────────────────────────────────
+  // Crescent moon with a star, in the two-tone style
+  const CRESCENT = svg('0 0 80 70', `
+    <path d="M40 6A28 28 0 1 0 40 62A22 22 0 1 1 40 6Z" ${TONE} stroke-width="1.5"/>
+    ${star(56, 24, 9, `${TONE} stroke-width="1.3"`)}
+    <g ${SOLID}><circle cx="68" cy="44" r="1.4"/><circle cx="62" cy="54" r="1"/><circle cx="72" cy="12" r="1"/></g>`);
+
+  // Fanoos lantern on a 40-wide grid, hung from y=0
+  const lanternBody = `
+    <circle cx="20" cy="3" r="2.2"/>
+    <path d="M13 14L20 6L27 14Z" ${TONE}/>
+    <rect x="11.5" y="14" width="17" height="3.5" rx="1" ${TONE}/>
+    <path d="M12 17.5H28L31 26V40L28 46H12L9 40V26Z" ${TONE}/>
+    <path d="M15.5 41V29.5A4.5 4.5 0 0 1 24.5 29.5V41Z"/>
+    <path d="M20 31.5C22 33.5 21.8 36 20 37C18.2 36 18 33.5 20 31.5Z" ${SOLID}/>
+    <path d="M9 26H31M9 40H31" stroke-width="0.8"/>
+    <path d="M12 46H28L24 51H16Z" ${TONE}/>
+    <path d="M20 51V56"/><circle cx="20" cy="57.5" r="1.4" ${SOLID}/>`;
+  const hangLantern = (x, len, size) =>
+    `<path d="M${x} 0V${len}" stroke-width="0.8"/>
+     <g transform="translate(${f1(x - size / 2)} ${len}) scale(${f1(size / 40)})" stroke-width="${f1(1.4 * 40 / size)}">${lanternBody}</g>`;
+  const hangStar = (x, len, r) => `<path d="M${x} 0V${len}" stroke-width="0.8"/>${star(x, len + r, r, `${TONE} stroke-width="1.1"`)}`;
+  const hangMoon = (x, len, r) => `<path d="M${x} 0V${len}" stroke-width="0.8"/>
+    <path d="M${x} ${len}A${r} ${r} 0 1 0 ${x} ${len + 2 * r}A${f1(r * 0.78)} ${f1(r * 0.78)} 0 1 1 ${x} ${len}Z" ${TONE} stroke-width="1.1"/>`;
+  const LANTERNS = svg('0 0 220 170',
+    hangStar(12, 26, 7) + hangLantern(44, 44, 34) + hangMoon(80, 18, 9) + hangLantern(118, 70, 40)
+    + hangStar(152, 36, 6) + hangLantern(184, 30, 30) + hangStar(210, 58, 6));
+  const LANTERN_ONE = svg('0 0 40 100', hangLantern(20, 34, 40));
+
+  // Eight-point star (khatam): two squares, one turned 45°, with inner rings
+  const star8 = (cx, cy, r) => {
+    const sq = rot => [0, 1, 2, 3].map(i => {
+      const a = rot + i * Math.PI / 2;
+      return `${i ? 'L' : 'M'}${f1(cx + r * Math.cos(a))} ${f1(cy + r * Math.sin(a))}`;
+    }).join('') + 'Z';
+    return `<path d="${sq(Math.PI / 4)}${sq(0)}" ${TONE}/>
+      <circle cx="${cx}" cy="${cy}" r="${f1(r * 0.52)}"/>
+      <circle cx="${cx}" cy="${cy}" r="${f1(r * 0.2)}" ${SOLID}/>`;
+  };
+  const STAR8 = svg('0 0 60 60', star8(30, 30, 26), 'stroke-width="1.4"');
+  // Corner group (bottom-left; CSS mirrors it): a large eight-point star
+  // and two small ones strung along a thin arc
+  const ROSETTE = svg('0 0 120 120', `
+    <path d="M8 18Q16 104 112 112" stroke-width="0.9"/>
+    <g stroke-width="1.3">${star8(36, 84, 24)}${star8(88, 104, 11)}${star8(18, 36, 10)}</g>`);
+
+  // Mosque line for the footer: a central dome over arches, side domes,
+  // two tall minarets, on a ground line
+  const MOSQUE_LINE = svg('0 22 600 68', `
+    <g ${TONE} stroke-width="1.2">
+      <path d="M220 88V58H380V88Z"/>
+      <path d="M258 58A42 42 0 0 1 342 58Z"/>
+      <path d="M190 88V66H220V88ZM380 88V66H410V88Z"/>
+      <path d="M190 66A15 15 0 0 1 220 66ZM380 66A15 15 0 0 1 410 66Z"/>
+      <path d="M160 88V40L164 30L168 40V88ZM432 88V40L436 30L440 40V88Z"/>
+    </g>
+    <path d="M300 16V10M297 13H303M205 51V47M395 51V47" stroke-width="1.1"/>
+    <path d="M158 50H170M430 50H442M159 66H169M431 66H441" stroke-width="1.2"/>
+    <path d="M236 88V74A6 6 0 0 1 248 74V88M262 88V74A6 6 0 0 1 274 74V88M288 88V72A12 12 0 0 1 312 72V88M326 88V74A6 6 0 0 1 338 74V88M352 88V74A6 6 0 0 1 364 74V88" stroke-width="0.9"/>
+    <path d="M40 88V76H120V88M480 88V76H560V88" ${TONE} stroke-width="1"/>
+    <path d="M60 76A20 20 0 0 1 100 76M500 76A20 20 0 0 1 540 76" stroke-width="1"/>
+    <path d="M0 88H600" stroke-width="1.1"/>`);
+
+  const GREETING = `<span class="deco-date">Ramazan i bekuar</span>`;
+
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
 
@@ -445,11 +457,8 @@
       ['.hero',        'deco--bat deco--bat6',                  BAT_UP],
       ['.ps-pin',      'deco--web deco--web-sm deco--tl',       WEB],
       ['.ps-pin',      'deco--web deco--web-sm deco--br',       WEB_TORN],
-      ['.ps-pin',      'deco--bat deco--bat7',                  BAT_UP],
       ['.booking',     'deco--web deco--web-sm deco--tr',       WEB],
       ['.booking',     'deco--spider',                          SPIDER],
-      ['.booking',     'deco--bat deco--bat8',                  BAT],
-      ['.booking',     'deco--bat deco--bat9',                  BAT_UP],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tl', WEB_TORN],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tr', WEB],
       ['.site-footer', 'deco--pumpkin deco--bl',                pumpkin()],
@@ -462,82 +471,51 @@
       ['.hero',        'deco--chevrons deco--bl',               chevrons()],
       ['.hero',        'deco--shield deco--br',                 SHIELD_EAGLE],
       ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
-      ['.ps-pin',      'deco--eagle deco--eagle-sm deco--br',   EAGLE],
+      ['.ps-pin',      'deco--eagle deco--eagle-sm deco--tr',   EAGLE],
       ['.ps-pin',      'deco--kilim-strip deco--bl',            KILIM_STRIP],
+      ['.ps-pin',      'deco--kilim-strip deco--br',            KILIM_STRIP],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
       ['.booking',     'deco--cifteli deco--tr',                CIFTELI],
-      ['.booking',     'deco--medallion',                       kilimMedallion(), 'left:0;top:36%'],
       ['.booking',     'deco--kilim-corner deco--kilim-sm deco--bl', KILIM_CORNER],
       ['.booking',     'deco--kilim-corner deco--kilim-sm deco--br', KILIM_CORNER],
       ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tl', KILIM_CORNER],
       ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tr', KILIM_CORNER],
       ['.site-footer', 'deco--skyline deco--light',             SKYLINE],
-      ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],
-      ['.site-footer', 'deco--eagle deco--light deco--br',      EAGLE],
-      ['.hero', 'deco--confetti', CONFETTI.tri, 'left:6%;top:34%;width:clamp(21px,1.94vw,27px)'],
-      ['.hero', 'deco--confetti', CONFETTI.circ, 'left:14%;top:44%;width:clamp(18px,1.71vw,24px)'],
-      ['.hero', 'deco--confetti', CONFETTI.dots, 'left:4%;top:58%;width:clamp(45px,4.29vw,60px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.x, 'left:16%;top:66%;width:clamp(15px,1.50vw,21px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.pluses, 'right:5%;bottom:42%;width:clamp(58px,5.56vw,78px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.sq, 'right:16%;bottom:30%;width:clamp(18px,1.71vw,24px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.wave, 'right:22%;top:40%;width:clamp(57px,5.35vw,75px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.dia, 'left:24%;top:14%;width:clamp(14px,1.29vw,18px)'],
-      ['.hero', 'deco--confetti deco--minor', CONFETTI.rings, 'left:8%;bottom:36%;width:clamp(57px,5.35vw,75px)'],
-      ['.ps-pin', 'deco--confetti', CONFETTI.dia, 'right:10%;top:16%;width:clamp(14px,1.29vw,18px)'],
-      ['.ps-pin', 'deco--confetti', CONFETTI.circ, 'right:6%;top:30%;width:clamp(18px,1.71vw,24px)'],
-      ['.ps-pin', 'deco--confetti', CONFETTI.wave, 'left:8%;top:40%;width:clamp(51px,4.94vw,69px)'],
-      ['.ps-pin', 'deco--confetti deco--minor', CONFETTI.x, 'right:12%;bottom:30%;width:clamp(15px,1.50vw,21px)'],
-      ['.booking', 'deco--confetti', CONFETTI.pluses, 'left:6%;top:24%;width:clamp(54px,5.15vw,72px)'],
-      ['.booking', 'deco--confetti', CONFETTI.tri, 'left:12%;bottom:40%;width:clamp(18px,1.71vw,24px)'],
-      ['.booking', 'deco--confetti', CONFETTI.circ, 'right:8%;bottom:36%;width:clamp(18px,1.71vw,24px)'],
-      ['.booking', 'deco--confetti deco--minor', CONFETTI.dots, 'right:14%;top:40%;width:clamp(45px,4.29vw,60px)'],
-      ['.site-footer', 'deco--confetti deco--light', CONFETTI.x, 'left:18%;top:40%;width:clamp(14px,1.29vw,18px)'],
-      ['.site-footer', 'deco--confetti deco--light', CONFETTI.circ, 'right:18%;top:44%;width:clamp(15px,1.50vw,21px)'],
-      ['.site-footer', 'deco--confetti deco--light', CONFETTI.dia, 'left:26%;bottom:30%;width:clamp(12px,1.06vw,15px)'],
     ],
     christmas: () => [
+      ['.hero',        'deco--wreath deco--tl',                 icon('wreath')],
+      ['.hero',        'deco--mistletoe deco--m-hero',          MISTLETOE],
       ['.hero',        'deco--hanging deco--tr',                hanging('0 0 220 160', [
                          [16, 30, 26, 'bauble'], [48, 66, 30, 'bell'], [80, 22, 24, 'star'], [112, 82, 32, 'bauble'],
                          [146, 40, 26, 'cane'], [178, 70, 28, 'star'], [204, 26, 22, 'bauble']])],
-      ['.hero',        'deco--wreath deco--tl',                 icon('wreath')],
-      ['.hero',        'deco--mistletoe deco--m-hero',          MISTLETOE],
       ['.hero',        'deco--scene deco--bl',                  SNOW_SCENE],
       ['.hero',        'deco--icon deco--sleigh deco--br',      icon('sleigh')],
       ['.ps-pin',      'deco--icon deco--tl',                   icon('candle')],
       ['.ps-pin',      'deco--hanging deco--hanging-sm deco--tr', hanging('0 0 120 110', [
                          [16, 26, 24, 'star'], [50, 52, 28, 'bauble'], [86, 20, 22, 'cane'], [108, 44, 20, 'star']])],
-      ['.ps-pin',      'deco--icon deco--icon-sm deco--br',     icon('gingerbread')],
       ['.booking',     'deco--icon deco--tl',                   icon('calendar')],
       ['.booking',     'deco--mistletoe deco--m-booking',       MISTLETOE],
-      ['.booking',     'deco--icon deco--tr',                   icon('hat')],
       ['.booking',     'deco--icon deco--bl',                   icon('cheers')],
       ['.booking',     'deco--icon deco--br',                   icon('globe')],
       ['.site-footer', 'deco--icon deco--light deco--tl',       icon('holly')],
       ['.site-footer', 'deco--icon deco--light deco--tr',       icon('holly')],
       ['.site-footer', 'deco--icon deco--light deco--bl',       icon('reindeer')],
       ['.site-footer', 'deco--icon deco--light deco--br',       icon('stocking')],
-      ['.site-footer', 'deco--icon deco--light deco--minor deco--f-gift', icon('gift')],
-      ['.site-footer', 'deco--icon deco--light deco--minor deco--f-mitten', icon('mitten')],
-      ['.hero', 'deco--flake', flake(0), 'left:5%;top:30%;width:clamp(36px,3.43vw,48px);opacity:0.38'],
-      ['.hero', 'deco--flake', flake(2), 'left:13%;top:40%;width:clamp(22px,2.07vw,29px);opacity:0.3'],
-      ['.hero', 'deco--flake', flake(1), 'left:3%;top:52%;width:clamp(16px,1.57vw,22px);opacity:0.26'],
-      ['.hero', 'deco--flake deco--minor', flake(1), 'left:22%;top:20%;width:clamp(20px,1.86vw,26px);opacity:0.26'],
-      ['.hero', 'deco--flake deco--minor', flake(2), 'right:6%;bottom:30%;width:clamp(34px,3.21vw,45px);opacity:0.34'],
-      ['.hero', 'deco--flake deco--minor', flake(0), 'right:16%;bottom:24%;width:clamp(20px,1.86vw,26px);opacity:0.28'],
-      ['.hero', 'deco--flake deco--minor', flake(1), 'right:4%;bottom:40%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
-      ['.hero', 'deco--flake deco--minor', flake(0), 'right:20%;top:44%;width:clamp(22px,2.07vw,29px);opacity:0.26'],
-      ['.hero', 'deco--flake deco--minor', flake(2), 'left:24%;bottom:12%;width:clamp(20px,1.86vw,26px);opacity:0.24'],
-      ['.hero', 'deco--flake deco--minor', flake(2), 'right:28%;top:12%;width:clamp(16px,1.57vw,22px);opacity:0.22'],
-      ['.ps-pin', 'deco--flake', flake(0), 'right:22%;top:8%;width:clamp(24px,2.29vw,32px);opacity:0.3'],
-      ['.ps-pin', 'deco--flake', flake(2), 'left:14%;top:14%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
-      ['.ps-pin', 'deco--flake', flake(1), 'left:6%;bottom:12%;width:clamp(24px,2.29vw,32px);opacity:0.28'],
-      ['.ps-pin', 'deco--flake deco--minor', flake(2), 'right:14%;bottom:8%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
-      ['.booking', 'deco--flake', flake(0), 'left:14%;bottom:8%;width:clamp(26px,2.50vw,35px);opacity:0.3'],
-      ['.booking', 'deco--flake', flake(2), 'right:14%;bottom:14%;width:clamp(20px,1.86vw,26px);opacity:0.26'],
-      ['.booking', 'deco--flake', flake(1), 'left:20%;top:12%;width:clamp(20px,1.86vw,26px);opacity:0.24'],
-      ['.booking', 'deco--flake deco--minor', flake(0), 'right:22%;top:30%;width:clamp(16px,1.57vw,22px);opacity:0.22'],
-      ['.site-footer', 'deco--flake deco--light', flake(0), 'left:14%;top:30%;width:clamp(20px,1.86vw,26px);opacity:0.22'],
-      ['.site-footer', 'deco--flake deco--light', flake(2), 'right:14%;top:34%;width:clamp(16px,1.57vw,22px);opacity:0.2'],
+    ],
+    ramadan: () => [
+      ['.hero',        'deco--crescent deco--tl',               CRESCENT],
+      ['.hero',        'deco--lanterns deco--tr',               LANTERNS],
+      ['.hero',        'deco--rosette deco--bl',                ROSETTE],
+      ['.hero',        'deco--rosette deco--br',                ROSETTE],
+      ['.ps-pin',      'deco--lantern deco--tl',                LANTERN_ONE],
+      ['.ps-pin',      'deco--lantern deco--tr',                LANTERN_ONE],
+      ['.booking',     'deco--date deco--tl',                   GREETING],
+      ['.booking',     'deco--star8 deco--tr',                  STAR8],
+      ['.booking',     'deco--rosette deco--rosette-sm deco--bl', ROSETTE],
+      ['.booking',     'deco--rosette deco--rosette-sm deco--br', ROSETTE],
+      ['.site-footer', 'deco--rosette deco--rosette-sm deco--light deco--tl', ROSETTE],
+      ['.site-footer', 'deco--rosette deco--rosette-sm deco--light deco--tr', ROSETTE],
+      ['.site-footer', 'deco--mosque deco--light',              MOSQUE_LINE],
     ],
   };
 

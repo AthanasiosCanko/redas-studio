@@ -42,11 +42,6 @@ html[data-theme] .site-footer { position: relative; }
 .deco--bat4 { top: 27%; right: 9%;  width: clamp(18px, 1.8vw, 26px); opacity: 0.35; }
 .deco--bat5 { top: 24%; left: 9%;   width: clamp(28px, 3vw, 44px);   }
 .deco--bat6 { top: 31%; left: 15%;  width: clamp(18px, 1.8vw, 26px); opacity: 0.35; }
-/* price list: one bat off the top-right corner */
-.deco--bat7 { top: 7%;  right: 7%;  width: clamp(22px, 2.2vw, 32px); opacity: 0.35; }
-/* booking: a pair near the top-left */
-.deco--bat8 { top: 7%;  left: 8%;   width: clamp(30px, 3.2vw, 46px); }
-.deco--bat9 { top: 13%; left: 14%;  width: clamp(18px, 1.8vw, 26px); opacity: 0.35; }
 
 /* ── Spider dangling under the booking section's corner web ── */
 .deco--spider {
@@ -78,7 +73,7 @@ html[data-theme] .site-footer { position: relative; }
 
 @media (max-width: 600px) {
   /* Fewer, smaller marks on a phone */
-  .deco--bat2, .deco--bat4, .deco--bat6, .deco--bat9,
+  .deco--bat2, .deco--bat4, .deco--bat6,
   .deco--web.deco--bl, .deco--pumpkin-sm { display: none; }
 }
 
@@ -96,7 +91,6 @@ html[data-theme] .site-footer { position: relative; }
 .deco--kilim-corner.deco--bl { transform: scaleY(-1); }
 .deco--kilim-corner.deco--br { transform: scale(-1, -1); }
 .deco--kilim-strip  { width: clamp(150px, 18vw, 250px); opacity: 0.36; }
-.deco--medallion    { width: clamp(100px, 11vw, 160px); opacity: 0.38; margin: clamp(16px, 2.6vw, 34px); }
 
 /* Eagles and flags sit a little in from their corners */
 .deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
@@ -120,8 +114,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
 
 @media (max-width: 600px) {
-  .hero > .deco--eagle, .booking > .deco--date, .deco--medallion { display: none; }
-}
+  .hero > .deco--eagle, .booking > .deco--date, }
 
 /* Banner-inspired pieces */
 .deco--mosaic   { width: clamp(150px, 18vw, 250px); opacity: 0.32; }
@@ -132,19 +125,16 @@ html[data-theme] .site-footer { position: relative; }
 .deco--chevrons { width: clamp(100px, 11vw, 160px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
 .deco--skyline  { bottom: 0; left: 50%; translate: -50% 0; width: min(780px, 92%); }
 .deco--skyline.deco--light { opacity: 0.26; }
-.deco--confetti { opacity: 0.4; }
-.deco--confetti.deco--light { opacity: 0.22; }
 
 @media (max-width: 600px) {
   .deco--minor, .deco--chevrons, .deco--cifteli { display: none; }
-  /* narrow sections leave no free margin for confetti */
-  .booking > .deco--confetti, .site-footer > .deco--confetti, .booking > .deco--kilim-corner { display: none; }
+  /* the booking section is too narrow for its corners on a phone */
+  .booking > .deco--kilim-corner { display: none; }
   .deco--mosaic { width: 120px; }
 }
 
 /* ── Christmas ──────────────────────────────────────────── */
 .deco--icon     { width: clamp(44px, 4.6vw, 66px); opacity: 0.42; margin: clamp(14px, 2.4vw, 32px); }
-.deco--icon-sm  { width: clamp(36px, 3.6vw, 52px); }
 .deco--icon.deco--light { opacity: 0.26; }
 .deco--icon.deco--tr, .deco--icon.deco--br, .deco--hanging.deco--tr { transform: none; }
 .deco--sleigh   { width: clamp(64px, 7vw, 100px); }
@@ -152,9 +142,6 @@ html[data-theme] .site-footer { position: relative; }
 .deco--hanging  { top: 0; right: clamp(12px, 3vw, 48px); width: clamp(220px, 25vw, 350px); opacity: 0.45; }
 .deco--hanging-sm { width: clamp(120px, 12vw, 170px); right: clamp(12px, 3vw, 40px); opacity: 0.38; }
 .deco--scene    { width: clamp(130px, 14vw, 200px); opacity: 0.4; margin: 0 0 clamp(10px, 1.6vw, 20px) clamp(14px, 2.4vw, 32px); }
-.deco--f-gift   { bottom: 0; left: calc(clamp(14px, 2.4vw, 32px) + clamp(52px, 5.4vw, 76px)); }
-.deco--f-mitten { bottom: 0; right: calc(clamp(14px, 2.4vw, 32px) + clamp(52px, 5.4vw, 76px)); }
-.deco--light.deco--flake { color: var(--white); }
 
 /* Mistletoe hangs from the top edge on its ribbon */
 .deco--mistletoe   { top: 0; width: clamp(64px, 7vw, 100px); opacity: 0.42; }
@@ -163,9 +150,35 @@ html[data-theme] .site-footer { position: relative; }
 
 @media (max-width: 600px) {
   .deco--m-booking, .deco--m-hero, .deco--sleigh, .booking > .deco--icon.deco--bl,
-  .booking > .deco--icon.deco--br, .booking > .deco--flake { display: none; }
+  .booking > .deco--icon.deco--br { display: none; }
   .deco--hanging { width: 200px; }
 }
 @media (max-width: 760px) {
-  .ps-pin > .deco--hanging-sm, .ps-pin > .deco--icon-sm { display: none; }
+  .ps-pin > .deco--hanging-sm { display: none; }
+}
+
+/* ── Ramadan ────────────────────────────────────────────── */
+.deco--crescent { width: clamp(70px, 7.4vw, 104px); opacity: 0.42; margin: clamp(16px, 2.6vw, 36px); }
+.deco--lanterns { top: 0; right: clamp(12px, 3vw, 48px); width: clamp(220px, 25vw, 350px); opacity: 0.45; }
+.deco--lanterns.deco--tr { transform: none; }
+.deco--lantern  { top: 0; width: clamp(28px, 2.8vw, 40px); opacity: 0.4; }
+.deco--lantern.deco--tl { left: clamp(24px, 5vw, 80px); }
+.deco--lantern.deco--tr { right: clamp(24px, 5vw, 80px); transform: none; }
+.deco--rosette  { width: clamp(90px, 9vw, 130px); opacity: 0.36; margin: clamp(8px, 1.4vw, 18px); }
+.deco--mosque   { bottom: 0; left: 50%; translate: -50% 0; width: min(520px, 84%); }
+.deco--mosque.deco--light { opacity: 0.26; }
+.deco--rosette.deco--br { transform: scaleX(-1); }
+.deco--rosette.deco--tl { transform: scaleY(-1); }
+.deco--rosette.deco--tr { transform: scale(-1, -1); }
+.deco--rosette-sm { width: clamp(70px, 7vw, 100px); }
+.deco--rosette.deco--light { opacity: 0.22; }
+.deco--star8    { width: clamp(44px, 4.4vw, 62px); opacity: 0.38; margin: clamp(16px, 2.6vw, 34px); }
+.deco--star8.deco--tr { transform: none; }
+
+@media (max-width: 600px) {
+  .deco--lanterns { width: 200px; }
+  .booking > .deco--rosette, .hero > .deco--rosette { display: none; }
+}
+@media (max-width: 760px) {
+  .ps-pin > .deco--lantern { display: none; }
 }
