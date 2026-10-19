@@ -100,10 +100,6 @@
     <path d="M5 6C18 2 30 12 45 7V34C30 39 18 29 5 33Z" stroke-width="1.3"/>
     <use href="#al-eagle" x="15.5" y="9.5" width="19" height="20" fill="currentColor" stroke="none"/>`;
   const FLAG = svg('0 0 60 64', FLAG_BODY);
-  // Two flags whose poles cross, cloths flying outward
-  const CROSSED_FLAGS = svg('0 0 100 72',
-    `<g transform="translate(30 5) rotate(22 4 63)">${FLAG_BODY}</g>
-     <g transform="matrix(-1 0 0 1 100 0) translate(30 5) rotate(22 4 63)">${FLAG_BODY}</g>`);
 
   // Kilim (Albanian woven carpet) motifs, built on a weaving grid: each
   // filled cell is a square, merged into horizontal runs.
@@ -193,12 +189,14 @@
       ['.hero',        'deco--kilim deco--tl',                  kilimBand()],
       ['.hero',        'deco--kilim deco--tr',                  kilimBand()],
       ['.hero',        'deco--eagle deco--bl',                  EAGLE],
-      ['.hero',        'deco--flags deco--br',                  CROSSED_FLAGS],
+      ['.hero',        'deco--medallion deco--br',              kilimMedallion()],
       ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
       ['.ps-pin',      'deco--eagle deco--eagle-sm deco--br',   EAGLE],
+      ['.ps-pin',      'deco--kilim deco--bl',                  kilimBand()],
       ['.booking',     'deco--eagle deco--tr',                  EAGLE],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
       ['.booking',     'deco--medallion deco--bl',              kilimMedallion()],
+      ['.booking',     'deco--kilim deco--br',                  kilimBand()],
       ['.site-footer', 'deco--kilim deco--light deco--tl',      kilimBand()],
       ['.site-footer', 'deco--kilim deco--light deco--tr',      kilimBand()],
       ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],

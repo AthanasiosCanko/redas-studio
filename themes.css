@@ -85,20 +85,22 @@ html[data-theme] .site-footer { position: relative; }
 /* Stacked price list: its closing strip runs edge to edge, so the bottom
    corner web would sit on "STUDIO •" */
 @media (max-width: 760px) {
-  .ps-pin > .deco--br { display: none; }
+  .ps-pin > .deco--br, .ps-pin > .deco--bl { display: none; }
 }
 
 /* ── Independence Day ───────────────────────────────────── */
 /* Kilim band along the top edge from each corner; medallion in a corner */
 .deco--kilim { width: clamp(150px, 20vw, 280px); opacity: 0.4; }
 .deco--kilim.deco--light { opacity: 0.2; width: clamp(130px, 16vw, 230px); }
+/* Along a bottom edge the band is flipped so its teeth point at the edge */
+.deco--kilim.deco--bl { transform: scaleY(-1); }
+.deco--kilim.deco--br { transform: scale(-1, -1); }
 .deco--medallion { width: clamp(100px, 11vw, 160px); opacity: 0.28; margin: clamp(16px, 2.6vw, 34px); }
 
 /* Eagles and flags sit a little in from their corners */
 .deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
 .deco--eagle-sm { width: clamp(40px, 4.4vw, 64px); opacity: 0.25; }
 .deco--eagle.deco--light { opacity: 0.2; width: clamp(44px, 4.6vw, 64px); }
-.deco--flags { width: clamp(80px, 9vw, 130px); opacity: 0.4; margin: clamp(12px, 2vw, 28px); }
 .deco--flag  { width: clamp(40px, 4.4vw, 60px); opacity: 0.4; margin: clamp(16px, 3vw, 40px); }
 
 .deco--date {
@@ -117,5 +119,5 @@ html[data-theme] .site-footer { position: relative; }
 .deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
 
 @media (max-width: 600px) {
-  .hero > .deco--eagle, .deco--flags, .booking > .deco--date, .deco--medallion { display: none; }
+  .hero > .deco--eagle, .booking > .deco--date, .deco--medallion { display: none; }
 }
