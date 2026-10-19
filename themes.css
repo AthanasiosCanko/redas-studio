@@ -93,6 +93,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--kilim-corner { width: clamp(120px, 15vw, 210px); opacity: 0.38; }
 .deco--kilim-sm     { width: clamp(90px, 10vw, 150px); opacity: 0.32; }
 .deco--kilim-corner.deco--light { opacity: 0.2; }
+.deco--kilim-corner.deco--bl { transform: scaleY(-1); }
 .deco--kilim-corner.deco--br { transform: scale(-1, -1); }
 .deco--kilim-strip  { width: clamp(150px, 18vw, 250px); opacity: 0.36; }
 .deco--medallion    { width: clamp(100px, 11vw, 160px); opacity: 0.38; margin: clamp(16px, 2.6vw, 34px); }
@@ -129,8 +130,8 @@ html[data-theme] .site-footer { position: relative; }
 .deco--cifteli  { width: clamp(80px, 8.4vw, 120px); opacity: 0.36; margin: clamp(12px, 2vw, 26px); }
 .deco--cifteli.deco--tr { transform: none; }
 .deco--chevrons { width: clamp(100px, 11vw, 160px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
-.deco--skyline  { bottom: 0; left: 50%; translate: -50% 0; width: min(720px, 86%); }
-.deco--skyline.deco--light { opacity: 0.14; }
+.deco--skyline  { bottom: 0; left: 50%; translate: -50% 0; width: min(780px, 92%); }
+.deco--skyline.deco--light { opacity: 0.26; }
 .deco--confetti { opacity: 0.4; }
 .deco--confetti.deco--light { opacity: 0.22; }
 

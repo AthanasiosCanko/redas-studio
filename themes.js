@@ -272,28 +272,36 @@
     <g transform="translate(62 6) scale(1.55)" stroke-width="1">${ICONS.tree}</g>
     <g transform="translate(118 32) scale(0.95)" stroke-width="1.5">${ICONS.gift}</g>`);
 
-  // Mistletoe hanging on a ribbon: a bow, forked stems with paired
-  // leaves, and a cluster of berries
-  const MISTLETOE = svg('0 0 70 104', `
-    <path d="M35 0V20" stroke-width="0.8"/>
-    <g stroke-width="1.1">
-      <path d="M35 21C29 15 22 16 23 21C24 25 31 23 35 21C39 23 46 25 47 21C48 16 41 15 35 21Z" ${TONE}/>
-      <path d="M35 21L29 32M35 21L41 31"/>
-      <path d="M35 22V46M35 40L22 60M35 40L48 60M35 44V70"/>
-      <g ${TONE}>
-        <ellipse cx="17" cy="66" rx="4.2" ry="11" transform="rotate(32 17 66)"/>
-        <ellipse cx="27" cy="70" rx="4.2" ry="11" transform="rotate(-6 27 70)"/>
-        <ellipse cx="53" cy="66" rx="4.2" ry="11" transform="rotate(-32 53 66)"/>
-        <ellipse cx="43" cy="70" rx="4.2" ry="11" transform="rotate(6 43 70)"/>
-        <ellipse cx="31" cy="85" rx="4" ry="10.5" transform="rotate(14 31 85)"/>
-        <ellipse cx="39" cy="85" rx="4" ry="10.5" transform="rotate(-14 39 85)"/>
+  // Mistletoe on a ribbon: a bow with forked tails, three stems fanning
+  // out, pointed leaves in pairs with midribs, and pearl berries gathered
+  // where the stems meet and at their tips.
+  function mistletoe() {
+    const leaf = (x, y, deg, len, w) => {
+      const a = deg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+      const tx = x + ux * len, ty = y + uy * len, mx = x + ux * len * 0.45, my = y + uy * len * 0.45;
+      return `<path d="M${x} ${y}Q${f1(mx - uy * w)} ${f1(my + ux * w)} ${f1(tx)} ${f1(ty)}Q${f1(mx + uy * w)} ${f1(my - ux * w)} ${x} ${y}Z" ${TONE}/>
+        <path d="M${x} ${y}L${f1(x + ux * len * 0.8)} ${f1(y + uy * len * 0.8)}" stroke-width="0.6"/>`;
+    };
+    const berry = (x, y, r = 2.8) => `<circle cx="${x}" cy="${y}" r="${r}" ${TONE}/><circle cx="${f1(x - r * 0.35)}" cy="${f1(y - r * 0.35)}" r="0.7" ${SOLID}/>`;
+    return svg('-6 0 92 112', `
+      <path d="M40 0V21" stroke-width="0.8"/>
+      <g stroke-width="1.1">
+        <path d="M40 22C31 10 19 13 21 21C22.5 27 32 26 40 22ZM40 22C49 10 61 13 59 21C57.5 27 48 26 40 22Z" ${TONE}/>
+        <path d="M40 23C38 30 35 34 30 39L33 40.5L33.5 37M40 23C42 30 45 34 50 39L47 40.5L46.5 37"/>
+        <circle cx="40" cy="22.5" r="2.6" ${SOLID}/>
+        <path d="M40 34Q36 48 26 62M40 34Q40 52 40 70M40 34Q44 48 54 62"/>
+        ${leaf(34, 46, 150, 22, 7)}${leaf(46, 46, 30, 22, 7)}
+        ${leaf(26, 62, 120, 26, 8)}${leaf(26, 62, 165, 24, 7.5)}
+        ${leaf(54, 62, 60, 26, 8)}${leaf(54, 62, 15, 24, 7.5)}
+        ${leaf(40, 70, 78, 28, 8)}${leaf(40, 70, 102, 28, 8)}
       </g>
-    </g>
-    <g stroke-width="1">
-      <circle cx="35" cy="48" r="3.2"/><circle cx="29.5" cy="51" r="3"/><circle cx="40.5" cy="51" r="3"/>
-      <circle cx="33" cy="54.5" r="2.8"/><circle cx="38" cy="55" r="2.6"/>
-    </g>
-    <g ${SOLID}><circle cx="35" cy="48" r="0.9"/><circle cx="29.5" cy="51" r="0.8"/><circle cx="40.5" cy="51" r="0.8"/></g>`);
+      <g stroke-width="0.9">
+        ${berry(35.5, 34, 3.4)}${berry(44.5, 34, 3.4)}${berry(40, 39.5, 3.6)}${berry(33, 41, 3.1)}${berry(47, 41, 3.1)}${berry(40, 31, 3)}
+        ${berry(26, 62, 3)}${berry(54, 62, 3)}${berry(40, 70, 3)}
+      </g>`);
+  }
+  const MISTLETOE = mistletoe();
+
 
   // Geometric tile mosaic (the banner corner): an L of square tiles —
   // four-point stars, crossed petals, quarter circles, rings, diamonds —
@@ -373,19 +381,50 @@
     rings:  svg('0 0 64 16', [0, 1, 2, 3].map(c => `<circle cx="${8 + c * 16}" cy="8" r="5.5" stroke-width="1.3"/>`).join('')),
   };
 
-  // Tirana skyline: towers, the arch bridge, Et'hem Bey mosque and the
-  // Clock Tower, along a common ground line
-  const SKYLINE = svg('0 0 600 52', `<g fill="currentColor" stroke="none">
-    <path d="M8 52V22H34V52ZM38 52V10H56V52ZM60 52V28H78V52Z"/>
-    <path d="M168 52V34H232V52ZM184 34A16 16 0 0 1 216 34ZM198 16H202V18H198Z"/>
-    <path d="M160 52V14L162 6L164 14V52ZM236 52V14L238 6L240 14V52Z"/>
-    <path d="M262 52V12H272V52ZM261 12L267 2L273 12Z"/>
-    <circle cx="267" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1"/>
-    <path d="M286 52V36H346V52ZM350 52V4H372V52ZM376 52V24H420V52ZM426 52V32H446V52ZM452 52V16H468V52ZM474 52V30H530V52ZM536 52V20H552V52ZM558 52V36H594V52Z"/>
-  </g>
-  <path d="M84 52Q120 20 156 52M90 52H150" stroke-width="1.6"/>
-  <path d="M100 41V52M110 35V52M120 33V52M130 35V52M140 41V52" stroke-width="0.8"/>
-  <path d="M0 52H600" stroke-width="1"/>`);
+  // Tirana skyline in the two-tone style, Dajti mountain behind it. Left to
+  // right: the pixel tower, a painted façade, the Pyramid, Tanners' Bridge,
+  // Et'hem Bey mosque and the Clock Tower, Skanderbeg on horseback, the
+  // National History Museum and its mosaic, the Resurrection Cathedral, a
+  // twisted tower, a high-rise, another painted block and the Great Mosque.
+  const SKYLINE = svg('0 8 800 82', `
+    <path d="M0 88V62Q60 44 120 50Q200 30 280 44Q360 18 450 40Q520 26 600 42Q680 28 740 44Q770 40 800 46V88Z" fill="currentColor" fill-opacity="0.09" stroke="none"/>
+    <g ${TONE} stroke-width="1.2">
+      <path d="M20 88V30H30V22H40V16H48V88Z"/>
+      <rect x="54" y="52" width="36" height="36"/>
+      <path d="M100 88L124 60H146L170 88Z"/>
+      <path d="M232 88V68H270V88Z"/>
+      <path d="M274 88V34L276.5 26L279 34V88Z"/>
+      <path d="M290 88V24H302V88Z"/>
+      <path d="M287.5 30H304.5V33H287.5Z"/>
+      <rect x="318" y="72" width="32" height="16"/>
+      <path d="M362 88V66H452V88Z"/>
+      <path d="M464 88V64H500V88Z"/>
+      <path d="M512 88L514 22L534 26L531 88Z"/>
+      <path d="M542 88V18L556 10V88Z"/>
+      <rect x="568" y="48" width="38" height="40"/>
+      <path d="M618 88V62H684V88Z"/>
+      <path d="M612 88V32L614.5 24L617 32V88ZM685 88V32L687.5 24L690 32V88Z"/>
+      <path d="M700 88V58H740V88ZM746 88V66H792V88Z"/>
+    </g>
+    <path d="M30 30V88M40 22V88M20 44H48M20 58H48M20 72H48" stroke-width="0.6"/>
+    <path d="M54 64L66 52M54 76L78 52M54 88L90 52M66 88L90 64M78 88L90 76" stroke-width="0.7"/>
+    <path d="M108 79H162M116 70H154" stroke-width="0.7"/>
+    <path d="M178 88Q198 64 218 88M174 80Q198 60 222 80" stroke-width="1.3"/>
+    <path d="M241 68A10 10 0 0 1 261 68Z" ${TONE} stroke-width="1.2"/>
+    <path d="M251 58V54M238 88V80A3 3 0 0 1 244 80V88M248 88V80A3 3 0 0 1 254 80V88M258 88V80A3 3 0 0 1 264 80V88" stroke-width="0.8"/>
+    <path d="M291 24A5 5 0 0 1 301 24ZM296 19V14" ${TONE} stroke-width="1.1"/>
+    <circle cx="296" cy="40" r="3.4" stroke-width="0.9"/>
+    <path d="M323 72L325 63Q324 58 330 57H341Q344 54 346 50L349 51.5Q348.5 55.5 346 59L345.5 72H343V64H330.5L328.5 72ZM333.5 57V48Q335.5 45 338.5 47.5V57Z" ${SOLID}/>
+    <circle cx="336" cy="45" r="2.3" fill="currentColor" stroke="none"/>
+    <path d="M385 70H429L424 84H390Z" ${SOLID} opacity="0.55"/>
+    <path d="M482 64A16 16 0 0 0 482 64ZM467 64A15 15 0 0 1 497 64Z" ${TONE} stroke-width="1.2"/>
+    <path d="M482 49V40M478.5 43H485.5" stroke-width="1.2"/>
+    <path d="M514 40L533 44M514.5 58L532 62M515 76L531.5 79" stroke-width="0.7"/>
+    <path d="M547 20V88M551 17V88M542 40H556M542 60H556" stroke-width="0.6"/>
+    <path d="M568 61H606M568 74H606M581 48V88M594 48V88" stroke-width="0.6"/>
+    <path d="M628 62A23 23 0 0 1 674 62Z" ${TONE} stroke-width="1.2"/>
+    <path d="M651 39V33" stroke-width="1.2"/>
+    <path d="M0 88H800" stroke-width="1.1"/>`);
 
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
@@ -427,7 +466,8 @@
       ['.ps-pin',      'deco--kilim-strip deco--bl',            KILIM_STRIP],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
       ['.booking',     'deco--cifteli deco--tr',                CIFTELI],
-      ['.booking',     'deco--medallion deco--bl',              kilimMedallion()],
+      ['.booking',     'deco--medallion',                       kilimMedallion(), 'left:0;top:36%'],
+      ['.booking',     'deco--kilim-corner deco--kilim-sm deco--bl', KILIM_CORNER],
       ['.booking',     'deco--kilim-corner deco--kilim-sm deco--br', KILIM_CORNER],
       ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tl', KILIM_CORNER],
       ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tr', KILIM_CORNER],
