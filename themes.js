@@ -155,6 +155,88 @@
     return svg(`0 0 ${W * 2} ${H * 2}`, `<path d="${cells(rows, 2)}"/>`, 'stroke="none" fill="currentColor"');
   }
 
+  // ── Christmas ─────────────────────────────────────────────
+  const f1 = n => n.toFixed(1);
+
+  // Baubles hanging from the top edge on strings of different lengths
+  function bauble(x, len, r, kind) {
+    const cy = len + r + 4;
+    let deco = '';
+    if (kind === 'bands') deco = `<path d="M${x - r + 1.5} ${cy - 3}Q${x} ${cy - 0.5} ${x + r - 1.5} ${cy - 3}M${x - r + 1.5} ${cy + 3}Q${x} ${cy + 5.5} ${x + r - 1.5} ${cy + 3}" stroke-width="1"/>`;
+    if (kind === 'zigzag') {
+      let z = `M${x - r + 1} ${cy}`;
+      for (let i = 1; i <= 6; i++) z += `L${f1(x - r + 1 + i * (2 * r - 2) / 6)} ${cy + (i % 2 ? -3 : 0)}`;
+      deco = `<path d="${z}" stroke-width="1"/>`;
+    }
+    if (kind === 'shine') deco = `<path d="M${f1(x - r * 0.55)} ${f1(cy - r * 0.15)}A${r * 0.6} ${r * 0.6} 0 0 1 ${f1(x - r * 0.1)} ${f1(cy - r * 0.6)}" stroke-width="1"/>`;
+    const body = kind === 'drop'
+      ? `<path d="M${x} ${len + 4}C${x + r} ${len + 4 + r} ${x + r} ${len + 4 + r * 2.2} ${x} ${len + 4 + r * 2.6}C${x - r} ${len + 4 + r * 2.2} ${x - r} ${len + 4 + r} ${x} ${len + 4}Z" stroke-width="1.3"/>
+         <path d="M${x} ${len + 4 + r * 0.8}V${len + 4 + r * 2}" stroke-width="1"/>`
+      : `<circle cx="${x}" cy="${cy}" r="${r}" stroke-width="1.3"/>${deco}`;
+    return `<path d="M${x} 0V${len}" stroke-width="0.8"/>
+      <rect x="${x - 3}" y="${len}" width="6" height="4" rx="0.8" fill="currentColor" stroke="none"/>${body}`;
+  }
+  const HANGING_STAR = (x, len) =>
+    `<path d="M${x} 0V${len}" stroke-width="0.8"/>${star(x, len + 9, 9, 'stroke-width="1.2"')}`;
+  function star(cx, cy, R, attrs) {
+    let d = '';
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? R * 0.45 : R;
+      d += `${i ? 'L' : 'M'}${f1(cx + r * Math.cos(a))} ${f1(cy + r * Math.sin(a))}`;
+    }
+    return `<path d="${d}Z" ${attrs}/>`;
+  }
+  const ORNAMENTS = svg('0 0 130 140',
+    bauble(22, 46, 11, 'bands') + HANGING_STAR(50, 22) + bauble(76, 74, 14, 'zigzag') + bauble(108, 30, 9, 'drop'));
+  const ORNAMENTS_SM = svg('0 0 90 110', bauble(20, 26, 10, 'shine') + bauble(52, 54, 12, 'bands') + HANGING_STAR(78, 14));
+
+  // Pine bough sweeping in from the top-left corner: two branches with
+  // needles along both sides, shortening towards the tips, and berries.
+  function bough() {
+    const branch = (P0, C, P1, n, len) => {
+      const at = t => [0, 1].map(k => (1 - t) ** 2 * P0[k] + 2 * (1 - t) * t * C[k] + t * t * P1[k]);
+      let d = `M${P0}Q${C} ${P1}`;
+      for (let i = 1; i <= n; i++) {
+        const t = i / (n + 1), [x, y] = at(t), [x2, y2] = at(Math.min(1, t + 0.02));
+        const a = Math.atan2(y2 - y, x2 - x), l = len * (1 - t * 0.55);
+        for (const side of [-1, 1]) {
+          const b = a + side * 0.8;
+          d += `M${f1(x)} ${f1(y)}l${f1(l * Math.cos(b))} ${f1(l * Math.sin(b))}`;
+        }
+      }
+      return d;
+    };
+    const d = branch([0, 14], [60, 6], [138, 40], 16, 13) + branch([12, 0], [22, 60], [52, 132], 14, 12)
+            + branch([40, 22], [62, 46], [70, 84], 8, 9);
+    return svg('0 0 140 140', `<path d="${d}" stroke-width="1.1"/>
+      <g fill="currentColor" stroke="none"><circle cx="26" cy="26" r="4"/><circle cx="34" cy="22" r="3.4"/><circle cx="31" cy="31" r="3"/></g>`);
+  }
+
+  function snowflake() {
+    let d = '';
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3, c = Math.cos(a), s = Math.sin(a);
+      const p = (r, da = 0) => `${f1(12 + r * Math.cos(a + da))} ${f1(12 + r * Math.sin(a + da))}`;
+      d += `M12 12L${p(11)}M${p(6)}L${p(8.6, 0.42)}M${p(6)}L${p(8.6, -0.42)}`;
+    }
+    return svg('0 0 24 24', `<path d="${d}" stroke-width="1.1"/>`);
+  }
+
+  const HOLLY = svg('0 0 64 40', `
+    <g stroke-width="1.2">
+      <path d="M30 24Q26 15 21 16Q20 10 14 12Q12 6 4 7Q7 12 5 16Q11 16 11 21Q17 20 18 25Q24 23 30 24Z"/>
+      <path d="M30 24Q16 15 6 9" stroke-width="0.8"/>
+      <path d="M34 24Q38 15 43 16Q44 10 50 12Q52 6 60 7Q57 12 59 16Q53 16 53 21Q47 20 46 25Q40 23 34 24Z"/>
+      <path d="M34 24Q48 15 58 9" stroke-width="0.8"/>
+    </g>
+    <g fill="currentColor" stroke="none"><circle cx="32" cy="27" r="3.4"/><circle cx="27.5" cy="31" r="3"/><circle cx="36.5" cy="31" r="3"/></g>`);
+
+  const TREE = svg('0 0 40 58', `
+    <path d="M20 9L11 21H15L7 33H12L4 46H36L28 33H33L25 21H29Z" stroke-width="1.2"/>
+    <path d="M17 46V53H23V46" stroke-width="1.2"/>
+    ${star(20, 6, 5, 'fill="currentColor" stroke="none"')}
+    <g fill="currentColor" stroke="none"><circle cx="17" cy="27" r="1.3"/><circle cx="24" cy="38" r="1.3"/><circle cx="14" cy="40" r="1.3"/><circle cx="22" cy="17" r="1.1"/></g>`);
+
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
 
@@ -201,6 +283,23 @@
       ['.site-footer', 'deco--kilim deco--light deco--tr',      kilimBand()],
       ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],
       ['.site-footer', 'deco--eagle deco--light deco--br',      EAGLE],
+    ],
+    christmas: () => [
+      ['.hero',        'deco--bough deco--tl',                  bough()],
+      ['.hero',        'deco--ornaments deco--tr',              ORNAMENTS],
+      ['.hero',        'deco--flake deco--flake1',              snowflake()],
+      ['.hero',        'deco--flake deco--flake2',              snowflake()],
+      ['.hero',        'deco--flake deco--flake3',              snowflake()],
+      ['.hero',        'deco--holly deco--br',                  HOLLY],
+      ['.ps-pin',      'deco--holly deco--tl',                  HOLLY],
+      ['.ps-pin',      'deco--flake deco--flake4',              snowflake()],
+      ['.booking',     'deco--ornaments deco--ornaments-sm deco--tl', ORNAMENTS_SM],
+      ['.booking',     'deco--bough deco--bough-sm deco--tr',   bough()],
+      ['.booking',     'deco--flake deco--flake5',              snowflake()],
+      ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tl', bough()],
+      ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tr', bough()],
+      ['.site-footer', 'deco--tree deco--light deco--bl',       TREE],
+      ['.site-footer', 'deco--tree deco--light deco--br',       TREE],
     ],
   };
 
