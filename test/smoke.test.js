@@ -138,7 +138,7 @@ test('seasonal theme: admin picker, guarded save route, public loader', () => {
   assert.ok(index.includes('<script src="themes.js">') && index.includes('href="themes.css"'), 'index must load themes.js/css');
   // every theme the server accepts (except none) must have decorations
   const themes = server.match(/const THEMES = \[([^\]]*)\]/)[1].match(/'([^']+)'/g).map(t => t.slice(1, -1));
-  for (const t of themes.filter(t => t !== 'none')) assert.ok(read('themes.js').includes(`${t}: [`), `themes.js has no ${t} decorations`);
+  for (const t of themes.filter(t => t !== 'none')) assert.ok(new RegExp(`\\b${t}: (\\(\\) => )?\\[`).test(read('themes.js')), `themes.js has no ${t} decorations`);
 });
 
 test('every requireAdmin route also references a JWT check', () => {

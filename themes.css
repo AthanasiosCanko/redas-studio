@@ -25,24 +25,35 @@ html[data-theme] .site-footer { position: relative; }
 .deco--tr { top: 0; right: 0; transform: scaleX(-1); }
 .deco--bl { bottom: 0; left: 0; }
 .deco--br { bottom: 0; right: 0; }
+.deco--web.deco--bl { transform: scaleY(-1); }
+.deco--web.deco--br { transform: scale(-1, -1); }
 
 /* ── Cobwebs ── */
-.deco--web        { width: clamp(84px, 13vw, 170px); }
-.deco--web-sm     { width: clamp(64px, 8vw, 110px); opacity: 0.3; }
+.deco--web    { width: clamp(84px, 13vw, 170px); }
+.deco--web-sm { width: clamp(64px, 8vw, 110px); opacity: 0.3; }
+.deco--light  { color: var(--white); opacity: 0.18; }   /* on the brown footer */
 
-/* ── Bats: a small flock near the hero's top-right, drifting gently ── */
+/* ── Bats: small flocks near corners, drifting gently ── */
 .deco--bat {
-  color: var(--brown);
   opacity: 0.5;
   animation: deco-in 900ms var(--ease-out-strong) backwards,
              bat-drift 6s ease-in-out infinite alternate;
 }
-.deco--bat1 { top: 12%; right: 14%; width: clamp(40px, 4.4vw, 64px); animation-delay: 0s, 0s; }
-.deco--bat2 { top: 21%; right: 23%; width: clamp(28px, 3vw, 44px);   animation-delay: 0s, -2s; }
+/* hero: a flock top-right, a pair top-left under the web */
+.deco--bat1 { top: 12%; right: 14%; width: clamp(40px, 4.4vw, 64px); }
+.deco--bat2 { top: 21%; right: 23%; width: clamp(26px, 2.8vw, 40px); animation-delay: 0s, -2s; }
 .deco--bat3 { top: 8%;  right: 27%; width: clamp(22px, 2.2vw, 32px); animation-delay: 0s, -4s; opacity: 0.35; }
+.deco--bat4 { top: 27%; right: 9%;  width: clamp(18px, 1.8vw, 26px); animation-delay: 0s, -1s; opacity: 0.35; }
+.deco--bat5 { top: 24%; left: 9%;   width: clamp(28px, 3vw, 44px);   animation-delay: 0s, -3s; }
+.deco--bat6 { top: 31%; left: 15%;  width: clamp(18px, 1.8vw, 26px); animation-delay: 0s, -5s; opacity: 0.35; }
+/* price list: one bat off the top-right corner */
+.deco--bat7 { top: 7%;  right: 7%;  width: clamp(22px, 2.2vw, 32px); animation-delay: 0s, -2.5s; opacity: 0.35; }
+/* booking: a pair near the top-left */
+.deco--bat8 { top: 7%;  left: 8%;   width: clamp(30px, 3.2vw, 46px); animation-delay: 0s, -1.5s; }
+.deco--bat9 { top: 13%; left: 14%;  width: clamp(18px, 1.8vw, 26px); animation-delay: 0s, -3.5s; opacity: 0.35; }
 
 @keyframes bat-drift {
-  from { translate: 0 0;      rotate: -4deg; }
+  from { translate: 0 0;       rotate: -4deg; }
   to   { translate: -10px 8px; rotate: 5deg; }
 }
 
@@ -62,16 +73,26 @@ html[data-theme] .site-footer { position: relative; }
   to   { rotate: 3deg; }
 }
 
-/* ── Pumpkins in the footer's bottom corners (light ink on the brown) ── */
+/* ── Jack-o'-lanterns in the footer's bottom corners (light ink on brown) ── */
 .deco--pumpkin {
   color: var(--white);
-  opacity: 0.35;
-  width: clamp(44px, 5vw, 64px);
-  margin: 0 0 clamp(16px, 2.5vw, 28px) clamp(16px, 4vw, 48px);
+  opacity: 0.38;
+  width: clamp(50px, 5.6vw, 76px);
+  bottom: clamp(14px, 2.2vw, 26px);
 }
-.deco--pumpkin.deco--br { margin: 0 clamp(16px, 4vw, 48px) clamp(16px, 2.5vw, 28px) 0; }
-.deco--pumpkin-sm { width: clamp(32px, 3.6vw, 46px); }
+.deco--pumpkin.deco--bl  { left: clamp(16px, 4vw, 48px); }
+.deco--pumpkin.deco--bl2 { left: calc(clamp(16px, 4vw, 48px) + clamp(48px, 5.4vw, 74px)); }
+.deco--pumpkin.deco--br  { right: clamp(16px, 4vw, 48px); }
+.deco--pumpkin-sm { width: clamp(32px, 3.4vw, 46px); opacity: 0.28; }
 
 @media (max-width: 600px) {
-  .deco--bat2 { display: none; }   /* two bats are plenty on a phone */
+  /* Fewer, smaller marks on a phone */
+  .deco--bat2, .deco--bat4, .deco--bat6, .deco--bat9,
+  .deco--web.deco--bl, .deco--pumpkin-sm { display: none; }
+}
+
+/* Stacked price list: its closing strip runs edge to edge, so the bottom
+   corner web would sit on "STUDIO •" */
+@media (max-width: 760px) {
+  .ps-pin > .deco--br { display: none; }
 }
