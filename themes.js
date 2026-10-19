@@ -50,20 +50,33 @@
   const BAT_UP = svg('0 0 48 28',
     `<path d="M24 16L22 11L21.5 16.5Q17 13 14 7Q10 2 3 1Q6 6 5 12Q8 12 10 15Q12 14 14 18Q17 17 19 22Q21 21 24 27Q27 21 29 22Q31 17 34 18Q36 14 38 15Q40 12 43 12Q42 6 45 1Q38 2 34 7Q31 13 26.5 16.5L26 11Z" fill="currentColor" stroke="none"/>`);
 
-  // Jack-o'-lantern in the same fine line as the cobwebs: two outer lobes,
-  // two inner lobe seams, a tapered stem with a curl, and a small face.
-  const PUMPKIN = svg('0 0 64 56', `
-    <g stroke-width="1.3">
-      <path d="M32 15C20 12 6 17 5 32C4 46 16 53 26 51Q32 54 38 51C48 53 60 46 59 32C58 17 44 12 32 15Z"/>
-      <path d="M32 15C24 17 19 25 19 34C19 43 23 49 27 51M32 15C40 17 45 25 45 34C45 43 41 49 37 51"/>
-      <path d="M30 15C30 11 29 7 27 4L31 3C33 7 34 11 34 15"/>
-      <path d="M33 9C37 5 42 6 41 9C40 11 37 10 38 8" stroke-width="1"/>
-    </g>
-    <g fill="currentColor" stroke="none">
-      <path d="M23 31L26.5 25.5L30 31Z"/>
-      <path d="M34 31L37.5 25.5L41 31Z"/>
-      <path d="M23.5 36.5Q32 46 40.5 36.5Q32 41 23.5 36.5Z"/>
-    </g>`);
+  // Outline jack-o'-lantern: five overlapping lobes, a tapered stem that
+  // hooks at the tip and flares into a cap, slanted eyes and a blocky grin.
+  // The face is masked out of the lobe seams so they don't run through it
+  // (works on any background); each copy needs its own mask id.
+  const EYES  = 'M33 37L46 40.5Q42.5 45 37.5 48.5Q34.5 43.5 33 37ZM67 37L54 40.5Q57.5 45 62.5 48.5Q65.5 43.5 67 37Z';
+  const GRIN  = 'M24 59Q31 62.5 38 63.5V67.5H43V64.2H57V67.5H62V63.5Q69 62.5 76 59Q68 70.5 53 73.5V68.5H47V73.5Q32 70.5 24 59Z';
+  let maskId = 0;
+  function pumpkin() {
+    const id = `pk-face-${++maskId}`;
+    return svg('0 0 100 90', `
+      <mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="90">
+        <rect width="100" height="90" fill="#fff"/>
+        <path d="${EYES}${GRIN}" fill="#000" stroke="#000" stroke-width="3"/>
+      </mask>
+      <g stroke-width="1.6">
+        <g mask="url(#${id})">
+          <path d="M33 22C14 20 6 36 6 52C6 68 16 80 34 80M67 22C86 20 94 36 94 52C94 68 84 80 66 80"/>
+          <path d="M40 20.5C24 22 18 38 18 52C18 68 28 81 44 82M60 20.5C76 22 82 38 82 52C82 68 72 81 56 82"/>
+          <path d="M38 22C27 30 26 68 38 79Q50 85 62 79C74 68 73 30 62 22"/>
+          <path d="M33 22Q36 20 40 20.5M67 22Q64 20 60 20.5"/>
+        </g>
+        <path d="M38 22Q50 26 62 22"/>
+        <path d="M38 22C45 20 47.5 15 48.5 8C49 5 50.5 3.5 53 3L53.5 6.5C51.5 7 51.5 9 52 11C53 16 55.5 20 62 22"/>
+        <path d="${EYES}"/>
+        <path d="${GRIN}"/>
+      </g>`);
+  }
 
   const SPIDER = svg('0 0 24 100',
     `<path d="M12 0V82" stroke-width="0.8"/>
@@ -93,9 +106,9 @@
       ['.booking',     'deco--bat deco--bat9',                  BAT_UP],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tl', WEB_TORN],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tr', WEB],
-      ['.site-footer', 'deco--pumpkin deco--bl',                PUMPKIN],
-      ['.site-footer', 'deco--pumpkin deco--pumpkin-sm deco--bl2', PUMPKIN],
-      ['.site-footer', 'deco--pumpkin deco--br',                PUMPKIN],
+      ['.site-footer', 'deco--pumpkin deco--bl',                pumpkin()],
+      ['.site-footer', 'deco--pumpkin deco--pumpkin-sm deco--bl2', pumpkin()],
+      ['.site-footer', 'deco--pumpkin deco--br',                pumpkin()],
     ],
   };
 
