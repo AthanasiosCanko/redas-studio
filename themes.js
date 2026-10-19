@@ -375,10 +375,16 @@
 
   // ── Ramadan ───────────────────────────────────────────────
   // Crescent moon with a star, in the two-tone style
-  const CRESCENT = svg('0 0 80 70', `
-    <path d="M40 6A28 28 0 1 0 40 62A22 22 0 1 1 40 6Z" ${TONE} stroke-width="1.5"/>
-    ${star(56, 24, 9, `${TONE} stroke-width="1.3"`)}
-    <g ${SOLID}><circle cx="68" cy="44" r="1.4"/><circle cx="62" cy="54" r="1"/><circle cx="72" cy="12" r="1"/></g>`);
+  const moonPath = (cx, cy, r) =>
+    `M${cx} ${f1(cy - r)}A${r} ${r} 0 1 0 ${cx} ${f1(cy + r)}A${f1(r * 0.8)} ${f1(r * 0.8)} 0 1 1 ${cx} ${f1(cy - r)}Z`;
+  const CRESCENT = svg('0 0 150 110', `
+    <path d="${moonPath(44, 40, 30)}" ${TONE} stroke-width="1.5"/>
+    <path d="${moonPath(118, 76, 12)}" ${TONE} stroke-width="1.2"/>
+    ${star(62, 26, 9, `${TONE} stroke-width="1.3"`)}
+    ${star(96, 20, 6, `${TONE} stroke-width="1.1"`)}
+    ${star(82, 52, 4.5, SOLID)}${star(132, 40, 5, `${TONE} stroke-width="1"`)}
+    ${star(24, 92, 5, `${TONE} stroke-width="1"`)}${star(64, 96, 3.5, SOLID)}${star(138, 104, 3.5, SOLID)}
+    <g ${SOLID}><circle cx="110" cy="44" r="1.3"/><circle cx="92" cy="86" r="1"/><circle cx="12" cy="66" r="1"/><circle cx="128" cy="10" r="1.2"/></g>`);
 
   // Fanoos lantern on a 40-wide grid, hung from y=0
   const lanternBody = `
@@ -396,11 +402,12 @@
      <g transform="translate(${f1(x - size / 2)} ${len}) scale(${f1(size / 40)})" stroke-width="${f1(1.4 * 40 / size)}">${lanternBody}</g>`;
   const hangStar = (x, len, r) => `<path d="M${x} 0V${len}" stroke-width="0.8"/>${star(x, len + r, r, `${TONE} stroke-width="1.1"`)}`;
   const hangMoon = (x, len, r) => `<path d="M${x} 0V${len}" stroke-width="0.8"/>
-    <path d="M${x} ${len}A${r} ${r} 0 1 0 ${x} ${len + 2 * r}A${f1(r * 0.78)} ${f1(r * 0.78)} 0 1 1 ${x} ${len}Z" ${TONE} stroke-width="1.1"/>`;
-  const LANTERNS = svg('0 0 220 170',
-    hangStar(12, 26, 7) + hangLantern(44, 44, 34) + hangMoon(80, 18, 9) + hangLantern(118, 70, 40)
-    + hangStar(152, 36, 6) + hangLantern(184, 30, 30) + hangStar(210, 58, 6));
-  const LANTERN_ONE = svg('0 0 40 100', hangLantern(20, 34, 40));
+    <path d="${moonPath(x, len + r, r)}" ${TONE} stroke-width="1.1"/>`;
+  const LANTERNS = svg('0 0 280 170',
+    hangStar(10, 22, 7) + hangLantern(40, 44, 34) + hangMoon(72, 16, 9) + hangStar(96, 54, 6)
+    + hangLantern(128, 70, 40) + hangMoon(162, 34, 8) + hangStar(186, 18, 5) + hangLantern(214, 30, 30)
+    + hangStar(240, 62, 6) + hangMoon(266, 22, 8));
+  const LANTERN_ONE = svg('0 0 84 110', hangStar(10, 18, 6) + hangLantern(42, 28, 36) + hangMoon(74, 12, 8));
 
   // Eight-point star (khatam): two squares, one turned 45°, with inner rings
   const star8 = (cx, cy, r) => {
@@ -412,7 +419,10 @@
       <circle cx="${cx}" cy="${cy}" r="${f1(r * 0.52)}"/>
       <circle cx="${cx}" cy="${cy}" r="${f1(r * 0.2)}" ${SOLID}/>`;
   };
-  const STAR8 = svg('0 0 60 60', star8(30, 30, 26), 'stroke-width="1.4"');
+  const STAR8 = svg('0 0 110 70', `<g stroke-width="1.4">${star8(76, 34, 26)}</g>
+    <path d="${moonPath(26, 30, 14)}" ${TONE} stroke-width="1.3"/>
+    ${star(38, 58, 5, `${TONE} stroke-width="1"`)}${star(48, 12, 3.5, SOLID)}
+    <circle cx="10" cy="58" r="1.1" ${SOLID}/>`);
   // Corner group (bottom-left; CSS mirrors it): a large eight-point star
   // and two small ones strung along a thin arc
   const ROSETTE = svg('0 0 120 120', `
@@ -421,7 +431,7 @@
 
   // Mosque line for the footer: a central dome over arches, side domes,
   // two tall minarets, on a ground line
-  const MOSQUE_LINE = svg('0 22 600 68', `
+  const MOSQUE_LINE = svg('0 0 600 90', `
     <g ${TONE} stroke-width="1.2">
       <path d="M220 88V58H380V88Z"/>
       <path d="M258 58A42 42 0 0 1 342 58Z"/>
@@ -429,7 +439,13 @@
       <path d="M190 66A15 15 0 0 1 220 66ZM380 66A15 15 0 0 1 410 66Z"/>
       <path d="M160 88V40L164 30L168 40V88ZM432 88V40L436 30L440 40V88Z"/>
     </g>
-    <path d="M300 16V10M297 13H303M205 51V47M395 51V47" stroke-width="1.1"/>
+    <path d="M300 16V12M205 51V48M395 51V48M164 30V27M436 30V27" stroke-width="1.1"/>
+    <g ${TONE} stroke-width="0.9">
+      <path d="${moonPath(300, 8, 4)}"/><path d="${moonPath(205, 45, 2.6)}"/><path d="${moonPath(395, 45, 2.6)}"/>
+      <path d="${moonPath(164, 24, 2.6)}"/><path d="${moonPath(436, 24, 2.6)}"/>
+    </g>
+    ${star(232, 32, 3.5, SOLID)}${star(368, 30, 3.5, SOLID)}${star(120, 50, 4, `${TONE} stroke-width="0.9"`)}${star(480, 48, 4, `${TONE} stroke-width="0.9"`)}
+    ${star(80, 64, 2.6, SOLID)}${star(520, 62, 2.6, SOLID)}
     <path d="M158 50H170M430 50H442M159 66H169M431 66H441" stroke-width="1.2"/>
     <path d="M236 88V74A6 6 0 0 1 248 74V88M262 88V74A6 6 0 0 1 274 74V88M288 88V72A12 12 0 0 1 312 72V88M326 88V74A6 6 0 0 1 338 74V88M352 88V74A6 6 0 0 1 364 74V88" stroke-width="0.9"/>
     <path d="M40 88V76H120V88M480 88V76H560V88" ${TONE} stroke-width="1"/>

@@ -158,25 +158,26 @@ html[data-theme] .site-footer { position: relative; }
 }
 
 /* ── Ramadan ────────────────────────────────────────────── */
-.deco--crescent { width: clamp(70px, 7.4vw, 104px); opacity: 0.42; margin: clamp(16px, 2.6vw, 36px); }
-.deco--lanterns { top: 0; right: clamp(12px, 3vw, 48px); width: clamp(220px, 25vw, 350px); opacity: 0.45; }
+.deco--crescent { width: clamp(110px, 12vw, 170px); opacity: 0.42; margin: clamp(14px, 2.2vw, 30px); }
+.deco--lanterns { top: 0; right: clamp(12px, 3vw, 48px); width: clamp(240px, 28vw, 400px); opacity: 0.45; }
 .deco--lanterns.deco--tr { transform: none; }
-.deco--lantern  { top: 0; width: clamp(28px, 2.8vw, 40px); opacity: 0.4; }
+.deco--lantern  { top: 0; width: clamp(60px, 6vw, 84px); opacity: 0.4; }
 .deco--lantern.deco--tl { left: clamp(24px, 5vw, 80px); }
 .deco--lantern.deco--tr { right: clamp(24px, 5vw, 80px); transform: none; }
 .deco--rosette  { width: clamp(90px, 9vw, 130px); opacity: 0.36; margin: clamp(8px, 1.4vw, 18px); }
-.deco--mosque   { bottom: 0; left: 50%; translate: -50% 0; width: min(520px, 84%); }
+.deco--mosque   { bottom: 0; left: 50%; translate: -50% 0; width: min(560px, 88%); }
 .deco--mosque.deco--light { opacity: 0.26; }
 .deco--rosette.deco--br { transform: scaleX(-1); }
 .deco--rosette.deco--tl { transform: scaleY(-1); }
 .deco--rosette.deco--tr { transform: scale(-1, -1); }
 .deco--rosette-sm { width: clamp(70px, 7vw, 100px); }
 .deco--rosette.deco--light { opacity: 0.22; }
-.deco--star8    { width: clamp(44px, 4.4vw, 62px); opacity: 0.38; margin: clamp(16px, 2.6vw, 34px); }
+.deco--star8    { width: clamp(80px, 8vw, 112px); opacity: 0.38; margin: clamp(14px, 2.4vw, 30px); }
 .deco--star8.deco--tr { transform: none; }
 
 @media (max-width: 600px) {
-  .deco--lanterns { width: 200px; }
+  .deco--lanterns { width: 220px; }
+  .deco--crescent { width: 96px; }
   .booking > .deco--rosette, .hero > .deco--rosette { display: none; }
 }
 @media (max-width: 760px) {
