@@ -20,4 +20,4 @@ against **Neon** Postgres.
 - **Notifications fail silently without their env vars** — the booking still succeeds.
 - **Motion is deliberately not gated on `prefers-reduced-motion`** — do not reintroduce it.
 - **`sw.js` must keep bypassing `.mp4`/`.webm`** — otherwise iOS playback breaks.
-- **`/server.js` is publicly downloadable** — keep `ADMIN_PASSWORD` set on Render.
+- **Install the admin PWA from the `/admin` URL on iOS**, or it opens the landing page.

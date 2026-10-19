@@ -141,6 +141,21 @@ test('seasonal theme: admin picker, guarded save route, public loader', () => {
   for (const t of themes.filter(t => t !== 'none')) assert.ok(new RegExp(`\\b${t}: (\\(\\) => )?\\[`).test(read('themes.js')), `themes.js has no ${t} decorations`);
 });
 
+test('only public files are served, and admin secrets have no fallback', () => {
+  const server = read('server.js');
+  assert.ok(!server.includes('express.static(path.join(__dirname))'), 'the repo root must not be served wholesale');
+  const allowed = new Set(server.match(/const PUBLIC_FILES = new Set\(\[([^\]]*)\]/)[1].match(/'([^']+)'/g).map(f => f.slice(1, -1)));
+  for (const f of ['server.js', 'sq.js', 'package.json']) assert.ok(!allowed.has(f), `${f} must not be public`);
+  // everything the pages and service worker load must be reachable
+  const refs = [read('index.html'), read('admin.html'), read('sw.js')].join('\n')
+    .match(/(?:href|src)="[^"#:?]+"|'\/[a-z][\w.-]*\.(?:html|css|js|json)'/g)
+    .map(r => r.replace(/^(href|src)=/, '').slice(1, -1).replace(/^\//, ''))
+    .filter(f => /\.(html|css|js|json)$/.test(f));
+  for (const f of refs) assert.ok(allowed.has(f), `${f} is referenced but not in PUBLIC_FILES`);
+  assert.ok(!/ADMIN_PASSWORD\s*=\s*process\.env\.ADMIN_PASSWORD\s*\|\|/.test(server), 'ADMIN_PASSWORD must not have a fallback');
+  assert.ok(!/JWT_SECRET\s*=\s*process\.env\.JWT_SECRET\s*\|\|/.test(server), 'JWT_SECRET must not have a fallback');
+});
+
 test('every requireAdmin route also references a JWT check', () => {
   const server = read('server.js');
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');

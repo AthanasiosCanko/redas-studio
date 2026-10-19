@@ -21,8 +21,12 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
 });
 
-const JWT_SECRET      = process.env.JWT_SECRET      || 'dev-secret-change-in-prod';
-const ADMIN_PASSWORD  = process.env.ADMIN_PASSWORD  || 'redas2024';
+// No fallbacks: a default here would be public (and was). Without both,
+// admin login is refused rather than guessable.
+const JWT_SECRET      = process.env.JWT_SECRET;
+const ADMIN_PASSWORD  = process.env.ADMIN_PASSWORD;
+const ADMIN_READY     = !!(JWT_SECRET && ADMIN_PASSWORD);
+if (!ADMIN_READY) console.warn('Admin login disabled: set ADMIN_PASSWORD and JWT_SECRET.');
 const VAPID_PUBLIC    = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE   = process.env.VAPID_PRIVATE_KEY;
 
@@ -344,7 +348,18 @@ function notifyClient(kind, { date, time, name, email, phone }) {
 
 // ── Middleware ───────────────────────────────────────────
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+
+// Serve only the site's own files. The repo root also holds server.js,
+// sq.js, package.json, docs and tests, none of which belong on the web.
+const PUBLIC_FILES = new Set([
+  'index.html', 'admin.html', 'manifest.json', 'manifest-admin.json', 'sw.js',
+  'styles.css', 'booking.css', 'themes.css', 'admin.css',
+  'booking.js', 'calendar.js', 'timepicker.js', 'hero.js', 'themes.js', 'admin.js',
+]);
+const sendPublic = express.static(__dirname);
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use((req, res, next) =>
+  (req.path === '/' || PUBLIC_FILES.has(req.path.slice(1)) ? sendPublic(req, res, next) : next()));
 
 function requireAdmin(req, res, next) {
   const auth  = req.headers.authorization || '';
@@ -444,6 +459,7 @@ app.post('/api/bookings', handle(async (req, res) => {
 // ── Admin routes ─────────────────────────────────────────
 
 app.post('/api/admin/login', (req, res) => {
+  if (!ADMIN_READY) return res.status(503).json({ error: 'Admin login not configured' });
   if (req.body.password !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Wrong password' });
   }

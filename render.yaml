@@ -1,7 +1,7 @@
 # Render Blueprint — service definition only.
 # All secrets/config (DATABASE_URL, ADMIN_PASSWORD, VAPID_*, INFOBIP_*, GMAIL_*,
 # EMAIL_FROM) are set directly in the Render dashboard → Environment, and are
-# documented in CLAUDE.md. Keeping them out of this file avoids blueprint-sync
+# documented in docs/OPERATIONS.md. Keeping them out of this file avoids blueprint-sync
 # prompts; removing them here does NOT delete the values already set in Render.
 services:
   - type: web

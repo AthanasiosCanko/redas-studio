@@ -2,8 +2,8 @@
 
 - **`sw.js` deliberately bypasses `.mp4`/`.webm`** — intercepting media Range requests
   breaks iOS playback, and multi-MB media must not enter the SW cache.
-- **The repo root is served statically** (`express.static(__dirname)`), so `/server.js`
-  is publicly downloadable, fallback admin password included — keep `ADMIN_PASSWORD` set.
+- **Static files are an allow-list** (`PUBLIC_FILES` in `server.js`, plus `assets/`) — a
+  new page, script or stylesheet 404s until it is added there.
 - **Push, SMS and email are each a graceful no-op when their keys are absent** — the
   booking still succeeds, so nothing surfaces an error. Variables in
   [OPERATIONS.md](./OPERATIONS.md).
