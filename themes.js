@@ -50,27 +50,20 @@
   const BAT_UP = svg('0 0 48 28',
     `<path d="M24 16L22 11L21.5 16.5Q17 13 14 7Q10 2 3 1Q6 6 5 12Q8 12 10 15Q12 14 14 18Q17 17 19 22Q21 21 24 27Q27 21 29 22Q31 17 34 18Q36 14 38 15Q40 12 43 12Q42 6 45 1Q38 2 34 7Q31 13 26.5 16.5L26 11Z" fill="currentColor" stroke="none"/>`);
 
-  // Jack-o'-lantern: a squat filled pumpkin with the ribs and face cut out
-  // through a mask (so it reads on any background), a curled vine and a leaf.
-  let maskId = 0;
-  function pumpkin() {
-    const id = `pk-mask-${++maskId}`;
-    return svg('0 0 64 56', `
-      <mask id="${id}">
-        <path d="M32 16C22 12 11 14 6 22C1 30 2 44 9 50C15 55 25 55 32 53C39 55 49 55 55 50C62 44 63 30 58 22C53 14 42 12 32 16Z" fill="#fff"/>
-        <path d="M14 19C7 30 7 42 14 51M50 19C57 30 57 42 50 51" stroke="#000" stroke-width="1.8"/>
-        <g fill="#000">
-          <path d="M17 31L29 25.5L27 36Z"/>
-          <path d="M47 31L35 25.5L37 36Z"/>
-          <path d="M32 35.5L28.8 41H35.2Z"/>
-          <path d="M14 41Q32 57 50 41Q46 44.5 43 44L41 48.5L37.5 45.5Q32 47 26.5 45.5L23 48.5L21 44Q18 44.5 14 41Z"/>
-        </g>
-      </mask>
-      <rect width="64" height="56" fill="currentColor" stroke="none" mask="url(#${id})"/>
-      <path d="M30 17C30 11 31 6 35 3L38 5C35 8 34 12 34 17Z" fill="currentColor" stroke="none"/>
-      <path d="M36 8C41 3 48 5 47 10C46 13 42 12 43 9.5" stroke-width="1.1"/>
-      <path d="M37 13C41 9 48 10 51 14C47 17 41 17 37 13Z" fill="currentColor" stroke="none"/>`);
-  }
+  // Jack-o'-lantern in the same fine line as the cobwebs: two outer lobes,
+  // two inner lobe seams, a tapered stem with a curl, and a small face.
+  const PUMPKIN = svg('0 0 64 56', `
+    <g stroke-width="1.3">
+      <path d="M32 15C20 12 6 17 5 32C4 46 16 53 26 51Q32 54 38 51C48 53 60 46 59 32C58 17 44 12 32 15Z"/>
+      <path d="M32 15C24 17 19 25 19 34C19 43 23 49 27 51M32 15C40 17 45 25 45 34C45 43 41 49 37 51"/>
+      <path d="M30 15C30 11 29 7 27 4L31 3C33 7 34 11 34 15"/>
+      <path d="M33 9C37 5 42 6 41 9C40 11 37 10 38 8" stroke-width="1"/>
+    </g>
+    <g fill="currentColor" stroke="none">
+      <path d="M23 31L26.5 25.5L30 31Z"/>
+      <path d="M34 31L37.5 25.5L41 31Z"/>
+      <path d="M23.5 36.5Q32 46 40.5 36.5Q32 41 23.5 36.5Z"/>
+    </g>`);
 
   const SPIDER = svg('0 0 24 100',
     `<path d="M12 0V82" stroke-width="0.8"/>
@@ -100,9 +93,9 @@
       ['.booking',     'deco--bat deco--bat9',                  BAT_UP],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tl', WEB_TORN],
       ['.site-footer', 'deco--web deco--web-sm deco--light deco--tr', WEB],
-      ['.site-footer', 'deco--pumpkin deco--bl',                pumpkin()],
-      ['.site-footer', 'deco--pumpkin deco--pumpkin-sm deco--bl2', pumpkin()],
-      ['.site-footer', 'deco--pumpkin deco--br',                pumpkin()],
+      ['.site-footer', 'deco--pumpkin deco--bl',                PUMPKIN],
+      ['.site-footer', 'deco--pumpkin deco--pumpkin-sm deco--bl2', PUMPKIN],
+      ['.site-footer', 'deco--pumpkin deco--br',                PUMPKIN],
     ],
   };
 
