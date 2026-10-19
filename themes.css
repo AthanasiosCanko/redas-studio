@@ -175,7 +175,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--rosette.deco--light { opacity: 0.22; }
 .deco--star8    { width: clamp(80px, 8vw, 112px); opacity: 0.38; margin: clamp(14px, 2.4vw, 30px); }
 .deco--star8.deco--tr { transform: none; }
-/* Bajram: baklava and coffee in the booking section's bottom corners */
+/* Dates, baklava and coffee in the booking section's corners */
 .deco--eid      { width: clamp(84px, 8.6vw, 124px); opacity: 0.4; margin: clamp(14px, 2.4vw, 30px); }
 
 @media (max-width: 600px) {
