@@ -114,7 +114,8 @@ html[data-theme] .site-footer { position: relative; }
 .deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
 
 @media (max-width: 600px) {
-  .hero > .deco--eagle, .booking > .deco--date, }
+  .hero > .deco--eagle, .booking > .deco--date { display: none; }
+}
 
 /* Banner-inspired pieces */
 .deco--mosaic   { width: clamp(150px, 18vw, 250px); opacity: 0.32; }
@@ -174,11 +175,13 @@ html[data-theme] .site-footer { position: relative; }
 .deco--rosette.deco--light { opacity: 0.22; }
 .deco--star8    { width: clamp(80px, 8vw, 112px); opacity: 0.38; margin: clamp(14px, 2.4vw, 30px); }
 .deco--star8.deco--tr { transform: none; }
+/* Bajram: baklava and coffee in the booking section's bottom corners */
+.deco--eid      { width: clamp(84px, 8.6vw, 124px); opacity: 0.4; margin: clamp(14px, 2.4vw, 30px); }
 
 @media (max-width: 600px) {
   .deco--lanterns { width: 220px; }
   .deco--crescent { width: 96px; }
-  .booking > .deco--rosette, .hero > .deco--rosette { display: none; }
+  .hero > .deco--rosette, .deco--eid { display: none; }
 }
 @media (max-width: 760px) {
   .ps-pin > .deco--lantern { display: none; }

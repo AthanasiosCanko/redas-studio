@@ -54,7 +54,7 @@ The UI is in Albanian.
 - **Disponueshmëria** — click a day to see its bookings, **Shto rezervim** (auto-accepted),
   or **Blloko ditën** to block the whole day.
 - **Tema** — seasonal theme for the public site (Asnjë / Halloween / Dita e Pavarësisë /
-  Krishtlindje / Ramazan). Saved in the `settings` table; a new theme needs
+  Krishtlindje / Ramazan & Bajram). Saved in the `settings` table; a new theme needs
   its value in `THEMES` (server.js) and its decorations in `themes.js`.
 - On login the admin browser subscribes to Web Push; new public requests fire a notification.
 

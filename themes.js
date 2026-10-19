@@ -452,7 +452,43 @@
     <path d="M60 76A20 20 0 0 1 100 76M500 76A20 20 0 0 1 540 76" stroke-width="1"/>
     <path d="M0 88H600" stroke-width="1.1"/>`);
 
-  const GREETING = `<span class="deco-date">Ramazan i bekuar</span>`;
+  // ── Eid (Bajram), part of the Ramadan theme ──
+  // Round tray of baklava seen at an angle: diamond cuts with a nut on each
+  // piece, the lines clipped to the tray's inner ellipse
+  const BAKLAVA = (() => {
+    const cx = 50, cy = 26, rx = 38, ry = 12;
+    const at = (u, v) => `${f1(cx + rx * u)} ${f1(cy + ry * v)}`;
+    let cuts = '', nuts = '';
+    for (let c = -1.2; c <= 1.21; c += 0.4) {
+      const h = Math.sqrt(2 - c * c) / 2, m = c / 2;   // chord of u±v=c across the unit circle
+      cuts += `M${at(m - h, m + h)}L${at(m + h, m - h)}M${at(m - h, -m - h)}L${at(m + h, h - m)}`;
+    }
+    for (let a = -1; a <= 1.01; a += 0.4) for (let b = -1; b <= 1.01; b += 0.4) {
+      const u = (a + b) / 2, v = (a - b) / 2;
+      if (u * u + v * v < 0.62) nuts += `<ellipse cx="${f1(cx + rx * u)}" cy="${f1(cy + ry * v)}" rx="1.3" ry="0.8"/>`;
+    }
+    return svg('0 0 100 50', `
+      <path d="M6 26L9 34A41 13 0 0 0 91 34L94 26" ${TONE} stroke-width="1.3"/>
+      <ellipse cx="50" cy="26" rx="44" ry="15" stroke-width="1.3"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" ${TONE} stroke-width="1"/>
+      <path d="${cuts}" stroke-width="0.7"/>
+      <g ${SOLID}>${nuts}</g>`);
+  })();
+  // Bajram coffee: a xhezve with its long handle, and a filxhan on a saucer
+  const COFFEE = svg('0 0 100 66', `
+    <g ${TONE} stroke-width="1.3">
+      <path d="M19 24C18 34 10 44 11 53Q12 60 25 60Q38 60 39 53C40 44 32 34 31 24Z"/>
+      <path d="M31 30L62 14L64.5 17.5L32.5 35Z"/>
+      <path d="M68 44H90L87 56Q79 61 71 56Z"/>
+    </g>
+    <path d="M17 24H33M19 24L13 20.5" stroke-width="1.3"/>
+    <path d="M14 47H36" stroke-width="0.8"/>
+    <path d="M90 47Q96 48 93 53L88 54" stroke-width="1.1"/>
+    <path d="M64 60Q79 64 94 60" stroke-width="1.2"/>
+    <path d="M75 40C72 36 78 34 75 29M83 40C80 36 86 34 83 29" stroke-width="0.9"/>
+    ${star(48, 8, 4, SOLID)}${star(56, 38, 2.6, SOLID)}`);
+
+  const GREETING = `<span class="deco-date">Ramazan i bekuar · Gëzuar Bajramin</span>`;
 
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
@@ -527,8 +563,8 @@
       ['.ps-pin',      'deco--lantern deco--tr',                LANTERN_ONE],
       ['.booking',     'deco--date deco--tl',                   GREETING],
       ['.booking',     'deco--star8 deco--tr',                  STAR8],
-      ['.booking',     'deco--rosette deco--rosette-sm deco--bl', ROSETTE],
-      ['.booking',     'deco--rosette deco--rosette-sm deco--br', ROSETTE],
+      ['.booking',     'deco--eid deco--bl',                    BAKLAVA],
+      ['.booking',     'deco--eid deco--br',                    COFFEE],
       ['.site-footer', 'deco--rosette deco--rosette-sm deco--light deco--tl', ROSETTE],
       ['.site-footer', 'deco--rosette deco--rosette-sm deco--light deco--tr', ROSETTE],
       ['.site-footer', 'deco--mosque deco--light',              MOSQUE_LINE],
