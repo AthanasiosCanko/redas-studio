@@ -27,8 +27,6 @@ connection string points at `localhost`. Optional keys no-op silently — see
 
 ## Deploying to Render
 
-Changes go to GitHub, which auto-deploys to Render.
-
 1. Push to GitHub (`AthanasiosCanko/redas-studio`)
 2. Render's `render.yaml` configures the web service (it declares only `NODE_ENV` and
    an auto-generated `JWT_SECRET`)
@@ -44,9 +42,7 @@ No database or browser required.
 
 ## Admin panel
 
-Visit `/admin` (alias for `/admin.html`). Password is set via `ADMIN_PASSWORD`.
-
-The UI is in Albanian.
+Visit `/admin`. The UI is in Albanian.
 
 - **Rezervimet** — filter by Kërkesat (pending) / Të ardhshme / Të kaluara / Të gjitha.
   Pending requests show **Prano** (accept) and **Refuzo** (deny); confirmed bookings show
