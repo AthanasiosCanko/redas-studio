@@ -89,8 +89,10 @@ html[data-theme] .site-footer { position: relative; }
 }
 
 /* ── Independence Day ───────────────────────────────────── */
-.deco--bunting { width: clamp(150px, 20vw, 290px); opacity: 0.45; }
-.deco--bunting.deco--light { opacity: 0.22; width: clamp(130px, 16vw, 230px); }
+/* Kilim band along the top edge from each corner; medallion in a corner */
+.deco--kilim { width: clamp(150px, 20vw, 280px); opacity: 0.4; }
+.deco--kilim.deco--light { opacity: 0.2; width: clamp(130px, 16vw, 230px); }
+.deco--medallion { width: clamp(100px, 11vw, 160px); opacity: 0.28; margin: clamp(16px, 2.6vw, 34px); }
 
 /* Eagles and flags sit a little in from their corners */
 .deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
@@ -115,5 +117,5 @@ html[data-theme] .site-footer { position: relative; }
 .deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
 
 @media (max-width: 600px) {
-  .hero > .deco--eagle, .deco--flags, .booking > .deco--date { display: none; }
+  .hero > .deco--eagle, .deco--flags, .booking > .deco--date, .deco--medallion { display: none; }
 }
