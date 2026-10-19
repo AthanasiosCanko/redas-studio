@@ -158,26 +158,6 @@
   // ── Christmas ─────────────────────────────────────────────
   const f1 = n => n.toFixed(1);
 
-  // Baubles hanging from the top edge on strings of different lengths
-  function bauble(x, len, r, kind) {
-    const cy = len + r + 4;
-    let deco = '';
-    if (kind === 'bands') deco = `<path d="M${x - r + 1.5} ${cy - 3}Q${x} ${cy - 0.5} ${x + r - 1.5} ${cy - 3}M${x - r + 1.5} ${cy + 3}Q${x} ${cy + 5.5} ${x + r - 1.5} ${cy + 3}" stroke-width="1"/>`;
-    if (kind === 'zigzag') {
-      let z = `M${x - r + 1} ${cy}`;
-      for (let i = 1; i <= 6; i++) z += `L${f1(x - r + 1 + i * (2 * r - 2) / 6)} ${cy + (i % 2 ? -3 : 0)}`;
-      deco = `<path d="${z}" stroke-width="1"/>`;
-    }
-    if (kind === 'shine') deco = `<path d="M${f1(x - r * 0.55)} ${f1(cy - r * 0.15)}A${r * 0.6} ${r * 0.6} 0 0 1 ${f1(x - r * 0.1)} ${f1(cy - r * 0.6)}" stroke-width="1"/>`;
-    const body = kind === 'drop'
-      ? `<path d="M${x} ${len + 4}C${x + r} ${len + 4 + r} ${x + r} ${len + 4 + r * 2.2} ${x} ${len + 4 + r * 2.6}C${x - r} ${len + 4 + r * 2.2} ${x - r} ${len + 4 + r} ${x} ${len + 4}Z" stroke-width="1.3"/>
-         <path d="M${x} ${len + 4 + r * 0.8}V${len + 4 + r * 2}" stroke-width="1"/>`
-      : `<circle cx="${x}" cy="${cy}" r="${r}" stroke-width="1.3"/>${deco}`;
-    return `<path d="M${x} 0V${len}" stroke-width="0.8"/>
-      <rect x="${x - 3}" y="${len}" width="6" height="4" rx="0.8" fill="currentColor" stroke="none"/>${body}`;
-  }
-  const HANGING_STAR = (x, len) =>
-    `<path d="M${x} 0V${len}" stroke-width="0.8"/>${star(x, len + 9, 9, 'stroke-width="1.2"')}`;
   function star(cx, cy, R, attrs) {
     let d = '';
     for (let i = 0; i < 10; i++) {
@@ -186,9 +166,98 @@
     }
     return `<path d="${d}Z" ${attrs}/>`;
   }
-  const ORNAMENTS = svg('0 0 130 140',
-    bauble(22, 46, 11, 'bands') + HANGING_STAR(50, 22) + bauble(76, 74, 14, 'zigzag') + bauble(108, 30, 9, 'drop'));
-  const ORNAMENTS_SM = svg('0 0 90 110', bauble(20, 26, 10, 'shine') + bauble(52, 54, 12, 'bands') + HANGING_STAR(78, 14));
+
+  // Six-armed snowflake path centred on (cx, cy), radius R, in one of
+  // three designs
+  function flakePath(cx, cy, R, design) {
+    let d = '';
+    const p = (r, a) => `${f1(cx + r * Math.cos(a))} ${f1(cy + r * Math.sin(a))}`;
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      d += `M${p(design === 2 ? R * 0.28 : 0, a)}L${p(R, a)}`;
+      if (design === 0) {            // two pairs of branches
+        for (const [at, len] of [[0.45, 0.3], [0.72, 0.22]]) {
+          d += `M${p(R * at, a)}L${p(R * at + R * len, a + 0.55)}M${p(R * at, a)}L${p(R * at + R * len, a - 0.55)}`;
+        }
+      } else if (design === 1) {     // a small diamond on each arm
+        d += `M${p(R * 0.5, a)}L${p(R * 0.65, a + 0.22)}L${p(R * 0.8, a)}L${p(R * 0.65, a - 0.22)}Z`;
+        d += `M${p(R * 0.3, a)}L${p(R * 0.42, a + 0.5)}M${p(R * 0.3, a)}L${p(R * 0.42, a - 0.5)}`;
+      } else {                       // hexagon core, forked tips
+        d += `M${p(R * 0.28, a)}L${p(R * 0.28, a + Math.PI / 3)}`;
+        d += `M${p(R * 0.78, a)}L${p(R, a + 0.18)}M${p(R * 0.78, a)}L${p(R, a - 0.18)}`;
+      }
+    }
+    return d;
+  }
+  const snowflake = design => svg('0 0 24 24',
+    `<path d="${flakePath(12, 12, 11, design)}" stroke-width="${design === 1 ? 0.9 : 1}"/>` +
+    (design === 0 ? '<circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>' : ''));
+
+  // Baubles hanging from the top edge on strings of different lengths
+  function bauble(x, len, r, kind) {
+    const top = len + 4, cy = top + r;
+    const string = `<path d="M${x} 0V${len - 2.5}" stroke-width="0.7"/>
+      <circle cx="${x}" cy="${len - 1.2}" r="1.3" stroke-width="0.7"/>
+      <rect x="${x - 3.2}" y="${len}" width="6.4" height="4.2" rx="0.9" fill="currentColor" stroke="none"/>`;
+    if (kind === 'star') return `<path d="M${x} 0V${len}" stroke-width="0.7"/>${star(x, len + r, r, 'stroke-width="1.1"')}`;
+    if (kind === 'drop') return string +
+      `<path d="M${x} ${top}C${x + r} ${top + r} ${x + r} ${top + r * 2.2} ${x} ${top + r * 2.7}C${x - r} ${top + r * 2.2} ${x - r} ${top + r} ${x} ${top}Z" stroke-width="1.2"/>
+       <path d="M${x - r * 0.55} ${f1(top + r * 1.3)}H${x + r * 0.55}M${x - r * 0.6} ${f1(top + r * 1.7)}H${x + r * 0.6}" stroke-width="0.8"/>`;
+    if (kind === 'onion') return string +
+      `<path d="M${x} ${top}C${x + r * 1.3} ${top + r * 0.7} ${x + r * 1.1} ${top + r * 1.8} ${x + r * 0.2} ${top + r * 2.2}L${x} ${top + r * 3}L${x - r * 0.2} ${top + r * 2.2}C${x - r * 1.1} ${top + r * 1.8} ${x - r * 1.3} ${top + r * 0.7} ${x} ${top}Z" stroke-width="1.2"/>
+       <path d="M${x} ${top + r * 0.3}V${f1(top + r * 2.1)}" stroke-width="0.8"/>`;
+    let inner = '';
+    const band = (dy, curve) => `M${f1(x - r * Math.sqrt(1 - dy * dy))} ${f1(cy + dy * r)}Q${x} ${f1(cy + dy * r + curve)} ${f1(x + r * Math.sqrt(1 - dy * dy))} ${f1(cy + dy * r)}`;
+    if (kind === 'bands')  inner = `<path d="${band(-0.3, 2.5)}${band(0.3, 2.5)}" stroke-width="0.9"/>`;
+    if (kind === 'ribs')   inner = `<ellipse cx="${x}" cy="${cy}" rx="${f1(r * 0.42)}" ry="${r}" stroke-width="0.9"/><path d="M${x} ${cy - r}V${cy + r}" stroke-width="0.9"/>`;
+    if (kind === 'dots') {
+      inner = `<path d="${band(0, 2)}" stroke-width="0.9"/>`;
+      for (const k of [-2, -1, 0, 1, 2]) inner += `<circle cx="${f1(x + k * r * 0.36)}" cy="${f1(cy - r * 0.42 + Math.abs(k) * 0.6)}" r="${f1(r * 0.08 + 0.4)}" fill="currentColor" stroke="none"/>`;
+    }
+    if (kind === 'zigzag') {
+      let z = `M${f1(x - r * 0.95)} ${cy}`;
+      for (let i = 1; i <= 8; i++) z += `L${f1(x - r * 0.95 + i * r * 1.9 / 8)} ${f1(cy + (i % 2 ? -r * 0.22 : 0))}`;
+      inner = `<path d="${z}" stroke-width="0.9"/>`;
+    }
+    if (kind === 'flake')  inner = `<path d="${flakePath(x, cy, r * 0.62, 0)}" stroke-width="0.7"/>`;
+    if (kind === 'shine')  inner = `<path d="M${f1(x - r * 0.6)} ${f1(cy - r * 0.1)}A${r * 0.62} ${r * 0.62} 0 0 1 ${f1(x - r * 0.1)} ${f1(cy - r * 0.62)}" stroke-width="1"/>`;
+    return string + `<circle cx="${x}" cy="${cy}" r="${r}" stroke-width="1.2"/>${inner}`;
+  }
+  const cluster = (vb, items) => svg(vb, items.map(i => bauble(...i)).join(''));
+
+  const ORNAMENTS = cluster('0 0 200 150', [
+    [14, 34, 9, 'shine'], [36, 62, 12, 'ribs'], [58, 20, 7, 'star'], [80, 44, 14, 'flake'],
+    [106, 84, 13, 'bands'], [128, 26, 9, 'drop'], [150, 58, 12, 'dots'], [172, 16, 7, 'star'], [186, 40, 9, 'onion'],
+  ]);
+  const ORNAMENTS_SM = cluster('0 0 130 120', [
+    [14, 24, 9, 'dots'], [38, 50, 12, 'flake'], [60, 16, 6, 'star'], [82, 36, 10, 'onion'], [110, 60, 11, 'zigzag'],
+  ]);
+  const ORNAMENTS_XS = cluster('0 0 90 100', [
+    [14, 30, 9, 'ribs'], [40, 14, 6, 'star'], [60, 46, 11, 'bands'], [80, 22, 7, 'drop'],
+  ]);
+
+  // Mistletoe hanging on a ribbon: a bow, forked stems with paired
+  // leaves, and a cluster of berries
+  const MISTLETOE = svg('0 0 70 104', `
+    <path d="M35 0V20" stroke-width="0.8"/>
+    <g stroke-width="1.1">
+      <path d="M35 21C29 15 22 16 23 21C24 25 31 23 35 21C39 23 46 25 47 21C48 16 41 15 35 21Z"/>
+      <path d="M35 21L29 32M35 21L41 31"/>
+      <path d="M35 22V46M35 40L22 60M35 40L48 60M35 44V70"/>
+      <ellipse cx="17" cy="66" rx="4.2" ry="11" transform="rotate(32 17 66)"/>
+      <ellipse cx="27" cy="70" rx="4.2" ry="11" transform="rotate(-6 27 70)"/>
+      <ellipse cx="53" cy="66" rx="4.2" ry="11" transform="rotate(-32 53 66)"/>
+      <ellipse cx="43" cy="70" rx="4.2" ry="11" transform="rotate(6 43 70)"/>
+      <ellipse cx="31" cy="85" rx="4" ry="10.5" transform="rotate(14 31 85)"/>
+      <ellipse cx="39" cy="85" rx="4" ry="10.5" transform="rotate(-14 39 85)"/>
+    </g>
+    <g stroke-width="1">
+      <circle cx="35" cy="48" r="3.2"/><circle cx="29.5" cy="51" r="3"/><circle cx="40.5" cy="51" r="3"/>
+      <circle cx="33" cy="54.5" r="2.8"/><circle cx="38" cy="55" r="2.6"/>
+    </g>
+    <g fill="currentColor" stroke="none">
+      <circle cx="35" cy="48" r="0.9"/><circle cx="29.5" cy="51" r="0.8"/><circle cx="40.5" cy="51" r="0.8"/>
+    </g>`);
 
   // Pine bough sweeping in from the top-left corner: two branches with
   // needles along both sides, shortening towards the tips, and berries.
@@ -212,16 +281,6 @@
       <g fill="currentColor" stroke="none"><circle cx="26" cy="26" r="4"/><circle cx="34" cy="22" r="3.4"/><circle cx="31" cy="31" r="3"/></g>`);
   }
 
-  function snowflake() {
-    let d = '';
-    for (let i = 0; i < 6; i++) {
-      const a = i * Math.PI / 3, c = Math.cos(a), s = Math.sin(a);
-      const p = (r, da = 0) => `${f1(12 + r * Math.cos(a + da))} ${f1(12 + r * Math.sin(a + da))}`;
-      d += `M12 12L${p(11)}M${p(6)}L${p(8.6, 0.42)}M${p(6)}L${p(8.6, -0.42)}`;
-    }
-    return svg('0 0 24 24', `<path d="${d}" stroke-width="1.1"/>`);
-  }
-
   const HOLLY = svg('0 0 64 40', `
     <g stroke-width="1.2">
       <path d="M30 24Q26 15 21 16Q20 10 14 12Q12 6 4 7Q7 12 5 16Q11 16 11 21Q17 20 18 25Q24 23 30 24Z"/>
@@ -242,7 +301,7 @@
 
   const DATE_MARK = `<span class="deco-date">28 Nëntor 1912</span>`;
 
-  // [container selector, modifier classes, markup]
+  // [container selector, modifier classes, markup, optional inline position]
   const THEMES = {
     halloween: () => [
       ['.hero',        'deco--web deco--tl',                    WEB],
@@ -287,19 +346,40 @@
     christmas: () => [
       ['.hero',        'deco--bough deco--tl',                  bough()],
       ['.hero',        'deco--ornaments deco--tr',              ORNAMENTS],
-      ['.hero',        'deco--flake deco--flake1',              snowflake()],
-      ['.hero',        'deco--flake deco--flake2',              snowflake()],
-      ['.hero',        'deco--flake deco--flake3',              snowflake()],
+      ['.hero',        'deco--mistletoe deco--m-hero',          MISTLETOE],
       ['.hero',        'deco--holly deco--br',                  HOLLY],
       ['.ps-pin',      'deco--holly deco--tl',                  HOLLY],
-      ['.ps-pin',      'deco--flake deco--flake4',              snowflake()],
+      ['.ps-pin',      'deco--ornaments deco--ornaments-xs deco--tr', ORNAMENTS_XS],
       ['.booking',     'deco--ornaments deco--ornaments-sm deco--tl', ORNAMENTS_SM],
       ['.booking',     'deco--bough deco--bough-sm deco--tr',   bough()],
-      ['.booking',     'deco--flake deco--flake5',              snowflake()],
+      ['.booking',     'deco--mistletoe deco--m-booking',       MISTLETOE],
       ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tl', bough()],
       ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tr', bough()],
       ['.site-footer', 'deco--tree deco--light deco--bl',       TREE],
       ['.site-footer', 'deco--tree deco--light deco--br',       TREE],
+      ['.hero', 'deco--flake', snowflake(0), 'left:6%;top:18%;width:clamp(32px,3.16vw,44px);opacity:0.38'],
+      ['.hero', 'deco--flake', snowflake(2), 'left:14%;top:30%;width:clamp(20px,1.94vw,27px);opacity:0.3'],
+      ['.hero', 'deco--flake', snowflake(1), 'left:3%;top:40%;width:clamp(15px,1.46vw,20px);opacity:0.25'],
+      ['.hero', 'deco--flake deco--minor', snowflake(1), 'left:8%;bottom:14%;width:clamp(27px,2.67vw,37px);opacity:0.32'],
+      ['.hero', 'deco--flake deco--minor', snowflake(0), 'left:16%;bottom:26%;width:clamp(17px,1.70vw,24px);opacity:0.26'],
+      ['.hero', 'deco--flake deco--minor', snowflake(2), 'left:4%;bottom:30%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
+      ['.hero', 'deco--flake deco--minor', snowflake(2), 'right:7%;bottom:18%;width:clamp(31px,2.91vw,41px);opacity:0.34'],
+      ['.hero', 'deco--flake deco--minor', snowflake(0), 'right:15%;bottom:10%;width:clamp(20px,1.94vw,27px);opacity:0.28'],
+      ['.hero', 'deco--flake deco--minor', snowflake(1), 'right:4%;bottom:30%;width:clamp(15px,1.46vw,20px);opacity:0.24'],
+      ['.hero', 'deco--flake deco--minor', snowflake(1), 'right:18%;top:34%;width:clamp(17px,1.70vw,24px);opacity:0.24'],
+      ['.ps-pin', 'deco--flake', snowflake(0), 'right:6%;top:10%;width:clamp(22px,2.19vw,31px);opacity:0.3'],
+      ['.ps-pin', 'deco--flake', snowflake(2), 'right:12%;top:18%;width:clamp(15px,1.46vw,20px);opacity:0.24'],
+      ['.ps-pin', 'deco--flake', snowflake(1), 'left:6%;bottom:10%;width:clamp(20px,1.94vw,27px);opacity:0.26'],
+      ['.ps-pin', 'deco--flake deco--minor', snowflake(2), 'right:8%;bottom:12%;width:clamp(26px,2.43vw,34px);opacity:0.3'],
+      ['.booking', 'deco--flake', snowflake(0), 'left:6%;bottom:16%;width:clamp(26px,2.43vw,34px);opacity:0.3'],
+      ['.booking', 'deco--flake', snowflake(2), 'left:13%;bottom:8%;width:clamp(17px,1.70vw,24px);opacity:0.24'],
+      ['.booking', 'deco--flake', snowflake(1), 'right:7%;bottom:12%;width:clamp(22px,2.19vw,31px);opacity:0.28'],
+      ['.booking', 'deco--flake deco--minor', snowflake(0), 'right:14%;bottom:22%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
+      ['.booking', 'deco--flake deco--minor', snowflake(1), 'left:24%;top:30%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
+      ['.site-footer', 'deco--flake deco--light', snowflake(0), 'left:12%;top:46%;width:clamp(17px,1.70vw,24px);opacity:0.22'],
+      ['.site-footer', 'deco--flake deco--light', snowflake(2), 'right:13%;top:44%;width:clamp(15px,1.46vw,20px);opacity:0.2'],
+      ['.site-footer', 'deco--flake deco--light', snowflake(1), 'left:14%;bottom:40%;width:clamp(15px,1.46vw,20px);opacity:0.18'],
+      ['.site-footer', 'deco--flake deco--light deco--minor', snowflake(0), 'right:15%;bottom:38%;width:clamp(17px,1.70vw,24px);opacity:0.2'],
     ],
   };
 
@@ -311,12 +391,13 @@
     }
     const decos = THEMES[theme]();
     document.documentElement.dataset.theme = theme;
-    for (const [selector, classes, markup] of decos) {
+    for (const [selector, classes, markup, style] of decos) {
       const host = document.querySelector(selector);
       if (!host) continue;
       const el = document.createElement('div');
       el.className = `deco ${classes}`;
       el.setAttribute('aria-hidden', 'true');
+      if (style) el.style.cssText = style;   // scattered pieces place themselves
       el.innerHTML = markup;
       host.appendChild(el);
     }

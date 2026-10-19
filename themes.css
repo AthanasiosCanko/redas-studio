@@ -126,25 +126,26 @@ html[data-theme] .site-footer { position: relative; }
 .deco--bough        { width: clamp(100px, 13vw, 180px); opacity: 0.4; }
 .deco--bough-sm     { width: clamp(80px, 9vw, 130px); opacity: 0.32; }
 .deco--bough.deco--light { opacity: 0.2; }
-.deco--ornaments    { width: clamp(100px, 11vw, 160px); opacity: 0.45; right: clamp(16px, 4vw, 60px); }
-.deco--ornaments-sm { width: clamp(70px, 7vw, 100px); opacity: 0.4; left: clamp(16px, 4vw, 60px); }
+.deco--ornaments    { width: clamp(170px, 19vw, 270px); opacity: 0.45; right: clamp(12px, 3vw, 48px); }
+.deco--ornaments.deco--tr { transform: none; }   /* asymmetric cluster, not mirrored */
+.deco--ornaments-sm { width: clamp(110px, 11vw, 160px); opacity: 0.4; left: clamp(12px, 3vw, 48px); right: auto; }
+.deco--ornaments-xs { width: clamp(80px, 8vw, 116px); opacity: 0.36; }
 .deco--holly        { width: clamp(52px, 5.4vw, 80px); opacity: 0.38; margin: clamp(14px, 2.4vw, 32px); }
 .deco--tree         { width: clamp(34px, 3.4vw, 50px); bottom: clamp(14px, 2.2vw, 26px); }
 .deco--tree.deco--light { opacity: 0.3; }
 .deco--tree.deco--bl { left: clamp(16px, 4vw, 48px); }
 .deco--tree.deco--br { right: clamp(16px, 4vw, 48px); }
-.deco--ornaments.deco--tr { transform: none; }   /* asymmetric cluster, not mirrored */
 
-.deco--flake  { opacity: 0.35; }
-.deco--flake1 { top: 30%;    left: 7%;   width: clamp(18px, 1.8vw, 26px); }
-.deco--flake2 { bottom: 16%; left: 12%;  width: clamp(14px, 1.4vw, 20px); opacity: 0.28; }
-.deco--flake3 { bottom: 24%; right: 9%;  width: clamp(16px, 1.6vw, 22px); }
-.deco--flake4 { bottom: 12%; right: 7%;  width: clamp(16px, 1.6vw, 22px); }
-.deco--flake5 { bottom: 14%; left: 8%;   width: clamp(16px, 1.6vw, 22px); opacity: 0.28; }
+/* Mistletoe hangs from the top edge on its ribbon */
+.deco--mistletoe   { top: 0; width: clamp(64px, 7vw, 100px); opacity: 0.42; }
+.deco--m-hero      { left: clamp(150px, 16vw, 240px); }
+.deco--m-booking   { right: clamp(130px, 14vw, 200px); width: clamp(54px, 5.6vw, 80px); opacity: 0.36; }
+.deco--light.deco--flake { color: var(--white); }
 
 @media (max-width: 600px) {
-  .deco--flake2, .deco--flake3, .deco--flake5, .hero > .deco--holly, .deco--ornaments-sm { display: none; }
+  .deco--minor, .hero > .deco--holly, .deco--ornaments-sm, .deco--m-booking { display: none; }
+  .deco--m-hero { display: none; }
 }
 @media (max-width: 760px) {
-  .ps-pin > .deco--flake4 { display: none; }
+  .ps-pin > .deco--ornaments-xs { display: none; }
 }
