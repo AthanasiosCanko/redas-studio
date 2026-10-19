@@ -373,8 +373,10 @@
     <path d="M651 39V33" stroke-width="1.2"/>
     <path d="M0 88H800" stroke-width="1.1"/>`);
 
+  const DATE_MARK = '28 Nëntor 1912';
+
   // ── Ramadan ───────────────────────────────────────────────
-  // Crescent moon with a star, in the two-tone style
+  // Crescent opening to the right, centred on (cx, cy)
   const moonPath = (cx, cy, r) =>
     `M${cx} ${f1(cy - r)}A${r} ${r} 0 1 0 ${cx} ${f1(cy + r)}A${f1(r * 0.8)} ${f1(r * 0.8)} 0 1 1 ${cx} ${f1(cy - r)}Z`;
   const CRESCENT = svg('0 0 150 110', `
@@ -509,9 +511,7 @@
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
 
-  const DATE_MARK = `<span class="deco-date">28 Nëntor 1912</span>`;
-
-  // [container selector, modifier classes, markup, optional inline position]
+  // [container selector, modifier classes, markup]
   const THEMES = {
     halloween: () => [
       ['.hero',        'deco--web deco--tl',                    WEB],
@@ -539,7 +539,7 @@
       ['.hero',        'deco--chevrons deco--bl',               chevrons()],
       ['.hero',        'deco--shield deco--br',                 SHIELD_EAGLE],
       ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
-      ['.ps-pin',      'deco--eagle deco--eagle-sm deco--tr',   EAGLE],
+      ['.ps-pin',      'deco--eagle deco--tr',                 EAGLE],
       ['.ps-pin',      'deco--kilim-strip deco--bl',            KILIM_STRIP],
       ['.ps-pin',      'deco--kilim-strip deco--br',            KILIM_STRIP],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
@@ -595,13 +595,12 @@
     }
     const decos = THEMES[theme]();
     document.documentElement.dataset.theme = theme;
-    for (const [selector, classes, markup, style] of decos) {
+    for (const [selector, classes, markup] of decos) {
       const host = document.querySelector(selector);
       if (!host) continue;
       const el = document.createElement('div');
       el.className = `deco ${classes}`;
       el.setAttribute('aria-hidden', 'true');
-      if (style) el.style.cssText = style;   // scattered pieces place themselves
       el.innerHTML = markup;
       host.appendChild(el);
     }

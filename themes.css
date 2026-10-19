@@ -93,9 +93,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--kilim-strip  { width: clamp(150px, 18vw, 250px); opacity: 0.36; }
 
 /* Eagles and flags sit a little in from their corners */
-.deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
-.deco--eagle-sm { width: clamp(40px, 4.4vw, 64px); opacity: 0.25; }
-.deco--eagle.deco--light { opacity: 0.2; width: clamp(44px, 4.6vw, 64px); }
+.deco--eagle { width: clamp(40px, 4.4vw, 64px); opacity: 0.25; margin: clamp(14px, 2.4vw, 32px); }
 .deco--flag  { width: clamp(40px, 4.4vw, 60px); opacity: 0.4; margin: clamp(16px, 3vw, 40px); }
 
 .deco--date {
@@ -114,7 +112,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
 
 @media (max-width: 600px) {
-  .hero > .deco--eagle, .booking > .deco--date { display: none; }
+  .booking > .deco--date { display: none; }
 }
 
 /* Banner-inspired pieces */
@@ -128,7 +126,7 @@ html[data-theme] .site-footer { position: relative; }
 .deco--skyline.deco--light { opacity: 0.26; }
 
 @media (max-width: 600px) {
-  .deco--minor, .deco--chevrons, .deco--cifteli { display: none; }
+  .deco--chevrons, .deco--cifteli { display: none; }
   /* the booking section is too narrow for its corners on a phone */
   .booking > .deco--kilim-corner { display: none; }
   .deco--mosaic { width: 120px; }
