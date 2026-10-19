@@ -87,3 +87,33 @@ html[data-theme] .site-footer { position: relative; }
 @media (max-width: 760px) {
   .ps-pin > .deco--br { display: none; }
 }
+
+/* ── Independence Day ───────────────────────────────────── */
+.deco--bunting { width: clamp(150px, 20vw, 290px); opacity: 0.45; }
+.deco--bunting.deco--light { opacity: 0.22; width: clamp(130px, 16vw, 230px); }
+
+/* Eagles and flags sit a little in from their corners */
+.deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
+.deco--eagle-sm { width: clamp(40px, 4.4vw, 64px); opacity: 0.25; }
+.deco--eagle.deco--light { opacity: 0.2; width: clamp(44px, 4.6vw, 64px); }
+.deco--flags { width: clamp(80px, 9vw, 130px); opacity: 0.4; margin: clamp(12px, 2vw, 28px); }
+.deco--flag  { width: clamp(40px, 4.4vw, 60px); opacity: 0.4; margin: clamp(16px, 3vw, 40px); }
+
+.deco--date {
+  margin: clamp(18px, 3vw, 40px);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.deco--date::before,
+.deco--date::after { content: ''; width: 18px; height: 1px; background: currentColor; opacity: 0.6; }
+
+@media (max-width: 600px) {
+  .hero > .deco--eagle, .deco--flags, .booking > .deco--date { display: none; }
+}

@@ -383,7 +383,7 @@ app.get('/api/vapid-public-key', (req, res) => {
 
 // Seasonal theme chosen in the admin panel. 'none' is the standard site;
 // extend THEMES as each theme's decorations are built (themes.js).
-const THEMES = ['none', 'halloween'];
+const THEMES = ['none', 'halloween', 'independence'];
 
 app.get('/api/theme', handle(async (req, res) => {
   const { rows } = await pool.query(`SELECT value FROM settings WHERE key = 'theme'`);

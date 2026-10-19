@@ -85,6 +85,45 @@
      </g>
      <ellipse cx="12" cy="88" rx="4" ry="5" fill="currentColor" stroke="none"/>`);
 
+  // ── Independence Day (28 Nëntor 1912) ─────────────────────
+  // Double-headed eagle: the left half, mirrored about x=50.
+  const EAGLE_HALF = 'M50.6 36C47 32 44 27 42.5 22C41.5 17 38 14 33 14.5C29 15 26 17 24.5 20.5L23.5 23L26.5 21.5C28 20.5 29.5 20.5 30.5 22L28 24C31 24 33 25.5 34 28.5C35 32 37 35 40 38C34 35 26 30 18 20C17 17 17 13 18 10L14 16L11 9L10 17L5 13L7 21L2 20L6 27L1 28L6 33L2 36L8 39L5 44L12 45L10 50L17 50L16 56L23 54L24 60L31 56C35 58 38 60 40.5 62.5L39 66L32 68L37 70.5L31 74L38 74L35 80L41 77.5L39 85L45 80L45.5 88L50.6 83Z';
+  const eagleShape = fill =>
+    `<path d="${EAGLE_HALF}" fill="${fill}"/><path d="${EAGLE_HALF}" fill="${fill}" transform="matrix(-1 0 0 1 100 0)"/>`;
+  const EAGLE = svg('0 0 100 92', eagleShape('currentColor'), 'stroke="none"');
+
+  // A flag waving from a pole: outlined cloth with the eagle at its centre
+  const FLAG_BODY = `
+    <path d="M4 3V63" stroke-width="1.6"/>
+    <circle cx="4" cy="2.4" r="1.9" fill="currentColor" stroke="none"/>
+    <path d="M5 6C18 2 30 12 45 7V34C30 39 18 29 5 33Z" stroke-width="1.3"/>
+    <g transform="translate(15.5 9) scale(0.2)" stroke="none">${eagleShape('currentColor')}</g>`;
+  const FLAG = svg('0 0 60 64', FLAG_BODY);
+  // Two flags whose poles cross, cloths flying outward
+  const CROSSED_FLAGS = svg('0 0 100 72',
+    `<g transform="translate(30 5) rotate(22 4 63)">${FLAG_BODY}</g>
+     <g transform="matrix(-1 0 0 1 100 0) translate(30 5) rotate(22 4 63)">${FLAG_BODY}</g>`);
+
+  // Bunting: a garland sagging from the corner, pennants hung along it
+  function bunting() {
+    const P0 = [0, 4], C = [100, 70], P1 = [220, 0];
+    const at = t => [0, 1].map(k => (1 - t) ** 2 * P0[k] + 2 * (1 - t) * t * C[k] + t * t * P1[k]);
+    const slope = t => Math.atan2(
+      2 * (1 - t) * (C[1] - P0[1]) + 2 * t * (P1[1] - C[1]),
+      2 * (1 - t) * (C[0] - P0[0]) + 2 * t * (P1[0] - C[0])) * 180 / Math.PI;
+    let pennants = '';
+    for (let i = 0, n = 9; i < n; i++) {
+      const t = 0.08 + i * (0.84 / (n - 1));
+      const [x, y] = at(t);
+      const solid = i % 2 === 0;
+      pennants += `<path d="M-6 0H6L0 16Z" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${slope(t).toFixed(1)})"
+        ${solid ? 'fill="currentColor" stroke="none"' : 'stroke-width="1.1"'}/>`;
+    }
+    return svg('0 0 220 70', `<path d="M${P0}Q${C} ${P1}" stroke-width="1"/>${pennants}`);
+  }
+
+  const DATE_MARK = `<span class="deco-date">28 Nëntor 1912</span>`;
+
   // [container selector, modifier classes, markup]
   const THEMES = {
     halloween: () => [
@@ -109,6 +148,20 @@
       ['.site-footer', 'deco--pumpkin deco--bl',                pumpkin()],
       ['.site-footer', 'deco--pumpkin deco--pumpkin-sm deco--bl2', pumpkin()],
       ['.site-footer', 'deco--pumpkin deco--br',                pumpkin()],
+    ],
+    independence: () => [
+      ['.hero',        'deco--bunting deco--tl',                bunting()],
+      ['.hero',        'deco--bunting deco--tr',                bunting()],
+      ['.hero',        'deco--eagle deco--bl',                  EAGLE],
+      ['.hero',        'deco--flags deco--br',                  CROSSED_FLAGS],
+      ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
+      ['.ps-pin',      'deco--eagle deco--eagle-sm deco--br',   EAGLE],
+      ['.booking',     'deco--eagle deco--tr',                  EAGLE],
+      ['.booking',     'deco--date deco--tl',                   DATE_MARK],
+      ['.site-footer', 'deco--bunting deco--light deco--tl',    bunting()],
+      ['.site-footer', 'deco--bunting deco--light deco--tr',    bunting()],
+      ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],
+      ['.site-footer', 'deco--eagle deco--light deco--br',      EAGLE],
     ],
   };
 
