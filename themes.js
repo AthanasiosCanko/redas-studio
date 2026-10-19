@@ -296,6 +296,98 @@
     ${star(20, 6, 5, 'fill="currentColor" stroke="none"')}
     <g fill="currentColor" stroke="none"><circle cx="17" cy="27" r="1.3"/><circle cx="24" cy="38" r="1.3"/><circle cx="14" cy="40" r="1.3"/><circle cx="22" cy="17" r="1.1"/></g>`);
 
+  // Geometric tile mosaic (the banner corner): an L of square tiles —
+  // four-point stars, crossed petals, quarter circles, rings, diamonds —
+  // half of them solid, half at lighter weight for a two-tone feel.
+  function mosaic() {
+    const T = 20, tiles = {
+      star:    `<path d="M10 0A10 10 0 0 0 20 10A10 10 0 0 0 10 20A10 10 0 0 0 0 10A10 10 0 0 0 10 0Z"/>`,
+      petals:  `<path d="M1 1Q19 1 19 19Q1 19 1 1ZM19 1Q19 19 1 19Q1 1 19 1Z" fill-rule="nonzero"/>`,
+      quarter: `<path d="M0 0H20A20 20 0 0 1 0 20Z"/>`,
+      half:    `<path d="M0 20A10 10 0 0 1 20 20Z"/><circle cx="10" cy="6" r="3"/>`,
+      holed:   `<path d="M0 0H20V20H0ZM10 4.5A5.5 5.5 0 1 0 10.01 4.5Z" fill-rule="evenodd"/>`,
+      diamond: `<path d="M10 1L19 10L10 19L1 10Z"/>`,
+      ring:    `<path d="M10 1A9 9 0 1 0 10.01 1ZM10 5.5A4.5 4.5 0 1 1 9.99 5.5Z" fill-rule="evenodd"/>`,
+      dot:     `<circle cx="10" cy="10" r="4.5"/>`,
+      bars:    `<path d="M3 0H6V20H3ZM8.5 0H11.5V20H8.5ZM14 0H17V20H14Z"/>`,
+    };
+    const layout = [   // [col, row, tile, solid?]
+      [0, 0, 'petals', 0], [1, 0, 'star', 1], [2, 0, 'ring', 0], [3, 0, 'quarter', 1], [4, 0, 'star', 0], [5, 0, 'bars', 1], [6, 0, 'holed', 1],
+      [1, 1, 'dot', 1], [2, 1, 'diamond', 0], [3, 1, 'petals', 1], [4, 1, 'half', 0], [5, 1, 'star', 1], [6, 1, 'quarter', 0],
+      [3, 2, 'star', 0], [4, 2, 'holed', 0], [5, 2, 'ring', 1], [6, 2, 'diamond', 1],
+      [5, 3, 'petals', 0], [6, 3, 'star', 1],
+      [6, 4, 'dot', 0], [5, 4, 'quarter', 1],
+      [6, 5, 'petals', 1],
+    ];
+    const body = layout.map(([c, r, t, solid]) =>
+      `<g transform="translate(${c * T} ${r * T})" opacity="${solid ? 1 : 0.5}">${tiles[t]}</g>`).join('');
+    return svg('0 0 140 120', body, 'stroke="none" fill="currentColor"');
+  }
+
+  // The eagle on a heater shield, as on the coat of arms
+  const SHIELD_EAGLE = svg('0 0 80 96', `
+    <path d="M6 6H74V44C74 70 56 84 40 92C24 84 6 70 6 44Z" stroke-width="2"/>
+    <path d="M11 11H69V44C69 66 54 78 40 85C26 78 11 66 11 44Z" stroke-width="0.8"/>
+    <use href="#al-eagle" x="17" y="17" width="46" height="50" fill="currentColor" stroke="none"/>`);
+
+  // Çifteli, the two-string lute, with a few notes
+  const note = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="2.3" transform="rotate(-20 ${x} ${y})" fill="currentColor" stroke="none"/>
+    <path d="M${x + 2.9} ${y - 0.8}V${y - 15}Q${x + 7} ${y - 12} ${x + 8} ${y - 7}" stroke-width="1.1"/>`;
+  const CIFTELI = svg('0 0 110 120', `
+    <g transform="rotate(32 40 70)" stroke-width="1.3">
+      <path d="M40 118C25 118 19 101 25 88C29 80 35 75 37 67H43C45 75 51 80 55 88C61 101 55 118 40 118Z"/>
+      <circle cx="40" cy="100" r="3" fill="currentColor" stroke="none"/>
+      <path d="M37 67V16H43V67" fill="currentColor"/>
+      <path d="M36 16L35 4H45L44 16Z"/>
+      <path d="M35 7H31M35 12H31M45 7H49M45 12H49" stroke-width="1.6"/>
+      <path d="M39 14V112M41 14V112" stroke-width="0.5"/>
+      <path d="M34 110H46" stroke-width="1.6"/>
+    </g>
+    ${note(84, 34)}${note(98, 62)}
+    <ellipse cx="78" cy="78" rx="3.2" ry="2.3" transform="rotate(-20 78 78)" fill="currentColor" stroke="none"/>
+    <ellipse cx="90" cy="74" rx="3.2" ry="2.3" transform="rotate(-20 90 74)" fill="currentColor" stroke="none"/>
+    <path d="M80.9 77.2V63M92.9 73.2V59M80.9 63L92.9 59M80.9 66L92.9 62" stroke-width="1.1"/>`);
+
+  // Chevron arrows, solid and outlined, in a loose flight
+  function chevrons() {
+    const chev = (x, y, sz, solid) =>
+      `<path d="M${x} ${y}h${sz * 0.45}l${sz * 0.5} ${sz * 0.5}l${-sz * 0.5} ${sz * 0.5}h${-sz * 0.45}l${sz * 0.5} ${-sz * 0.5}Z" ${solid ? 'fill="currentColor" stroke="none"' : 'stroke-width="1.2"'}/>`;
+    return svg('0 0 150 90', [
+      [4, 6, 18, 0], [34, 4, 22, 1], [70, 8, 16, 0], [96, 6, 18, 0], [118, 6, 18, 1],
+      [20, 38, 16, 0], [46, 34, 24, 1], [84, 40, 14, 0], [104, 36, 18, 0],
+      [8, 66, 14, 0], [30, 64, 18, 0], [62, 62, 20, 1],
+    ].map(c => chev(...c)).join(''));
+  }
+
+  // Memphis confetti: small geometric pieces scattered near corners
+  const CONFETTI = {
+    tri:    svg('0 0 20 20', '<path d="M3 17L10 3L17 17Z" stroke-width="1.5"/>'),
+    sq:     svg('0 0 20 20', '<rect x="4" y="4" width="12" height="12" rx="1.5" stroke-width="1.5"/>'),
+    circ:   svg('0 0 20 20', '<circle cx="10" cy="10" r="6.5" stroke-width="1.5"/>'),
+    x:      svg('0 0 20 20', '<path d="M4 4L16 16M16 4L4 16" stroke-width="1.6"/>'),
+    dia:    svg('0 0 20 20', '<path d="M10 2L18 10L10 18L2 10Z" fill="currentColor" stroke="none"/>'),
+    wave:   svg('0 0 60 14', '<path d="M2 7Q8 1 14 7T26 7T38 7T50 7T62 7" stroke-width="1.4"/>'),
+    dots:   svg('0 0 50 30', [0, 1, 2].map(r => [0, 1, 2, 3, 4].map(c =>
+              `<circle cx="${5 + c * 10}" cy="${5 + r * 10}" r="1.8" fill="currentColor" stroke="none"/>`).join('')).join('')),
+    pluses: svg('0 0 70 30', [0, 1].map(r => [0, 1, 2, 3, 4].map(c =>
+              `<path d="M${7 + c * 14} ${3 + r * 14}v8M${3 + c * 14} ${7 + r * 14}h8" stroke-width="1.4"/>`).join('')).join('')),
+    rings:  svg('0 0 64 16', [0, 1, 2, 3].map(c => `<circle cx="${8 + c * 16}" cy="8" r="5.5" stroke-width="1.3"/>`).join('')),
+  };
+
+  // Tirana skyline: towers, the arch bridge, Et'hem Bey mosque and the
+  // Clock Tower, along a common ground line
+  const SKYLINE = svg('0 0 600 52', `<g fill="currentColor" stroke="none">
+    <path d="M8 52V22H34V52ZM38 52V10H56V52ZM60 52V28H78V52Z"/>
+    <path d="M168 52V34H232V52ZM184 34A16 16 0 0 1 216 34ZM198 16H202V18H198Z"/>
+    <path d="M160 52V14L162 6L164 14V52ZM236 52V14L238 6L240 14V52Z"/>
+    <path d="M262 52V12H272V52ZM261 12L267 2L273 12Z"/>
+    <circle cx="267" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1"/>
+    <path d="M286 52V36H346V52ZM350 52V4H372V52ZM376 52V24H420V52ZM426 52V32H446V52ZM452 52V16H468V52ZM474 52V30H530V52ZM536 52V20H552V52ZM558 52V36H594V52Z"/>
+  </g>
+  <path d="M84 52Q120 20 156 52M90 52H150" stroke-width="1.6"/>
+  <path d="M100 41V52M110 35V52M120 33V52M130 35V52M140 41V52" stroke-width="0.8"/>
+  <path d="M0 52H600" stroke-width="1"/>`);
+
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
 
@@ -328,20 +420,41 @@
     ],
     independence: () => [
       ['.hero',        'deco--kilim deco--tl',                  kilimBand()],
-      ['.hero',        'deco--kilim deco--tr',                  kilimBand()],
-      ['.hero',        'deco--eagle deco--bl',                  EAGLE],
-      ['.hero',        'deco--medallion deco--br',              kilimMedallion()],
+      ['.hero',        'deco--mosaic deco--tr',                 mosaic()],
+      ['.hero',        'deco--chevrons deco--bl',               chevrons()],
+      ['.hero',        'deco--shield deco--br',                 SHIELD_EAGLE],
       ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
       ['.ps-pin',      'deco--eagle deco--eagle-sm deco--br',   EAGLE],
       ['.ps-pin',      'deco--kilim deco--bl',                  kilimBand()],
-      ['.booking',     'deco--eagle deco--tr',                  EAGLE],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
+      ['.booking',     'deco--cifteli deco--tr',                CIFTELI],
       ['.booking',     'deco--medallion deco--bl',              kilimMedallion()],
       ['.booking',     'deco--kilim deco--br',                  kilimBand()],
       ['.site-footer', 'deco--kilim deco--light deco--tl',      kilimBand()],
       ['.site-footer', 'deco--kilim deco--light deco--tr',      kilimBand()],
+      ['.site-footer', 'deco--skyline deco--light',             SKYLINE],
       ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],
       ['.site-footer', 'deco--eagle deco--light deco--br',      EAGLE],
+      ['.hero', 'deco--confetti', CONFETTI.tri, 'left:6%;top:34%;width:clamp(21px,1.94vw,27px)'],
+      ['.hero', 'deco--confetti', CONFETTI.circ, 'left:14%;top:44%;width:clamp(18px,1.71vw,24px)'],
+      ['.hero', 'deco--confetti', CONFETTI.dots, 'left:4%;top:58%;width:clamp(45px,4.29vw,60px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.x, 'left:16%;top:66%;width:clamp(15px,1.50vw,21px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.pluses, 'right:5%;bottom:42%;width:clamp(58px,5.56vw,78px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.sq, 'right:16%;bottom:30%;width:clamp(18px,1.71vw,24px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.wave, 'right:22%;top:40%;width:clamp(57px,5.35vw,75px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.dia, 'left:24%;top:14%;width:clamp(14px,1.29vw,18px)'],
+      ['.hero', 'deco--confetti deco--minor', CONFETTI.rings, 'left:8%;bottom:36%;width:clamp(57px,5.35vw,75px)'],
+      ['.ps-pin', 'deco--confetti', CONFETTI.dia, 'right:10%;top:16%;width:clamp(14px,1.29vw,18px)'],
+      ['.ps-pin', 'deco--confetti', CONFETTI.circ, 'right:6%;top:30%;width:clamp(18px,1.71vw,24px)'],
+      ['.ps-pin', 'deco--confetti', CONFETTI.wave, 'left:8%;top:40%;width:clamp(51px,4.94vw,69px)'],
+      ['.ps-pin', 'deco--confetti deco--minor', CONFETTI.x, 'right:12%;bottom:30%;width:clamp(15px,1.50vw,21px)'],
+      ['.booking', 'deco--confetti', CONFETTI.pluses, 'left:6%;top:24%;width:clamp(54px,5.15vw,72px)'],
+      ['.booking', 'deco--confetti', CONFETTI.tri, 'left:12%;bottom:40%;width:clamp(18px,1.71vw,24px)'],
+      ['.booking', 'deco--confetti', CONFETTI.circ, 'right:8%;bottom:36%;width:clamp(18px,1.71vw,24px)'],
+      ['.booking', 'deco--confetti deco--minor', CONFETTI.dots, 'right:14%;top:40%;width:clamp(45px,4.29vw,60px)'],
+      ['.site-footer', 'deco--confetti deco--light', CONFETTI.x, 'left:18%;top:40%;width:clamp(14px,1.29vw,18px)'],
+      ['.site-footer', 'deco--confetti deco--light', CONFETTI.circ, 'right:18%;top:44%;width:clamp(15px,1.50vw,21px)'],
+      ['.site-footer', 'deco--confetti deco--light', CONFETTI.dia, 'left:26%;bottom:30%;width:clamp(12px,1.06vw,15px)'],
     ],
     christmas: () => [
       ['.hero',        'deco--bough deco--tl',                  bough()],
