@@ -89,13 +89,13 @@ html[data-theme] .site-footer { position: relative; }
 }
 
 /* ── Independence Day ───────────────────────────────────── */
-/* Kilim band along the top edge from each corner; medallion in a corner */
-.deco--kilim { width: clamp(150px, 20vw, 280px); opacity: 0.4; }
-.deco--kilim.deco--light { opacity: 0.2; width: clamp(130px, 16vw, 230px); }
-/* Along a bottom edge the band is flipped so its teeth point at the edge */
-.deco--kilim.deco--bl { transform: scaleY(-1); }
-.deco--kilim.deco--br { transform: scale(-1, -1); }
-.deco--medallion { width: clamp(100px, 11vw, 160px); opacity: 0.28; margin: clamp(16px, 2.6vw, 34px); }
+/* Kilim pieces */
+.deco--kilim-corner { width: clamp(120px, 15vw, 210px); opacity: 0.38; }
+.deco--kilim-sm     { width: clamp(90px, 10vw, 150px); opacity: 0.32; }
+.deco--kilim-corner.deco--light { opacity: 0.2; }
+.deco--kilim-corner.deco--br { transform: scale(-1, -1); }
+.deco--kilim-strip  { width: clamp(150px, 18vw, 250px); opacity: 0.36; }
+.deco--medallion    { width: clamp(100px, 11vw, 160px); opacity: 0.38; margin: clamp(16px, 2.6vw, 34px); }
 
 /* Eagles and flags sit a little in from their corners */
 .deco--eagle { width: clamp(52px, 6vw, 88px); opacity: 0.3; margin: clamp(14px, 2.4vw, 32px); }
@@ -137,34 +137,34 @@ html[data-theme] .site-footer { position: relative; }
 @media (max-width: 600px) {
   .deco--minor, .deco--chevrons, .deco--cifteli { display: none; }
   /* narrow sections leave no free margin for confetti */
-  .booking > .deco--confetti, .site-footer > .deco--confetti { display: none; }
+  .booking > .deco--confetti, .site-footer > .deco--confetti, .booking > .deco--kilim-corner { display: none; }
   .deco--mosaic { width: 120px; }
 }
 
 /* ── Christmas ──────────────────────────────────────────── */
-.deco--bough        { width: clamp(100px, 13vw, 180px); opacity: 0.4; }
-.deco--bough-sm     { width: clamp(80px, 9vw, 130px); opacity: 0.32; }
-.deco--bough.deco--light { opacity: 0.2; }
-.deco--ornaments    { width: clamp(170px, 19vw, 270px); opacity: 0.45; right: clamp(12px, 3vw, 48px); }
-.deco--ornaments.deco--tr { transform: none; }   /* asymmetric cluster, not mirrored */
-.deco--ornaments-sm { width: clamp(110px, 11vw, 160px); opacity: 0.4; left: clamp(12px, 3vw, 48px); right: auto; }
-.deco--ornaments-xs { width: clamp(80px, 8vw, 116px); opacity: 0.36; }
-.deco--holly        { width: clamp(52px, 5.4vw, 80px); opacity: 0.38; margin: clamp(14px, 2.4vw, 32px); }
-.deco--tree         { width: clamp(34px, 3.4vw, 50px); bottom: clamp(14px, 2.2vw, 26px); }
-.deco--tree.deco--light { opacity: 0.3; }
-.deco--tree.deco--bl { left: clamp(16px, 4vw, 48px); }
-.deco--tree.deco--br { right: clamp(16px, 4vw, 48px); }
+.deco--icon     { width: clamp(44px, 4.6vw, 66px); opacity: 0.42; margin: clamp(14px, 2.4vw, 32px); }
+.deco--icon-sm  { width: clamp(36px, 3.6vw, 52px); }
+.deco--icon.deco--light { opacity: 0.26; }
+.deco--icon.deco--tr, .deco--icon.deco--br, .deco--hanging.deco--tr { transform: none; }
+.deco--sleigh   { width: clamp(64px, 7vw, 100px); }
+.deco--wreath   { width: clamp(70px, 7.4vw, 104px); opacity: 0.42; margin: clamp(16px, 2.6vw, 36px); }
+.deco--hanging  { top: 0; right: clamp(12px, 3vw, 48px); width: clamp(220px, 25vw, 350px); opacity: 0.45; }
+.deco--hanging-sm { width: clamp(120px, 12vw, 170px); right: clamp(12px, 3vw, 40px); opacity: 0.38; }
+.deco--scene    { width: clamp(130px, 14vw, 200px); opacity: 0.4; margin: 0 0 clamp(10px, 1.6vw, 20px) clamp(14px, 2.4vw, 32px); }
+.deco--f-gift   { bottom: 0; left: calc(clamp(14px, 2.4vw, 32px) + clamp(52px, 5.4vw, 76px)); }
+.deco--f-mitten { bottom: 0; right: calc(clamp(14px, 2.4vw, 32px) + clamp(52px, 5.4vw, 76px)); }
+.deco--light.deco--flake { color: var(--white); }
 
 /* Mistletoe hangs from the top edge on its ribbon */
 .deco--mistletoe   { top: 0; width: clamp(64px, 7vw, 100px); opacity: 0.42; }
-.deco--m-hero      { left: clamp(150px, 16vw, 240px); }
-.deco--m-booking   { right: clamp(130px, 14vw, 200px); width: clamp(54px, 5.6vw, 80px); opacity: 0.36; }
-.deco--light.deco--flake { color: var(--white); }
+.deco--m-hero      { left: clamp(130px, 14vw, 210px); }
+.deco--m-booking   { right: clamp(110px, 12vw, 180px); width: clamp(54px, 5.6vw, 80px); opacity: 0.36; }
 
 @media (max-width: 600px) {
-  .hero > .deco--holly, .deco--ornaments-sm, .deco--m-booking { display: none; }
-  .deco--m-hero { display: none; }
+  .deco--m-booking, .deco--m-hero, .deco--sleigh, .booking > .deco--icon.deco--bl,
+  .booking > .deco--icon.deco--br, .booking > .deco--flake { display: none; }
+  .deco--hanging { width: 200px; }
 }
 @media (max-width: 760px) {
-  .ps-pin > .deco--ornaments-xs { display: none; }
+  .ps-pin > .deco--hanging-sm, .ps-pin > .deco--icon-sm { display: none; }
 }

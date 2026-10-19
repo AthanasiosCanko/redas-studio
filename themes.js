@@ -101,63 +101,63 @@
     <use href="#al-eagle" x="15.5" y="9.5" width="19" height="20" fill="currentColor" stroke="none"/>`;
   const FLAG = svg('0 0 60 64', FLAG_BODY);
 
-  // Kilim (Albanian woven carpet) motifs, built on a weaving grid: each
-  // filled cell is a square, merged into horizontal runs.
-  function cells(rows, unit) {
-    let d = '';
-    rows.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        if (row[x] !== '#') continue;
-        let w = 1;
-        while (row[x + w] === '#') w++;
-        d += `M${x * unit} ${y * unit}h${w * unit}v${unit}h${-w * unit}Z`;
-        x += w - 1;
-      }
-    });
-    return d;
-  }
+  // Two-tone fill used by the kilim pieces and the Christmas icons: a soft
+  // wash of the line colour under crisp outlines
+  const TONE = 'fill="currentColor" fill-opacity="0.22"';
+  const SOLID = 'fill="currentColor" stroke="none"';
+  const f1 = n => +n.toFixed(1);
 
-  // Corner band: a stepped sawtooth edge above a row of hourglass motifs
-  // strung on a thread, as along the kilim's borders.
-  function kilimBand() {
-    const W = 120, rows = Array.from({ length: 18 }, () => Array(W).fill('.'));
-    const run = (x0, x1, y) => { for (let x = x0; x <= x1; x++) if (x >= 0 && x < W) rows[y][x] = '#'; };
-    run(0, W - 1, 0);
-    for (let t = 0; t < W; t += 8) {                    // stepped teeth
-      run(t, t + 6, 1); run(t + 1, t + 5, 2); run(t + 2, t + 4, 3); run(t + 3, t + 3, 4);
+  // ── Kilim, drawn as vectors ──────────────────────────────
+  // One border band (along the top edge, 30 deep): solid teeth on the
+  // outer edge, counter-teeth on the inner edge, and hourglass spindles
+  // strung on a thread between them.
+  function kilimBandBody(from, to) {
+    let d = '', sp = '';
+    for (let x = from; x + 12 <= to; x += 12) {
+      d += `M${x} 0H${x + 12}L${x + 6} 8ZM${x} 30H${x + 12}L${x + 6} 23Z`;
     }
-    run(0, W - 1, 12);                                  // thread
-    for (let c = 6; c + 4 < W; c += 14) {               // whole hourglasses only
-      // the two halves sit either side of the thread (row 12)
-      [4, 3, 2, 1, 1, 2, 3, 4].forEach((half, i) => run(c - half, c + half, 8 + i + (i > 3 ? 1 : 0)));
+    for (let c = from + 12; c + 6 <= to; c += 24) {
+      sp += `M${c - 5} 9.5H${c + 5}L${c + 1.4} 15L${c + 5} 20.5H${c - 5}L${c - 1.4} 15Z`;
     }
-    return svg(`0 0 ${W * 2} 36`, `<path d="${cells(rows.map(r => r.join('')), 2)}"/>`, 'stroke="none" fill="currentColor"');
+    return `<path d="${d}" ${SOLID}/>
+      <path d="M${from} 15H${to}" stroke-width="0.9"/>
+      <path d="${sp}" ${TONE} stroke-width="1.1"/>`;
   }
+  // Carpet-border corner: the band along the top and (mirrored across the
+  // diagonal) down the left, meeting in a framed diamond.
+  const KILIM_CORNER = svg('0 0 200 200', `
+    ${kilimBandBody(30, 200)}
+    <g transform="matrix(0 1 1 0 0 0)">${kilimBandBody(30, 200)}</g>
+    <rect x="0.6" y="0.6" width="28.8" height="28.8" stroke-width="1.2"/>
+    <path d="M15 4L26 15L15 26L4 15Z" ${TONE} stroke-width="1.2"/>
+    <path d="M15 10L20 15L15 20L10 15Z" ${SOLID}/>`);
+  const KILIM_STRIP = svg('0 0 200 30', kilimBandBody(0, 200));
 
-  // Medallion, like the carpet's: a solid stepped block with a hooked
-  // ram's-horn ring and a diamond core woven out of it, comb fringes off
-  // the side points.
+  // Medallion: a stepped panel with comb fringes off its points, a solid
+  // diamond core and four angular ram's-horn hooks around it.
   function kilimMedallion() {
-    const W = 41, H = 17, cx = 20, cy = 8, rows = [];
-    for (let y = 0; y < H; y++) {
-      let row = '';
-      for (let x = 0; x < W; x++) {
-        const dx = Math.abs(x - cx), dy = Math.abs(y - cy), d = dx + 2 * dy;
-        const block = d <= 16;
-        const hooks = d >= 8 && d <= 10 && dx >= 2 && dy >= 1;          // broken ring → four hooks
-        const horns = (dy === 0 && dx >= 6 && dx <= 10);                // horn stems on the axis
-        const halo  = d >= 4.5 && d <= 5.5;                             // gap round the core
-        const comb  = dx >= 17 && dx <= 20 && dy % 2 === 0 && dy <= 4;
-        row += (block && !hooks && !horns && !halo) || comb ? '#' : '.';
-      }
-      rows.push(row);
-    }
-    return svg(`0 0 ${W * 2} ${H * 2}`, `<path d="${cells(rows, 2)}"/>`, 'stroke="none" fill="currentColor"');
+    const stair = (x0, y0, x1, y1, n) => {     // stepped edge from (x0,y0) to (x1,y1)
+      let d = '';
+      const dx = (x1 - x0) / n, dy = (y1 - y0) / n;
+      for (let i = 0; i < n; i++) d += `H${f1(x0 + dx * (i + 1))}V${f1(y0 + dy * (i + 1))}`;
+      return d;
+    };
+    const panel = `M14 44V36${stair(14, 36, 40, 8, 4)}H100${stair(100, 8, 126, 36, 4)}V44`
+      + `${stair(126, 44, 100, 72, 4)}H40${stair(40, 72, 14, 44, 4)}Z`;
+    return svg('0 0 140 80', `
+      <path d="${panel}" ${TONE} stroke-width="1.3"/>
+      <path d="M2 32H14M0 40H14M2 48H14M126 32H138M126 40H140M126 48H138" stroke-width="1.3"/>
+      <g stroke-width="3.2" stroke-linecap="square" stroke-linejoin="miter">
+        <path d="M74 18L90 34L86 38L82 34"/>
+        <path d="M90 46L74 62L70 58L74 54"/>
+        <path d="M66 62L50 46L54 42L58 46"/>
+        <path d="M50 34L66 18L70 22L66 26"/>
+        <path d="M40 40H30M30 36V44M100 40H110M110 36V44"/>
+      </g>
+      <path d="M70 29L81 40L70 51L59 40Z" ${SOLID}/>`);
   }
 
   // ── Christmas ─────────────────────────────────────────────
-  const f1 = n => n.toFixed(1);
-
   function star(cx, cy, R, attrs) {
     let d = '';
     for (let i = 0; i < 10; i++) {
@@ -189,112 +189,111 @@
     }
     return d;
   }
-  const snowflake = design => svg('0 0 24 24',
+
+  // A matching icon set on a 40×40 grid, in the two-tone style: outlines
+  // over a soft wash (TONE), with solid accents.
+  const leafPair = (x, y) => `<path d="M${x} ${y}C${x - 6} ${y - 3} ${x - 11} ${y - 1} ${x - 14} ${y + 2}C${x - 9} ${y + 3} ${x - 5} ${y + 3} ${x} ${y}ZM${x} ${y}C${x + 6} ${y - 3} ${x + 11} ${y - 1} ${x + 14} ${y + 2}C${x + 9} ${y + 3} ${x + 5} ${y + 3} ${x} ${y}Z" ${TONE}/>`;
+  const ICONS = {
+    star: `${star(20, 21, 15, `${TONE} stroke-width="1.5"`)}${star(20, 21, 5, SOLID)}`,
+    bell: `<path d="M20 9C13 9 11 15 11 21V27L8 31H32L29 27V21C29 15 27 9 20 9Z" ${TONE}/>
+      <path d="M11.5 23H28.5"/><circle cx="20" cy="33.5" r="2.4" ${SOLID}/>
+      <path d="M20 9C16 4 11 5 13 8C14 10 18 9.5 20 9C22 9.5 26 10 27 8C29 5 24 4 20 9Z" ${TONE}/>`,
+    candle: `<rect x="15" y="14" width="10" height="18" rx="1" ${TONE}/>
+      <path d="M15 19L25 15.5M15 24L25 20.5M15 29L25 25.5"/>
+      <path d="M20 4C23.5 7.5 23 11.5 20 12C17 11.5 16.5 7.5 20 4Z" ${SOLID}/>
+      ${leafPair(20, 33)}<circle cx="18" cy="33" r="1.7" ${SOLID}/><circle cx="22" cy="33" r="1.7" ${SOLID}/>`,
+    tree: `<path d="M20 5L12 15H16L9 24H14L7 33H33L26 24H31L24 15H28Z" ${TONE}/>
+      <path d="M18 33V37H22V33"/>${star(20, 4.5, 3.4, SOLID)}
+      <g ${SOLID}><circle cx="18" cy="13" r="1.2"/><circle cx="23" cy="20" r="1.2"/><circle cx="15" cy="27" r="1.2"/><circle cx="25" cy="29" r="1.2"/></g>`,
+    cane: `<path d="M25 37V14A6 6 0 0 0 13 14V18" stroke-width="7" stroke-opacity="0.22" stroke-linecap="round"/>
+      <path d="M25 37V14A6 6 0 0 0 13 14V18" stroke-width="7" stroke-dasharray="3.2 4" stroke-linecap="butt"/>`,
+    gift: `<rect x="8" y="17" width="24" height="17" rx="1" ${TONE}/><rect x="6" y="12" width="28" height="6" rx="1" ${TONE}/>
+      <path d="M20 12V34"/><path d="M20 12C16 5 10 7 13 10C15 12 18 12 20 12C22 12 25 12 27 10C30 7 24 5 20 12Z" ${TONE}/>`,
+    bauble: `<circle cx="20" cy="23" r="12" ${TONE}/><rect x="17" y="8.5" width="6" height="3.5" rx="0.8" ${SOLID}/>
+      <circle cx="20" cy="6.4" r="1.8"/><path d="${flakePath(20, 23, 7, 0)}" stroke-width="1"/>`,
+    gingerbread: `<path d="M20 4A6 6 0 0 1 20 16A6 6 0 0 1 20 4ZM14 17H26L33 21C35 22 34 25 32 24L26 21.5V27L30 35C31 37 28 38 27 36L20 29.5L13 36C12 38 9 37 10 35L14 27V21.5L8 24C6 25 5 22 7 21Z" ${TONE}/>
+      <g ${SOLID}><circle cx="18" cy="9" r="1"/><circle cx="22" cy="9" r="1"/><circle cx="20" cy="21" r="1.1"/><circle cx="20" cy="25" r="1.1"/></g>
+      <path d="M17.5 12Q20 14 22.5 12M10 22.5L11.5 21M28.5 21L30 22.5" stroke-width="1.1"/>`,
+    snowman: `<circle cx="20" cy="28" r="9" ${TONE}/><circle cx="20" cy="14" r="6" ${TONE}/>
+      <path d="M13.5 9H26.5M16 9V3H24V9"/><path d="M20 15L25.5 16L20 16.8Z" ${SOLID}/>
+      <path d="M14.5 19Q20 22 25.5 19M23 20.5L24.5 26"/>
+      <g ${SOLID}><circle cx="18" cy="13" r="0.9"/><circle cx="22" cy="13" r="0.9"/><circle cx="20" cy="26" r="1.1"/><circle cx="20" cy="30.5" r="1.1"/></g>
+      <path d="M11.5 26L6 22M28.5 26L34 22" stroke-width="1.2"/>`,
+    hat: `<path d="M7 30C9 18 16 9 26 9C30 9 32 13 33 17L30 19C29 16 27 15 25 16C21 18 19 24 19 30Z" ${TONE}/>
+      <rect x="5" y="29" width="27" height="6" rx="3" ${TONE}/><circle cx="31" cy="20" r="3.4" ${TONE}/>`,
+    wreath: `<circle cx="20" cy="19" r="12" stroke-width="7" stroke-opacity="0.22"/>
+      <circle cx="20" cy="19" r="15.5" stroke-width="1.1"/><circle cx="20" cy="19" r="8.5" stroke-width="1.1"/>
+      <g ${SOLID}><circle cx="9" cy="14" r="1.5"/><circle cx="16" cy="6.5" r="1.5"/><circle cx="27" cy="8" r="1.5"/><circle cx="32" cy="17" r="1.5"/><circle cx="8.5" cy="23" r="1.5"/></g>
+      <path d="M20 31C16 27 11 29 13 32C15 34 18 32 20 31C22 32 25 34 27 32C29 29 24 27 20 31Z" ${TONE}/>
+      <path d="M20 31L17 38M20 31L23 38"/>`,
+    stocking: `<path d="M13 9H27V24C27 31 22 35 15 35C10 35 8 31 11 28L13 26Z" ${TONE}/>
+      <rect x="11.5" y="4" width="17" height="6.5" rx="1.5" ${TONE}/><path d="M12 30.5C14.5 29.5 17 31 17.5 34.5"/>`,
+    calendar: `<rect x="6" y="9" width="28" height="25" rx="3" ${TONE}/><path d="M6 16H34M13 6V12M27 6V12"/>
+      <text x="20" y="30.5" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="11" ${SOLID}>25</text>`,
+    reindeer: `<path d="M13 17C13 13 16 11 20 11C24 11 27 13 27 17C27 23 24 30 20 33C16 30 13 23 13 17Z" ${TONE}/>
+      <path d="M13 16C9 15 7 17 8 19C10 19 12 18 13 18ZM27 16C31 15 33 17 32 19C30 19 28 18 27 18Z" ${TONE}/>
+      <path d="M16 12C14 8 13 5 13 2M14 7L10 5M14.6 9.5L11 9.5M24 12C26 8 27 5 27 2M26 7L30 5M25.4 9.5L29 9.5"/>
+      <g ${SOLID}><circle cx="17.5" cy="19" r="1"/><circle cx="22.5" cy="19" r="1"/><circle cx="20" cy="29.5" r="2.4"/></g>`,
+    sleigh: `<path d="M8 29H30C33 29 35 24 34 18H26C24 22 20 23 16 23H11C8 23 6 21 6 18C4 21 5 29 8 29Z" ${TONE}/>
+      <path d="M4 34H30C34 34 36 31 35 29M10 34V29M26 34V29M34 18C35 15 33 13 31 14"/>
+      <rect x="12" y="14" width="9" height="9" rx="1" ${TONE}/><path d="M16.5 14V23M12 18.5H21"/>`,
+    cheers: `<g transform="rotate(-14 15 34)"><path d="M11 7H19L18 17C17.6 20 16.2 21 15 21C13.8 21 12.4 20 12 17Z" ${TONE}/><path d="M15 21V32M11.5 32H18.5"/></g>
+      <g transform="rotate(14 25 34)"><path d="M21 7H29L28 17C27.6 20 26.2 21 25 21C23.8 21 22.4 20 22 17Z" ${TONE}/><path d="M25 21V32M21.5 32H28.5"/></g>
+      <path d="M20 1V4M16.5 2.5L18 4.5M23.5 2.5L22 4.5" stroke-width="1.2"/>`,
+    mitten: `<path d="M12 31V18C12 11 15 7 20 7C25 7 28 11 28 17V20L31 17C33 15 35 17 34 19L28 27V31Z" ${TONE}/>
+      <rect x="11" y="30" width="18" height="6.5" rx="1.5" ${TONE}/><path d="${flakePath(20, 19, 4.5, 2)}" stroke-width="0.9"/>`,
+    holly: `<path d="M20 22Q17 14 13 15Q12 10 8 11Q6 6 2 8Q4 12 3 15Q7 15 8 19Q12 18 13 22Q17 20 20 22Z" ${TONE}/>
+      <path d="M20 22Q23 14 27 15Q28 10 32 11Q34 6 38 8Q36 12 37 15Q33 15 32 19Q28 18 27 22Q23 20 20 22Z" ${TONE}/>
+      <path d="M20 22Q11 14 4 10M20 22Q29 14 36 10" stroke-width="0.8"/>
+      <g ${SOLID}><circle cx="20" cy="25" r="3"/><circle cx="16" cy="28.5" r="2.7"/><circle cx="24" cy="28.5" r="2.7"/></g>`,
+    globe: `<circle cx="20" cy="18" r="13" ${TONE}/><path d="M10 31H30L32 37H8Z" ${TONE}/>
+      <path d="M15 25V19L20 14L25 19V25Z"/><path d="M19 25V21H21V25"/>
+      <g ${SOLID}><circle cx="13" cy="11" r="1"/><circle cx="27" cy="11" r="1"/><circle cx="11.5" cy="18" r="1"/><circle cx="28.5" cy="19" r="1"/><circle cx="20" cy="8" r="1"/></g>`,
+    tag: `<path d="M12 11L20 6L28 11V35H12Z" ${TONE}/><circle cx="20" cy="11" r="1.8"/><rect x="15" y="17" width="10" height="14" rx="1" stroke-width="0.9"/>
+      <path d="M20 6C17 2 13 3 15 5C16 6 18 6 20 6C22 6 24 6 25 5C27 3 23 2 20 6Z" ${TONE}/>`,
+    flake: `<path d="${flakePath(20, 20, 17, 0)}" stroke-width="1.4"/><circle cx="20" cy="20" r="2" ${SOLID}/>`,
+  };
+  const icon = name => svg('0 0 40 40', ICONS[name], 'stroke-width="1.5"');
+
+  // Icons hanging from the top edge on strings of different lengths:
+  // [x, string length, icon size, icon]
+  const hanging = (vb, items) => svg(vb, items.map(([x, len, size, name]) =>
+    `<path d="M${x} 0V${len}" stroke-width="0.8"/>
+     <g transform="translate(${x - size / 2} ${len - size * 0.12}) scale(${size / 40})" stroke-width="${f1(1.5 * 40 / size)}">${ICONS[name]}</g>`).join(''));
+
+  const flake = design => svg('0 0 24 24',
     `<path d="${flakePath(12, 12, 11, design)}" stroke-width="${design === 1 ? 0.9 : 1}"/>` +
     (design === 0 ? '<circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>' : ''));
 
-  // Baubles hanging from the top edge on strings of different lengths
-  function bauble(x, len, r, kind) {
-    const top = len + 4, cy = top + r;
-    const string = `<path d="M${x} 0V${len - 2.5}" stroke-width="0.7"/>
-      <circle cx="${x}" cy="${len - 1.2}" r="1.3" stroke-width="0.7"/>
-      <rect x="${x - 3.2}" y="${len}" width="6.4" height="4.2" rx="0.9" fill="currentColor" stroke="none"/>`;
-    if (kind === 'star') return `<path d="M${x} 0V${len}" stroke-width="0.7"/>${star(x, len + r, r, 'stroke-width="1.1"')}`;
-    if (kind === 'drop') return string +
-      `<path d="M${x} ${top}C${x + r} ${top + r} ${x + r} ${top + r * 2.2} ${x} ${top + r * 2.7}C${x - r} ${top + r * 2.2} ${x - r} ${top + r} ${x} ${top}Z" stroke-width="1.2"/>
-       <path d="M${x - r * 0.55} ${f1(top + r * 1.3)}H${x + r * 0.55}M${x - r * 0.6} ${f1(top + r * 1.7)}H${x + r * 0.6}" stroke-width="0.8"/>`;
-    if (kind === 'onion') return string +
-      `<path d="M${x} ${top}C${x + r * 1.3} ${top + r * 0.7} ${x + r * 1.1} ${top + r * 1.8} ${x + r * 0.2} ${top + r * 2.2}L${x} ${top + r * 3}L${x - r * 0.2} ${top + r * 2.2}C${x - r * 1.1} ${top + r * 1.8} ${x - r * 1.3} ${top + r * 0.7} ${x} ${top}Z" stroke-width="1.2"/>
-       <path d="M${x} ${top + r * 0.3}V${f1(top + r * 2.1)}" stroke-width="0.8"/>`;
-    let inner = '';
-    const band = (dy, curve) => `M${f1(x - r * Math.sqrt(1 - dy * dy))} ${f1(cy + dy * r)}Q${x} ${f1(cy + dy * r + curve)} ${f1(x + r * Math.sqrt(1 - dy * dy))} ${f1(cy + dy * r)}`;
-    if (kind === 'bands')  inner = `<path d="${band(-0.3, 2.5)}${band(0.3, 2.5)}" stroke-width="0.9"/>`;
-    if (kind === 'ribs')   inner = `<ellipse cx="${x}" cy="${cy}" rx="${f1(r * 0.42)}" ry="${r}" stroke-width="0.9"/><path d="M${x} ${cy - r}V${cy + r}" stroke-width="0.9"/>`;
-    if (kind === 'dots') {
-      inner = `<path d="${band(0, 2)}" stroke-width="0.9"/>`;
-      for (const k of [-2, -1, 0, 1, 2]) inner += `<circle cx="${f1(x + k * r * 0.36)}" cy="${f1(cy - r * 0.42 + Math.abs(k) * 0.6)}" r="${f1(r * 0.08 + 0.4)}" fill="currentColor" stroke="none"/>`;
-    }
-    if (kind === 'zigzag') {
-      let z = `M${f1(x - r * 0.95)} ${cy}`;
-      for (let i = 1; i <= 8; i++) z += `L${f1(x - r * 0.95 + i * r * 1.9 / 8)} ${f1(cy + (i % 2 ? -r * 0.22 : 0))}`;
-      inner = `<path d="${z}" stroke-width="0.9"/>`;
-    }
-    if (kind === 'flake')  inner = `<path d="${flakePath(x, cy, r * 0.62, 0)}" stroke-width="0.7"/>`;
-    if (kind === 'shine')  inner = `<path d="M${f1(x - r * 0.6)} ${f1(cy - r * 0.1)}A${r * 0.62} ${r * 0.62} 0 0 1 ${f1(x - r * 0.1)} ${f1(cy - r * 0.62)}" stroke-width="1"/>`;
-    return string + `<circle cx="${x}" cy="${cy}" r="${r}" stroke-width="1.2"/>${inner}`;
-  }
-  const cluster = (vb, items) => svg(vb, items.map(i => bauble(...i)).join(''));
-
-  const ORNAMENTS = cluster('0 0 200 150', [
-    [14, 34, 9, 'shine'], [36, 62, 12, 'ribs'], [58, 20, 7, 'star'], [80, 44, 14, 'flake'],
-    [106, 84, 13, 'bands'], [128, 26, 9, 'drop'], [150, 58, 12, 'dots'], [172, 16, 7, 'star'], [186, 40, 9, 'onion'],
-  ]);
-  const ORNAMENTS_SM = cluster('0 0 130 120', [
-    [14, 24, 9, 'dots'], [38, 50, 12, 'flake'], [60, 16, 6, 'star'], [82, 36, 10, 'onion'], [110, 60, 11, 'zigzag'],
-  ]);
-  const ORNAMENTS_XS = cluster('0 0 90 100', [
-    [14, 30, 9, 'ribs'], [40, 14, 6, 'star'], [60, 46, 11, 'bands'], [80, 22, 7, 'drop'],
-  ]);
+  // A small winter scene on a snow line: snowman, tree and a gift
+  const SNOW_SCENE = svg('0 0 160 76', `
+    <path d="M0 70Q30 64 60 69T120 67T160 68" stroke-width="1.2"/>
+    <g transform="translate(6 18) scale(1.25)" stroke-width="1.2">${ICONS.snowman}</g>
+    <g transform="translate(62 6) scale(1.55)" stroke-width="1">${ICONS.tree}</g>
+    <g transform="translate(118 32) scale(0.95)" stroke-width="1.5">${ICONS.gift}</g>`);
 
   // Mistletoe hanging on a ribbon: a bow, forked stems with paired
   // leaves, and a cluster of berries
   const MISTLETOE = svg('0 0 70 104', `
     <path d="M35 0V20" stroke-width="0.8"/>
     <g stroke-width="1.1">
-      <path d="M35 21C29 15 22 16 23 21C24 25 31 23 35 21C39 23 46 25 47 21C48 16 41 15 35 21Z"/>
+      <path d="M35 21C29 15 22 16 23 21C24 25 31 23 35 21C39 23 46 25 47 21C48 16 41 15 35 21Z" ${TONE}/>
       <path d="M35 21L29 32M35 21L41 31"/>
       <path d="M35 22V46M35 40L22 60M35 40L48 60M35 44V70"/>
-      <ellipse cx="17" cy="66" rx="4.2" ry="11" transform="rotate(32 17 66)"/>
-      <ellipse cx="27" cy="70" rx="4.2" ry="11" transform="rotate(-6 27 70)"/>
-      <ellipse cx="53" cy="66" rx="4.2" ry="11" transform="rotate(-32 53 66)"/>
-      <ellipse cx="43" cy="70" rx="4.2" ry="11" transform="rotate(6 43 70)"/>
-      <ellipse cx="31" cy="85" rx="4" ry="10.5" transform="rotate(14 31 85)"/>
-      <ellipse cx="39" cy="85" rx="4" ry="10.5" transform="rotate(-14 39 85)"/>
+      <g ${TONE}>
+        <ellipse cx="17" cy="66" rx="4.2" ry="11" transform="rotate(32 17 66)"/>
+        <ellipse cx="27" cy="70" rx="4.2" ry="11" transform="rotate(-6 27 70)"/>
+        <ellipse cx="53" cy="66" rx="4.2" ry="11" transform="rotate(-32 53 66)"/>
+        <ellipse cx="43" cy="70" rx="4.2" ry="11" transform="rotate(6 43 70)"/>
+        <ellipse cx="31" cy="85" rx="4" ry="10.5" transform="rotate(14 31 85)"/>
+        <ellipse cx="39" cy="85" rx="4" ry="10.5" transform="rotate(-14 39 85)"/>
+      </g>
     </g>
     <g stroke-width="1">
       <circle cx="35" cy="48" r="3.2"/><circle cx="29.5" cy="51" r="3"/><circle cx="40.5" cy="51" r="3"/>
       <circle cx="33" cy="54.5" r="2.8"/><circle cx="38" cy="55" r="2.6"/>
     </g>
-    <g fill="currentColor" stroke="none">
-      <circle cx="35" cy="48" r="0.9"/><circle cx="29.5" cy="51" r="0.8"/><circle cx="40.5" cy="51" r="0.8"/>
-    </g>`);
-
-  // Pine bough sweeping in from the top-left corner: two branches with
-  // needles along both sides, shortening towards the tips, and berries.
-  function bough() {
-    const branch = (P0, C, P1, n, len) => {
-      const at = t => [0, 1].map(k => (1 - t) ** 2 * P0[k] + 2 * (1 - t) * t * C[k] + t * t * P1[k]);
-      let d = `M${P0}Q${C} ${P1}`;
-      for (let i = 1; i <= n; i++) {
-        const t = i / (n + 1), [x, y] = at(t), [x2, y2] = at(Math.min(1, t + 0.02));
-        const a = Math.atan2(y2 - y, x2 - x), l = len * (1 - t * 0.55);
-        for (const side of [-1, 1]) {
-          const b = a + side * 0.8;
-          d += `M${f1(x)} ${f1(y)}l${f1(l * Math.cos(b))} ${f1(l * Math.sin(b))}`;
-        }
-      }
-      return d;
-    };
-    const d = branch([0, 14], [60, 6], [138, 40], 16, 13) + branch([12, 0], [22, 60], [52, 132], 14, 12)
-            + branch([40, 22], [62, 46], [70, 84], 8, 9);
-    return svg('0 0 140 140', `<path d="${d}" stroke-width="1.1"/>
-      <g fill="currentColor" stroke="none"><circle cx="26" cy="26" r="4"/><circle cx="34" cy="22" r="3.4"/><circle cx="31" cy="31" r="3"/></g>`);
-  }
-
-  const HOLLY = svg('0 0 64 40', `
-    <g stroke-width="1.2">
-      <path d="M30 24Q26 15 21 16Q20 10 14 12Q12 6 4 7Q7 12 5 16Q11 16 11 21Q17 20 18 25Q24 23 30 24Z"/>
-      <path d="M30 24Q16 15 6 9" stroke-width="0.8"/>
-      <path d="M34 24Q38 15 43 16Q44 10 50 12Q52 6 60 7Q57 12 59 16Q53 16 53 21Q47 20 46 25Q40 23 34 24Z"/>
-      <path d="M34 24Q48 15 58 9" stroke-width="0.8"/>
-    </g>
-    <g fill="currentColor" stroke="none"><circle cx="32" cy="27" r="3.4"/><circle cx="27.5" cy="31" r="3"/><circle cx="36.5" cy="31" r="3"/></g>`);
-
-  const TREE = svg('0 0 40 58', `
-    <path d="M20 9L11 21H15L7 33H12L4 46H36L28 33H33L25 21H29Z" stroke-width="1.2"/>
-    <path d="M17 46V53H23V46" stroke-width="1.2"/>
-    ${star(20, 6, 5, 'fill="currentColor" stroke="none"')}
-    <g fill="currentColor" stroke="none"><circle cx="17" cy="27" r="1.3"/><circle cx="24" cy="38" r="1.3"/><circle cx="14" cy="40" r="1.3"/><circle cx="22" cy="17" r="1.1"/></g>`);
+    <g ${SOLID}><circle cx="35" cy="48" r="0.9"/><circle cx="29.5" cy="51" r="0.8"/><circle cx="40.5" cy="51" r="0.8"/></g>`);
 
   // Geometric tile mosaic (the banner corner): an L of square tiles —
   // four-point stars, crossed petals, quarter circles, rings, diamonds —
@@ -419,19 +418,19 @@
       ['.site-footer', 'deco--pumpkin deco--br',                pumpkin()],
     ],
     independence: () => [
-      ['.hero',        'deco--kilim deco--tl',                  kilimBand()],
+      ['.hero',        'deco--kilim-corner deco--tl',           KILIM_CORNER],
       ['.hero',        'deco--mosaic deco--tr',                 mosaic()],
       ['.hero',        'deco--chevrons deco--bl',               chevrons()],
       ['.hero',        'deco--shield deco--br',                 SHIELD_EAGLE],
       ['.ps-pin',      'deco--flag deco--tl',                   FLAG],
       ['.ps-pin',      'deco--eagle deco--eagle-sm deco--br',   EAGLE],
-      ['.ps-pin',      'deco--kilim deco--bl',                  kilimBand()],
+      ['.ps-pin',      'deco--kilim-strip deco--bl',            KILIM_STRIP],
       ['.booking',     'deco--date deco--tl',                   DATE_MARK],
       ['.booking',     'deco--cifteli deco--tr',                CIFTELI],
       ['.booking',     'deco--medallion deco--bl',              kilimMedallion()],
-      ['.booking',     'deco--kilim deco--br',                  kilimBand()],
-      ['.site-footer', 'deco--kilim deco--light deco--tl',      kilimBand()],
-      ['.site-footer', 'deco--kilim deco--light deco--tr',      kilimBand()],
+      ['.booking',     'deco--kilim-corner deco--kilim-sm deco--br', KILIM_CORNER],
+      ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tl', KILIM_CORNER],
+      ['.site-footer', 'deco--kilim-corner deco--kilim-sm deco--light deco--tr', KILIM_CORNER],
       ['.site-footer', 'deco--skyline deco--light',             SKYLINE],
       ['.site-footer', 'deco--eagle deco--light deco--bl',      EAGLE],
       ['.site-footer', 'deco--eagle deco--light deco--br',      EAGLE],
@@ -457,42 +456,48 @@
       ['.site-footer', 'deco--confetti deco--light', CONFETTI.dia, 'left:26%;bottom:30%;width:clamp(12px,1.06vw,15px)'],
     ],
     christmas: () => [
-      ['.hero',        'deco--bough deco--tl',                  bough()],
-      ['.hero',        'deco--ornaments deco--tr',              ORNAMENTS],
+      ['.hero',        'deco--hanging deco--tr',                hanging('0 0 220 160', [
+                         [16, 30, 26, 'bauble'], [48, 66, 30, 'bell'], [80, 22, 24, 'star'], [112, 82, 32, 'bauble'],
+                         [146, 40, 26, 'cane'], [178, 70, 28, 'star'], [204, 26, 22, 'bauble']])],
+      ['.hero',        'deco--wreath deco--tl',                 icon('wreath')],
       ['.hero',        'deco--mistletoe deco--m-hero',          MISTLETOE],
-      ['.hero',        'deco--holly deco--br',                  HOLLY],
-      ['.ps-pin',      'deco--holly deco--tl',                  HOLLY],
-      ['.ps-pin',      'deco--ornaments deco--ornaments-xs deco--tr', ORNAMENTS_XS],
-      ['.booking',     'deco--ornaments deco--ornaments-sm deco--tl', ORNAMENTS_SM],
-      ['.booking',     'deco--bough deco--bough-sm deco--tr',   bough()],
+      ['.hero',        'deco--scene deco--bl',                  SNOW_SCENE],
+      ['.hero',        'deco--icon deco--sleigh deco--br',      icon('sleigh')],
+      ['.ps-pin',      'deco--icon deco--tl',                   icon('candle')],
+      ['.ps-pin',      'deco--hanging deco--hanging-sm deco--tr', hanging('0 0 120 110', [
+                         [16, 26, 24, 'star'], [50, 52, 28, 'bauble'], [86, 20, 22, 'cane'], [108, 44, 20, 'star']])],
+      ['.ps-pin',      'deco--icon deco--icon-sm deco--br',     icon('gingerbread')],
+      ['.booking',     'deco--icon deco--tl',                   icon('calendar')],
       ['.booking',     'deco--mistletoe deco--m-booking',       MISTLETOE],
-      ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tl', bough()],
-      ['.site-footer', 'deco--bough deco--bough-sm deco--light deco--tr', bough()],
-      ['.site-footer', 'deco--tree deco--light deco--bl',       TREE],
-      ['.site-footer', 'deco--tree deco--light deco--br',       TREE],
-      ['.hero', 'deco--flake', snowflake(0), 'left:6%;top:18%;width:clamp(32px,3.16vw,44px);opacity:0.38'],
-      ['.hero', 'deco--flake', snowflake(2), 'left:14%;top:30%;width:clamp(20px,1.94vw,27px);opacity:0.3'],
-      ['.hero', 'deco--flake', snowflake(1), 'left:3%;top:40%;width:clamp(15px,1.46vw,20px);opacity:0.25'],
-      ['.hero', 'deco--flake deco--minor', snowflake(1), 'left:8%;bottom:14%;width:clamp(27px,2.67vw,37px);opacity:0.32'],
-      ['.hero', 'deco--flake deco--minor', snowflake(0), 'left:16%;bottom:26%;width:clamp(17px,1.70vw,24px);opacity:0.26'],
-      ['.hero', 'deco--flake deco--minor', snowflake(2), 'left:4%;bottom:30%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
-      ['.hero', 'deco--flake deco--minor', snowflake(2), 'right:7%;bottom:18%;width:clamp(31px,2.91vw,41px);opacity:0.34'],
-      ['.hero', 'deco--flake deco--minor', snowflake(0), 'right:15%;bottom:10%;width:clamp(20px,1.94vw,27px);opacity:0.28'],
-      ['.hero', 'deco--flake deco--minor', snowflake(1), 'right:4%;bottom:30%;width:clamp(15px,1.46vw,20px);opacity:0.24'],
-      ['.hero', 'deco--flake deco--minor', snowflake(1), 'right:18%;top:34%;width:clamp(17px,1.70vw,24px);opacity:0.24'],
-      ['.ps-pin', 'deco--flake', snowflake(0), 'right:6%;top:10%;width:clamp(22px,2.19vw,31px);opacity:0.3'],
-      ['.ps-pin', 'deco--flake', snowflake(2), 'right:12%;top:18%;width:clamp(15px,1.46vw,20px);opacity:0.24'],
-      ['.ps-pin', 'deco--flake', snowflake(1), 'left:6%;bottom:10%;width:clamp(20px,1.94vw,27px);opacity:0.26'],
-      ['.ps-pin', 'deco--flake deco--minor', snowflake(2), 'right:8%;bottom:12%;width:clamp(26px,2.43vw,34px);opacity:0.3'],
-      ['.booking', 'deco--flake', snowflake(0), 'left:6%;bottom:16%;width:clamp(26px,2.43vw,34px);opacity:0.3'],
-      ['.booking', 'deco--flake', snowflake(2), 'left:13%;bottom:8%;width:clamp(17px,1.70vw,24px);opacity:0.24'],
-      ['.booking', 'deco--flake', snowflake(1), 'right:7%;bottom:12%;width:clamp(22px,2.19vw,31px);opacity:0.28'],
-      ['.booking', 'deco--flake deco--minor', snowflake(0), 'right:14%;bottom:22%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
-      ['.booking', 'deco--flake deco--minor', snowflake(1), 'left:24%;top:30%;width:clamp(15px,1.46vw,20px);opacity:0.22'],
-      ['.site-footer', 'deco--flake deco--light', snowflake(0), 'left:12%;top:46%;width:clamp(17px,1.70vw,24px);opacity:0.22'],
-      ['.site-footer', 'deco--flake deco--light', snowflake(2), 'right:13%;top:44%;width:clamp(15px,1.46vw,20px);opacity:0.2'],
-      ['.site-footer', 'deco--flake deco--light', snowflake(1), 'left:14%;bottom:40%;width:clamp(15px,1.46vw,20px);opacity:0.18'],
-      ['.site-footer', 'deco--flake deco--light deco--minor', snowflake(0), 'right:15%;bottom:38%;width:clamp(17px,1.70vw,24px);opacity:0.2'],
+      ['.booking',     'deco--icon deco--tr',                   icon('hat')],
+      ['.booking',     'deco--icon deco--bl',                   icon('cheers')],
+      ['.booking',     'deco--icon deco--br',                   icon('globe')],
+      ['.site-footer', 'deco--icon deco--light deco--tl',       icon('holly')],
+      ['.site-footer', 'deco--icon deco--light deco--tr',       icon('holly')],
+      ['.site-footer', 'deco--icon deco--light deco--bl',       icon('reindeer')],
+      ['.site-footer', 'deco--icon deco--light deco--br',       icon('stocking')],
+      ['.site-footer', 'deco--icon deco--light deco--minor deco--f-gift', icon('gift')],
+      ['.site-footer', 'deco--icon deco--light deco--minor deco--f-mitten', icon('mitten')],
+      ['.hero', 'deco--flake', flake(0), 'left:5%;top:30%;width:clamp(36px,3.43vw,48px);opacity:0.38'],
+      ['.hero', 'deco--flake', flake(2), 'left:13%;top:40%;width:clamp(22px,2.07vw,29px);opacity:0.3'],
+      ['.hero', 'deco--flake', flake(1), 'left:3%;top:52%;width:clamp(16px,1.57vw,22px);opacity:0.26'],
+      ['.hero', 'deco--flake deco--minor', flake(1), 'left:22%;top:20%;width:clamp(20px,1.86vw,26px);opacity:0.26'],
+      ['.hero', 'deco--flake deco--minor', flake(2), 'right:6%;bottom:30%;width:clamp(34px,3.21vw,45px);opacity:0.34'],
+      ['.hero', 'deco--flake deco--minor', flake(0), 'right:16%;bottom:24%;width:clamp(20px,1.86vw,26px);opacity:0.28'],
+      ['.hero', 'deco--flake deco--minor', flake(1), 'right:4%;bottom:40%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
+      ['.hero', 'deco--flake deco--minor', flake(0), 'right:20%;top:44%;width:clamp(22px,2.07vw,29px);opacity:0.26'],
+      ['.hero', 'deco--flake deco--minor', flake(2), 'left:24%;bottom:12%;width:clamp(20px,1.86vw,26px);opacity:0.24'],
+      ['.hero', 'deco--flake deco--minor', flake(2), 'right:28%;top:12%;width:clamp(16px,1.57vw,22px);opacity:0.22'],
+      ['.ps-pin', 'deco--flake', flake(0), 'right:22%;top:8%;width:clamp(24px,2.29vw,32px);opacity:0.3'],
+      ['.ps-pin', 'deco--flake', flake(2), 'left:14%;top:14%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
+      ['.ps-pin', 'deco--flake', flake(1), 'left:6%;bottom:12%;width:clamp(24px,2.29vw,32px);opacity:0.28'],
+      ['.ps-pin', 'deco--flake deco--minor', flake(2), 'right:14%;bottom:8%;width:clamp(16px,1.57vw,22px);opacity:0.24'],
+      ['.booking', 'deco--flake', flake(0), 'left:14%;bottom:8%;width:clamp(26px,2.50vw,35px);opacity:0.3'],
+      ['.booking', 'deco--flake', flake(2), 'right:14%;bottom:14%;width:clamp(20px,1.86vw,26px);opacity:0.26'],
+      ['.booking', 'deco--flake', flake(1), 'left:20%;top:12%;width:clamp(20px,1.86vw,26px);opacity:0.24'],
+      ['.booking', 'deco--flake deco--minor', flake(0), 'right:22%;top:30%;width:clamp(16px,1.57vw,22px);opacity:0.22'],
+      ['.site-footer', 'deco--flake deco--light', flake(0), 'left:14%;top:30%;width:clamp(20px,1.86vw,26px);opacity:0.22'],
+      ['.site-footer', 'deco--flake deco--light', flake(2), 'right:14%;top:34%;width:clamp(16px,1.57vw,22px);opacity:0.2'],
     ],
   };
 
