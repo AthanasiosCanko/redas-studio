@@ -488,19 +488,23 @@
     <path d="M75 40C72 36 78 34 75 29M83 40C80 36 86 34 83 29" stroke-width="0.9"/>
     ${star(48, 8, 4, SOLID)}${star(56, 38, 2.6, SOLID)}`);
 
-  // Dates for breaking the fast: a small bowl heaped with them, one loose.
-  // Each date is a long oval with its cap and a crease, tilted by `a`
-  const date = (x, y, a) => `<g transform="translate(${x} ${y}) rotate(${a})">
-      <path d="M-9 0C-9 -4.6 9 -4.6 9 0C9 4.6 -9 4.6 -9 0Z" fill="currentColor" fill-opacity="0.38"/>
-      <path d="M-4 -1.2Q1 -2.4 5 -0.6" stroke-width="0.6"/>
-      <path d="M9 -1.6L11 0L9 1.6" ${SOLID}/></g>`;
-  const DATES = svg('0 0 100 64', `<g stroke-width="1.2">
-      ${date(30, 33, -8)}${date(50, 35, 4)}${date(70, 33, 10)}
-      ${date(40, 26, -14)}${date(60, 25, 12)}${date(50, 17, -4)}
-      ${date(86, 58, -18)}</g>
-    <path d="M12 36H88Q84 54 50 54Q16 54 12 36Z" ${TONE} stroke-width="1.3"/>
-    <path d="M42 54L40 59H60L58 54" stroke-width="1.2"/>
-    ${star(18, 12, 3.5, SOLID)}${star(84, 14, 2.6, SOLID)}`);
+  // Dates for breaking the fast, heaped in a footed bowl (line-icon style).
+  // Each date is a plump oval with a short highlight along its inner edge;
+  // an opaque under-fill lets the front ones hide the ones behind
+  const date = (x, y, rx, ry, a) => {
+    const oval = `M${-rx} 0A${rx} ${ry} 0 1 0 ${rx} 0A${rx} ${ry} 0 1 0 ${-rx} 0Z`;
+    const hx = f1(rx * 0.62), hy = f1(ry * 0.55);
+    return `<g transform="translate(${x} ${y}) rotate(${a})">
+      <path d="${oval}" fill="var(--white)" stroke="none"/><path d="${oval}" ${TONE}/>
+      <path d="M${f1(-rx * 0.62)} ${f1(-ry * 0.12)}A${hx} ${hy} 0 0 0 ${f1(-rx * 0.1)} ${f1(ry * 0.55)}" stroke-width="1"/></g>`;
+  };
+  const BOWL = 'M3 43H97V47.5H3ZM5 47.5Q10 70 34 71H66Q90 70 95 47.5Z';
+  const DATES = svg('0 0 100 80', `<g stroke-width="1.4">
+      ${date(31, 20, 17, 9, -12)}${date(62, 17, 17, 9.5, 18)}
+      ${date(21, 37, 15, 8, 10)}${date(48, 37, 17, 9.5, -20)}${date(76, 31, 18, 10, -60)}
+      <path d="${BOWL}" fill="var(--white)" stroke="none"/><path d="${BOWL}" ${TONE}/>
+      <path d="M38 71L34 78H66L62 71" ${TONE}/></g>
+    ${star(6, 10, 3.2, SOLID)}${star(94, 8, 2.6, SOLID)}`);
 
   // Shared <symbol>s a theme's decorations <use>, added to the page once
   const SPRITES = { independence: EAGLE_SYMBOL };
