@@ -52,6 +52,7 @@
     <nav class="adm-tabs">
       <button class="adm-tab adm-tab--active" data-tab="bookings">Rezervimet</button>
       <button class="adm-tab" data-tab="availability">Disponueshmëria</button>
+      <button class="adm-tab" data-tab="theme">Tema</button>
     </nav>
 
     <!-- ── BOOKINGS TAB ─────────────────────────────────── -->
@@ -99,6 +100,39 @@
           <button class="bk-submit adm-add-booking-btn" id="adm-add-booking" type="button">Shto rezervim</button>
         </div>
 
+      </div>
+    </section>
+
+    <!-- ── THEME TAB ────────────────────────────────────── -->
+    <section id="tab-theme" class="adm-section" hidden>
+      <div class="adm-inner">
+        <p class="adm-section-hint">Zgjidhni një temë sezonale për faqen. Ngjyrat mbeten të njëjta — shtohen vetëm detaje të vogla.</p>
+
+        <form id="theme-form" class="theme-options">
+          <label class="theme-option">
+            <input type="radio" name="theme" value="none">
+            <span class="theme-option-name">Asnjë</span>
+            <span class="theme-option-desc">Faqja standarde</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="halloween">
+            <span class="theme-option-name">Halloween</span>
+            <span class="theme-option-desc">Rrjeta merimangash, lakuriqë nate, kunguj</span>
+          </label>
+          <label class="theme-option theme-option--soon">
+            <input type="radio" name="theme" value="independence" disabled>
+            <span class="theme-option-name">Dita e Pavarësisë</span>
+            <span class="theme-option-desc">Së shpejti</span>
+          </label>
+          <label class="theme-option theme-option--soon">
+            <input type="radio" name="theme" value="christmas" disabled>
+            <span class="theme-option-name">Krishtlindje</span>
+            <span class="theme-option-desc">Së shpejti</span>
+          </label>
+        </form>
+
+        <p id="theme-status" class="theme-status" hidden></p>
+        <a href="/?theme=halloween" target="_blank" rel="noopener" class="theme-preview" id="theme-preview" hidden>Shiko paraprakisht ↗</a>
       </div>
     </section>
 

@@ -117,6 +117,7 @@
     dashboard.hidden   = false;
     loadBookings();
     initAdminCalendar();
+    loadTheme();
     subscribeToPush();
   }
 
@@ -389,6 +390,38 @@
     } finally {
       admBkSubmit.disabled    = false;
       admBkSubmit.textContent = origLabel;
+    }
+  });
+
+  // ── Seasonal theme ───────────────────────────────────────
+  const themeForm    = document.getElementById('theme-form');
+  const themeStatus  = document.getElementById('theme-status');
+  const themePreview = document.getElementById('theme-preview');
+
+  function showTheme(theme) {
+    const radio = themeForm.querySelector(`input[value="${theme}"]`);
+    if (radio) radio.checked = true;
+    themePreview.hidden = theme === 'none';
+    themePreview.href   = `/?theme=${theme}`;
+  }
+
+  async function loadTheme() {
+    try {
+      showTheme((await fetch('/api/theme').then(r => r.json())).theme);
+    } catch { /* leave unselected */ }
+  }
+
+  themeForm.addEventListener('change', async e => {
+    const theme = e.target.value;
+    themeStatus.hidden = false;
+    themeStatus.textContent = 'Duke ruajtur…';
+    try {
+      await post('/api/admin/theme', { theme });
+      showTheme(theme);
+      themeStatus.textContent = theme === 'none' ? 'Faqja u kthye në standarde.' : 'Tema u aktivizua në faqe.';
+    } catch {
+      themeStatus.textContent = 'Tema nuk u ruajt — provoni përsëri.';
+      loadTheme();
     }
   });
 

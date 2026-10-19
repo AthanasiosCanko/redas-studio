@@ -100,8 +100,9 @@ address { font-style: normal; }
   opacity: 0.05;
 }
 
-/* Hero content sits above the media and veil. */
-.hero > :not(.hero-media):not(.hero-veil) {
+/* Hero content sits above the media and veil (theme decorations position
+   themselves — see themes.css). */
+.hero > :not(.hero-media):not(.hero-veil):not(.deco) {
   position: relative;
   z-index: 2;
 }

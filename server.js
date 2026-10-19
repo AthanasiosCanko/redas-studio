@@ -120,6 +120,10 @@ async function initDb() {
       subscription JSONB       NOT NULL UNIQUE,
       created_at   TIMESTAMPTZ DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key   VARCHAR(64) PRIMARY KEY,
+      value TEXT        NOT NULL
+    );
     -- Lock a time only while a booking there is active; freed/denied times reopen.
     CREATE UNIQUE INDEX IF NOT EXISTS bookings_active_slot
       ON bookings (date, time) WHERE ${ACTIVE};
@@ -377,6 +381,15 @@ app.get('/api/vapid-public-key', (req, res) => {
   res.json({ key: VAPID_PUBLIC || null });
 });
 
+// Seasonal theme chosen in the admin panel. 'none' is the standard site;
+// extend THEMES as each theme's decorations are built (themes.js).
+const THEMES = ['none', 'halloween'];
+
+app.get('/api/theme', handle(async (req, res) => {
+  const { rows } = await pool.query(`SELECT value FROM settings WHERE key = 'theme'`);
+  res.json({ theme: THEMES.includes(rows[0]?.value) ? rows[0].value : 'none' });
+}));
+
 // Calendar month data: blocked days + active-booking dot counts
 app.get('/api/calendar/:year/:month', handle(async (req, res) => {
   const { year, month } = req.params;
@@ -447,6 +460,17 @@ app.post('/api/admin/push-subscribe', requireAdmin, handle(async (req, res) => {
     [JSON.stringify(subscription)]
   );
   res.json({ ok: true });
+}));
+
+app.post('/api/admin/theme', requireAdmin, handle(async (req, res) => {
+  const { theme } = req.body;
+  if (!THEMES.includes(theme)) return res.status(400).json({ error: 'Unknown theme' });
+  await pool.query(
+    `INSERT INTO settings (key, value) VALUES ('theme', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [theme]
+  );
+  res.json({ theme });
 }));
 
 const BOOKING_COLS = 'date, time, name, email, phone, contact, status, created_at';

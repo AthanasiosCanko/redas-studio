@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'calendar.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'calendar.js', 'themes.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {
@@ -128,6 +128,17 @@ test('shared calendar helpers: Albanian labels, month roll-over, first free time
   // A far-future day ignores the clock: first 5-minute step not already taken
   assert.equal(firstFreeTime('2099-01-05', new Set()), '09:00');
   assert.equal(firstFreeTime('2099-01-05', new Set(['09:00', '09:05'])), '09:10');
+});
+
+test('seasonal theme: admin picker, guarded save route, public loader', () => {
+  const server = read('server.js'), admin = read('admin.html'), index = read('index.html');
+  assert.ok(server.includes("app.get('/api/theme'"), 'public theme read route missing');
+  assert.ok(server.includes("app.post('/api/admin/theme', requireAdmin"), 'theme save must require admin');
+  for (const v of ['none', 'halloween']) assert.ok(admin.includes(`value="${v}"`), `admin radio "${v}" missing`);
+  assert.ok(index.includes('<script src="themes.js">') && index.includes('href="themes.css"'), 'index must load themes.js/css');
+  // every theme the server accepts (except none) must have decorations
+  const themes = server.match(/const THEMES = \[([^\]]*)\]/)[1].match(/'([^']+)'/g).map(t => t.slice(1, -1));
+  for (const t of themes.filter(t => t !== 'none')) assert.ok(read('themes.js').includes(`${t}: [`), `themes.js has no ${t} decorations`);
 });
 
 test('every requireAdmin route also references a JWT check', () => {

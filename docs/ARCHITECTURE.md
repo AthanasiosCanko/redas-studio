@@ -20,6 +20,7 @@ booking.js          — public booking calendar + request flow
 admin.js            — admin logic (JWT auth, push subscribe, API calls)
 calendar.js         — shared by both: Albania time, date labels, month grid (RedaCalendar)
 timepicker.js       — shared wheel time picker (RedaTimePicker.create)
+themes.js/.css      — seasonal decorations for the theme picked in admin (`/?theme=x` previews)
 hero.js             — hero video loader (saveData/2g gate), parallax, scroll reveals,
                       pinned horizontal price-category scroll
 server.js           — Express: static serving + REST API + DB bootstrap
