@@ -69,73 +69,93 @@
   }
 
   // ── Picker (browser only) ─────────────────────────────────
-  // Renders one collapsible group per category into `host`. Add-ons appear
-  // once a main service of their category is ticked. Returns
+  // Tabs, one category shown at a time, so the form keeps one height
+  // whatever is picked. Each tab counts its picks; add-ons are chips that
+  // switch on once a main service of their category is ticked; a line under
+  // the tabs lists everything picked across them. Returns
   // { value(), reset() }; onChange fires with the current picks.
   function mount(host, { onChange = () => {} } = {}) {
     const esc = s => String(s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-    const row = (category, item) => `
-      <label class="svc-row${item.addon ? ' svc-row--addon' : ''}">
-        <input type="checkbox" value="${esc(keyOf(category, item.name))}">
-        <span class="svc-name">${item.addon ? '+ ' : ''}${esc(item.name)}</span>
-        <span class="svc-price">${esc(item.price)}</span>
-      </label>`;
+    const uid = `svc${Math.random().toString(36).slice(2, 8)}`;
 
-    host.innerHTML = SERVICES.map(({ category, single, items }) => `
-      <div class="svc-group" data-category="${esc(category)}">
-        <button type="button" class="svc-head" aria-expanded="false">
-          <span class="svc-cat">${esc(category)}</span>
-          <span class="svc-count"></span>
-        </button>
-        <div class="svc-body" hidden>
-          ${single ? '<p class="svc-note">Zgjidhni një</p>' : ''}
-          ${items.filter(i => !i.addon).map(i => row(category, i)).join('')}
-          <div class="svc-addons" hidden>${items.filter(i => i.addon).map(i => row(category, i)).join('')}</div>
-        </div>
-      </div>`).join('');
+    host.innerHTML = `
+      <div class="svc-tabs" role="tablist">${SERVICES.map(({ category }, i) => `
+        <button type="button" class="svc-tab" role="tab" id="${uid}-t${i}" aria-controls="${uid}-p${i}">
+          ${esc(category)}<span class="svc-count"></span>
+        </button>`).join('')}
+      </div>
+      ${SERVICES.map(({ category, single, items }, i) => `
+      <div class="svc-panel${single ? ' svc-panel--single' : ''}" role="tabpanel" id="${uid}-p${i}" aria-labelledby="${uid}-t${i}" data-category="${esc(category)}">
+        ${items.filter(it => !it.addon).map(it => `
+        <label class="svc-row">
+          <input type="checkbox" value="${esc(keyOf(category, it.name))}">
+          <span class="svc-name">${esc(it.name)}</span>
+          <span class="svc-price">${esc(it.price)}</span>
+        </label>`).join('')}
+        ${items.some(it => it.addon) ? `
+        <div class="svc-addons">${items.filter(it => it.addon).map(it => `
+          <label class="svc-chip">
+            <input type="checkbox" value="${esc(keyOf(category, it.name))}">+ ${esc(it.name)} <span class="svc-price">${esc(it.price)}</span>
+          </label>`).join('')}
+        </div>` : ''}
+      </div>`).join('')}
+      <p class="svc-picked" hidden></p>`;
 
-    const boxes = () => [...host.querySelectorAll('input[type="checkbox"]')];
-    const value = () => boxes().filter(b => b.checked).map(b => b.value);
+    const tabs   = [...host.querySelectorAll('.svc-tab')];
+    const panels = [...host.querySelectorAll('.svc-panel')];
+    const picked = host.querySelector('.svc-picked');
+    const boxes  = () => [...host.querySelectorAll('input[type="checkbox"]')];
+    const value  = () => boxes().filter(b => b.checked).map(b => b.value);
 
-    function sync(group) {
-      const mains  = [...group.querySelectorAll('.svc-row:not(.svc-row--addon) input')];
-      const addons = [...group.querySelectorAll('.svc-addons input')];
-      const hasMain = mains.some(b => b.checked);
-      const wrap = group.querySelector('.svc-addons');
-      if (wrap) wrap.hidden = !hasMain || !addons.length;
-      if (!hasMain) addons.forEach(b => { b.checked = false; });
-      const n = mains.concat(addons).filter(b => b.checked).length;
-      group.querySelector('.svc-count').textContent = n ? `${n} zgjedhur` : '';
-      group.classList.toggle('svc-group--picked', n > 0);
+    function show(i) {
+      tabs.forEach((t, j) => {
+        t.setAttribute('aria-selected', String(i === j));
+        t.tabIndex = i === j ? 0 : -1;
+      });
+      panels.forEach((p, j) => { p.hidden = i !== j; });
+    }
+
+    function sync() {
+      panels.forEach((panel, i) => {
+        const mains  = [...panel.querySelectorAll('.svc-row input')];
+        const addons = [...panel.querySelectorAll('.svc-chip input')];
+        const hasMain = mains.some(b => b.checked);
+        addons.forEach(b => { b.disabled = !hasMain; if (!hasMain) b.checked = false; });
+        const n = mains.concat(addons).filter(b => b.checked).length;
+        tabs[i].querySelector('.svc-count').textContent = n ? ` · ${n}` : '';
+      });
+      const picks = value();
+      picked.hidden = !picks.length;
+      picked.textContent = summary(picks);
     }
 
     host.addEventListener('click', e => {
-      const head = e.target.closest('.svc-head');
-      if (!head) return;
-      const body = head.nextElementSibling;
-      body.hidden = !body.hidden;
-      head.setAttribute('aria-expanded', String(!body.hidden));
+      const tab = e.target.closest('.svc-tab');
+      if (tab) show(tabs.indexOf(tab));
+    });
+    host.addEventListener('keydown', e => {
+      const i = tabs.indexOf(e.target);
+      if (i < 0 || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+      const next = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+      show(next);
+      tabs[next].focus();
     });
 
     host.addEventListener('change', e => {
       const box = e.target;
-      const group = box.closest('.svc-group');
-      const cat = SERVICES.find(s => s.category === group.dataset.category);
-      if (cat.single && box.checked) {
-        group.querySelectorAll('input').forEach(b => { if (b !== box) b.checked = false; });
+      const panel = box.closest('.svc-panel');
+      if (panel.classList.contains('svc-panel--single') && box.checked) {
+        panel.querySelectorAll('input').forEach(b => { if (b !== box) b.checked = false; });
       }
-      sync(group);
+      sync();
       onChange(value());
     });
 
     function reset() {
       boxes().forEach(b => { b.checked = false; });
-      host.querySelectorAll('.svc-group').forEach(g => {
-        sync(g);
-        g.querySelector('.svc-body').hidden = true;
-        g.querySelector('.svc-head').setAttribute('aria-expanded', 'false');
-      });
+      sync();
+      show(0);
     }
 
     reset();
