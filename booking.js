@@ -36,14 +36,13 @@
   const successDiv  = document.getElementById('bk-success');
   const svcHint     = document.getElementById('bk-services-hint');
 
-  // Services: the request can't be sent until a main service is ticked
-  const svcPicker = RedaServices.mount(document.getElementById('bk-services'), {
-    onChange: () => updateSubmit(),
-  });
+  // Services: the request can't be sent until one is ticked
+  const svcPicker  = RedaServices.mount(document.getElementById('bk-services'), { onChange: updateSubmit });
   const servicesOk = () => !RedaServices.check(svcPicker.value());
   function updateSubmit() {
-    svcHint.hidden     = servicesOk();
-    submitBtn.disabled = !servicesOk();
+    const ok = servicesOk();
+    svcHint.hidden     = ok;
+    submitBtn.disabled = !ok;
   }
 
   const friendlyDate = key => formatDate(key, { year: true });

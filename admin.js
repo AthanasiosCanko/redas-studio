@@ -326,9 +326,8 @@
   // Services are optional here, but saving without one asks for a second
   // press first, so it is a choice rather than an oversight
   let admSvcConfirmed = false;
-  const admSvcPicker = RedaServices.mount(document.getElementById('adm-bk-services'), {
-    onChange: () => { admSvcConfirmed = false; admSvcHint.hidden = true; },
-  });
+  const clearSvcPrompt = () => { admSvcConfirmed = false; admSvcHint.hidden = true; };
+  const admSvcPicker   = RedaServices.mount(document.getElementById('adm-bk-services'), { onChange: clearSvcPrompt });
 
   let admModalDate = null;
   let admChosen    = null;
@@ -344,8 +343,7 @@
     admBkPhone.value     = '';
     admBkSubmit.disabled = false;
     admSvcPicker.reset();
-    admSvcConfirmed      = false;
-    admSvcHint.hidden    = true;
+    clearSvcPrompt();
 
     admChosen = firstFreeTime(dateKey, admDayTaken);
     if (!admPicker) {

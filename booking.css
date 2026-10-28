@@ -289,7 +289,6 @@
 }
 
 .time-choose-btn { width: 100%; max-width: 280px; }
-.time-choose-btn:disabled { cursor: not-allowed; opacity: 0.4; }
 
 /* ── Modal overlay ─────────────────────────────────────── */
 .bk-overlay {
@@ -435,6 +434,9 @@
   color: var(--brown);
 }
 
+.bk-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+.bk-submit:disabled:hover { background: var(--brown); color: var(--white); }
+
 /* Press feedback — the interface confirms it heard the tap */
 .bk-submit:active   { transform: scale(0.97); }
 .cal-nav-btn:active { transform: scale(0.94); }
@@ -493,8 +495,9 @@
 }
 
 .svc-row--extra .svc-name { font-size: 0.98rem; color: var(--brown-mid); }
-.svc-row--extra:has(input:disabled) { opacity: 0.35; cursor: not-allowed; }
+.svc-row--extra:has(input:disabled),
 .svc-row--extra input:disabled { cursor: not-allowed; }
+.svc-row--extra:has(input:disabled) { opacity: 0.35; }
 
 .svc-hint {
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -503,9 +506,6 @@
   color: var(--brown-mid);
   margin: 6px 0 0;
 }
-
-.bk-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-.bk-submit:disabled:hover { background: var(--brown); color: var(--white); }
 
 /* ── Success state ─────────────────────────────────────── */
 .bk-success {
@@ -555,4 +555,6 @@
   /* Match the price list's tighter gutter so the brand strip stays aligned */
   .booking-inner { padding-left: 16px; padding-right: 16px; }
   .cal-wrap { padding: 12px; }
+  /* keeps "Konfirmo rezervimin" on one line in a 320px-wide modal */
+  .bk-submit { letter-spacing: 0.28em; }
 }

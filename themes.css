@@ -184,3 +184,7 @@ html[data-theme] .site-footer { position: relative; }
 @media (max-width: 760px) {
   .ps-pin > .deco--lantern { display: none; }
 }
+/* the booking title runs nearly edge to edge on the narrowest phones */
+@media (max-width: 400px) {
+  .booking > .deco--star8 { display: none; }
+}

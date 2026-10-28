@@ -516,9 +516,6 @@
   color: var(--brown-mid);
 }
 
-.theme-option--soon { opacity: 0.5; cursor: default; }
-.theme-option--soon:hover { border-color: var(--brown-faint); }
-
 .theme-status,
 .theme-preview {
   font-family: 'Montserrat', sans-serif;
