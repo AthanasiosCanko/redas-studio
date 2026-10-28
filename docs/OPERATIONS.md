@@ -47,8 +47,9 @@ Visit `/admin`. The UI is in Albanian.
 - **Rezervimet** — filter by Kërkesat (pending) / Të ardhshme / Të kaluara / Të gjitha.
   Pending requests show **Prano** (accept) and **Refuzo** (deny); confirmed bookings show
   **Anulo** (cancel).
-- **Disponueshmëria** — click a day to see its bookings, **Shto rezervim** (auto-accepted),
-  or **Blloko ditën** to block the whole day.
+- **Disponueshmëria** — click a day to see its bookings, **Shto rezervim** (auto-accepted;
+  services optional, saving without one takes a second press), or **Blloko ditën** to
+  block the whole day.
 - **Tema** — seasonal theme for the public site (Asnjë / Halloween / Dita e Pavarësisë /
   Krishtlindje / Ramazan & Bajram). Saved in the `settings` table; a new theme needs
   its value in `THEMES` (server.js) and its decorations in `themes.js`.

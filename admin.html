@@ -153,6 +153,11 @@
         <p class="time-pick-hint">Orari — 9:00 – 20:00</p>
         <div id="adm-time-picker"></div>
         <p class="slot-warning" id="adm-bk-warning" hidden></p>
+        <fieldset class="svc">
+          <legend class="bk-label"><span>Shërbimet <span class="bk-optional">(opsionale)</span></span></legend>
+          <div class="svc-list" id="adm-bk-services"></div>
+          <p class="svc-hint" id="adm-bk-services-hint" hidden>Nuk keni zgjedhur asnjë shërbim — shtypni sërish për ta ruajtur pa shërbim.</p>
+        </fieldset>
         <label class="bk-label">
           Emri i klientit
           <input class="bk-input" id="adm-bk-name" type="text" placeholder="p.sh. Eda Hasani" required autocomplete="off">
@@ -182,6 +187,7 @@
 
   <script src="calendar.js"></script>
   <script src="timepicker.js"></script>
+  <script src="services.js"></script>
   <script src="admin.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

@@ -34,6 +34,17 @@
   const nameInput   = document.getElementById('bk-name');
   const phoneInput  = document.getElementById('bk-phone');
   const successDiv  = document.getElementById('bk-success');
+  const svcHint     = document.getElementById('bk-services-hint');
+
+  // Services: the request can't be sent until a main service is ticked
+  const svcPicker = RedaServices.mount(document.getElementById('bk-services'), {
+    onChange: () => updateSubmit(),
+  });
+  const servicesOk = () => !RedaServices.check(svcPicker.value());
+  function updateSubmit() {
+    svcHint.hidden     = servicesOk();
+    submitBtn.disabled = !servicesOk();
+  }
 
   const friendlyDate = key => formatDate(key, { year: true });
 
@@ -147,9 +158,10 @@
     successDiv.hidden    = true;
     nameInput.value      = '';
     phoneInput.value     = '';
-    submitBtn.disabled   = false;
+    svcPicker.reset();
+    updateSubmit();
     overlay.hidden       = false;
-    nameInput.focus();
+    overlay.querySelector('.svc-head').focus();
   }
 
   function closeModal() { overlay.hidden = true; }
@@ -164,7 +176,7 @@
     e.preventDefault();
     const name  = nameInput.value.trim();
     const local = phoneInput.value.trim();
-    if (!name || !local) return;                        // name + phone required
+    if (!name || !local || !servicesOk()) return;       // name, phone, a service required
     const phone = '+355 ' + local.replace(/^0+/, '');   // Albanian prefix
 
     submitBtn.disabled = true;
@@ -173,7 +185,7 @@
       const res = await fetch('/api/bookings', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ date: selectedDate, time: chosenTime, name, phone }),
+        body:    JSON.stringify({ date: selectedDate, time: chosenTime, name, phone, services: svcPicker.value() }),
       });
 
       if (!res.ok) {

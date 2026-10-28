@@ -159,6 +159,11 @@
         <h3 class="bk-modal-title" id="bk-modal-title">Kërko një takim</h3>
         <p class="bk-modal-sub" id="bk-modal-sub"></p>
         <form class="bk-form" id="bk-form" novalidate>
+          <fieldset class="svc">
+            <legend class="bk-label">Shërbimet</legend>
+            <div class="svc-list" id="bk-services"></div>
+            <p class="svc-hint" id="bk-services-hint">Zgjidhni të paktën një shërbim.</p>
+          </fieldset>
           <label class="bk-label">
             Emri i plotë
             <input class="bk-input" id="bk-name" type="text" placeholder="p.sh. Eda Hasani" required autocomplete="name">
@@ -200,6 +205,7 @@
   <script src="hero.js"></script>
   <script src="calendar.js"></script>
   <script src="timepicker.js"></script>
+  <script src="services.js"></script>
   <script src="booking.js"></script>
   <script src="themes.js"></script>
   <script>

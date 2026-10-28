@@ -16,7 +16,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'calendar.js', 'themes.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js'];
+const JS_FILES = ['server.js', 'booking.js', 'admin.js', 'calendar.js', 'themes.js', 'sw.js', 'timepicker.js', 'hero.js', 'sq.js', 'services.js'];
 const JSON_FILES = ['package.json', 'manifest.json', 'manifest-admin.json'];
 
 test('all JS files parse (node --check)', () => {
@@ -154,6 +154,52 @@ test('only public files are served, and admin secrets have no fallback', () => {
   for (const f of refs) assert.ok(allowed.has(f), `${f} is referenced but not in PUBLIC_FILES`);
   assert.ok(!/ADMIN_PASSWORD\s*=\s*process\.env\.ADMIN_PASSWORD\s*\|\|/.test(server), 'ADMIN_PASSWORD must not have a fallback');
   assert.ok(!/JWT_SECRET\s*=\s*process\.env\.JWT_SECRET\s*\|\|/.test(server), 'JWT_SECRET must not have a fallback');
+});
+
+test('booking services match the price list on the page', () => {
+  const { SERVICES } = require('../services');
+  const decode = t => t.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d)).replace(/&amp;/g, '&');
+  const panels = read('index.html').split('class="category-name">').slice(1).map(chunk => ({
+    category: chunk.slice(0, chunk.indexOf('<')),
+    rows: [...chunk.split('</ul>')[0].matchAll(/service-name">([^<]*)<[\s\S]*?service-price">([^<]*)</g)]
+      .map(m => `${decode(m[1]).toUpperCase()} ${decode(m[2])}`),   // CSS uppercases the names
+  }));
+  assert.deepEqual(
+    SERVICES.map(c => ({ category: c.category, rows: c.items.map(i => `${i.name.toUpperCase()} ${i.price}`) })),
+    panels,
+    'services.js and the price list in index.html have drifted apart'
+  );
+});
+
+test('service picks: a main service is required, add-ons need one, single categories allow one', () => {
+  const { check, summary } = require('../services');
+  assert.equal(check(['Manikyr: Tipsa']), '');
+  assert.equal(check(['Manikyr: Tipsa', 'Manikyr: French', 'Pedikyr: Trajtim këmbësh']), '');
+  assert.equal(check([]), 'No service');
+  assert.equal(check(undefined), 'Invalid services');
+  assert.equal(check(['Manikyr: French']), 'No service');                       // add-on alone
+  assert.equal(check(['Pedikyr: Trajtim këmbësh', 'Manikyr: French']), 'Add-on without service');
+  assert.equal(check(['Make-Up: Natural make-up', 'Make-Up: Bridal make-up']), 'Too many services');
+  assert.equal(check(['Manikyr: Tipsa', 'Manikyr: Tipsa']), 'Invalid services');
+  assert.equal(check(['Manikyr: Something else']), 'Unknown service');
+  assert.equal(check([], { required: false }), '');                             // admin may skip
+  assert.equal(check(['Manikyr: Design'], { required: false }), 'Add-on without service');
+  assert.equal(summary(['Manikyr: Tipsa', 'Manikyr: French', 'Pedikyr: Heqje xheli']),
+    'Manikyr: Tipsa + French · Pedikyr: Heqje xheli');
+});
+
+test('services are required on public bookings, optional for the admin, and stored', () => {
+  const server = read('server.js'), index = read('index.html'), admin = read('admin.html');
+  assert.ok(server.includes('ADD COLUMN IF NOT EXISTS services'), 'bookings.services column missing');
+  assert.ok(/app\.post\('\/api\/bookings'[\s\S]*?services\.check\(picks\)/.test(server), 'public route must require a service');
+  assert.ok(/app\.post\('\/api\/admin\/bookings'[\s\S]*?services\.check\(picks, \{ required: false \}\)/.test(server), 'admin route must validate optional services');
+  assert.ok(server.includes('BOOKING_COLS') && /BOOKING_COLS = '[^']*services/.test(server), 'admin lists must return services');
+  for (const [page, id] of [[index, 'bk-services'], [admin, 'adm-bk-services']]) {
+    assert.ok(page.includes(`id="${id}"`), `#${id} missing`);
+    assert.ok(page.indexOf('src="services.js"') < page.indexOf(page === index ? 'src="booking.js"' : 'src="admin.js"'),
+      'services.js must load before the page script');
+  }
 });
 
 test('every requireAdmin route also references a JWT check', () => {

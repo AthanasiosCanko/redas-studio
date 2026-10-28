@@ -86,6 +86,7 @@
       <span class="bk-item-time">${esc(bk.time)}</span>
       <div class="bk-item-info">
         <span class="bk-item-name">${esc(bk.name)}</span>
+        ${bk.services?.length ? `<span class="bk-item-services">${esc(RedaServices.summary(bk.services))}</span>` : ''}
         ${contacts.map(c => `<span class="bk-item-contact">${esc(c)}</span>`).join('')}
       </div>
       <div class="bk-item-actions">${actionsHtml}</div>`;
@@ -320,6 +321,14 @@
   const admBkWarning = document.getElementById('adm-bk-warning');
   const admBkSuccess = document.getElementById('adm-bk-success');
   const admPickerEl  = document.getElementById('adm-time-picker');
+  const admSvcHint   = document.getElementById('adm-bk-services-hint');
+
+  // Services are optional here, but saving without one asks for a second
+  // press first, so it is a choice rather than an oversight
+  let admSvcConfirmed = false;
+  const admSvcPicker = RedaServices.mount(document.getElementById('adm-bk-services'), {
+    onChange: () => { admSvcConfirmed = false; admSvcHint.hidden = true; },
+  });
 
   let admModalDate = null;
   let admChosen    = null;
@@ -334,6 +343,9 @@
     admBkEmail.value     = '';
     admBkPhone.value     = '';
     admBkSubmit.disabled = false;
+    admSvcPicker.reset();
+    admSvcConfirmed      = false;
+    admSvcHint.hidden    = true;
 
     admChosen = firstFreeTime(dateKey, admDayTaken);
     if (!admPicker) {
@@ -370,6 +382,13 @@
     e.preventDefault();
     const name = admBkName.value.trim();
     if (!name || !validateAdm()) return;
+    const picks = admSvcPicker.value();
+    if (!picks.length && !admSvcConfirmed) {
+      admSvcConfirmed   = true;
+      admSvcHint.hidden = false;
+      admSvcHint.scrollIntoView({ block: 'nearest' });
+      return;
+    }
 
     const origLabel = admBkSubmit.textContent;
     admBkSubmit.disabled    = true;
@@ -378,7 +397,7 @@
     try {
       const localPhone = admBkPhone.value.trim();
       await post('/api/admin/bookings', {
-        date: admModalDate, time: admChosen, name,
+        date: admModalDate, time: admChosen, name, services: picks,
         email: admBkEmail.value.trim(),
         phone: localPhone ? '+355 ' + localPhone.replace(/^0+/, '') : '',
       });

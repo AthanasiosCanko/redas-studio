@@ -7,6 +7,7 @@ const jwt        = require('jsonwebtoken');
 const webpush    = require('web-push');
 const nodemailer = require('nodemailer');
 const { sqDate, sqDayMonth, sqWeekday, smsText } = require('./sq');
+const services   = require('./services');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -116,6 +117,7 @@ async function initDb() {
       google_event_id VARCHAR(255),
       created_at      TIMESTAMPTZ  DEFAULT NOW()
     );
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS services TEXT[];   -- "Category: Name" picks
     CREATE TABLE IF NOT EXISTS blocked_days (
       date DATE PRIMARY KEY
     );
@@ -141,11 +143,11 @@ const isSlotTaken = async (date, time) =>
   (await pool.query(`SELECT 1 FROM bookings WHERE date = $1 AND time = $2 AND ${ACTIVE}`, [date, time]))
     .rowCount > 0;
 
-async function insertBooking({ date, time, name, email, phone }, status) {
+async function insertBooking({ date, time, name, email, phone, services: picks }, status) {
   const { rows } = await pool.query(
-    `INSERT INTO bookings (date, time, name, email, phone, status)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [date, time, name, email, phone, status]
+    `INSERT INTO bookings (date, time, name, email, phone, services, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [date, time, name, email, phone, picks, status]
   );
   return rows[0].id;
 }
@@ -238,7 +240,7 @@ function addMinutes(date, time, mins) {
 
 // Creates the event and returns its id, or null when disabled/failed.
 // Local wall time + timeZone lets Google handle DST — no UTC maths here.
-async function calendarCreate({ date, time, name, email, phone }) {
+async function calendarCreate({ date, time, name, email, phone, services: picks }) {
   if (!GCAL_READY) return null;
   const end = addMinutes(date, time, APPT_MINUTES);
   const details = [email, phone].filter(Boolean).join(' · ');
@@ -252,7 +254,7 @@ async function calendarCreate({ date, time, name, email, phone }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          summary:     name,
+          summary:     picks?.length ? `${name} — ${services.summary(picks)}` : name,
           description: details || undefined,
           start: { dateTime: `${date}T${time}:00`,         timeZone: ALBANIA_TZ },
           end:   { dateTime: `${end.date}T${end.time}:00`, timeZone: ALBANIA_TZ },
@@ -310,7 +312,7 @@ async function sendEmail(to, subject, text, html) {
 
 // Compose + send the client email for a booking lifecycle event.
 // kind ∈ 'received' | 'accepted' | 'denied' | 'cancelled'
-function bookingEmail(kind, { to, name, date, time }) {
+function bookingEmail(kind, { to, name, date, time, services: picks }) {
   if (!to) return;
   const fd    = longDate(date);
   const greet = name ? `Përshëndetje ${name},` : 'Përshëndetje,';
@@ -327,9 +329,12 @@ function bookingEmail(kind, { to, name, date, time }) {
   };
   const entry = COPY[kind];
   if (!entry) return;
-  const [subject, line] = entry;
+  const [subject, base] = entry;
+  // Requests and confirmations also list what was booked (validated names)
+  const line = picks?.length && (kind === 'received' || kind === 'accepted')
+    ? `${base}<br>Shërbimet: ${services.summary(picks)}` : base;
 
-  const text = `${greet}\n\n${line.replace(/<\/?strong>/g, '')}\n\n— R-EDA'S STUDIO`;
+  const text = `${greet}\n\n${line.replace(/<br>/g, '\n').replace(/<\/?strong>/g, '')}\n\n— R-EDA'S STUDIO`;
   const html = `<div style="font-family:Georgia,'Times New Roman',serif;color:#5c2520;font-size:16px;line-height:1.6;max-width:480px">
     <p style="margin:0 0 16px">${greet}</p>
     <p style="margin:0 0 24px">${line}</p>
@@ -341,9 +346,9 @@ function bookingEmail(kind, { to, name, date, time }) {
 
 // Text and email the client about a booking event; each channel no-ops
 // when unconfigured or when the booking has no number/address for it.
-function notifyClient(kind, { date, time, name, email, phone }) {
+function notifyClient(kind, { date, time, name, email, phone, services: picks }) {
   sendSms(phone, smsText(kind, date, time));
-  bookingEmail(kind, { to: email, name, date, time });
+  bookingEmail(kind, { to: email, name, date, time, services: picks });
 }
 
 // ── Middleware ───────────────────────────────────────────
@@ -354,7 +359,7 @@ app.use(express.json());
 const PUBLIC_FILES = new Set([
   'index.html', 'admin.html', 'manifest.json', 'manifest-admin.json', 'sw.js',
   'styles.css', 'booking.css', 'themes.css', 'admin.css',
-  'booking.js', 'calendar.js', 'timepicker.js', 'hero.js', 'themes.js', 'admin.js',
+  'booking.js', 'calendar.js', 'timepicker.js', 'hero.js', 'themes.js', 'admin.js', 'services.js',
 ]);
 const sendPublic = express.static(__dirname);
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
@@ -433,10 +438,12 @@ app.get('/api/availability/:date', handle(async (req, res) => {
 
 // Create a booking request (status: pending)
 app.post('/api/bookings', handle(async (req, res) => {
-  const { date, time, name, email, phone } = req.body;
+  const { date, time, name, email, phone, services: picks } = req.body;
   if (!date || !time || !name?.trim() || !phone?.trim()) {   // email is optional
     return res.status(400).json({ error: 'Missing fields' });
   }
+  const svcError = services.check(picks);   // at least one main service
+  if (svcError) return res.status(400).json({ error: svcError });
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
   if (isSlotPast(date, time)) return res.status(409).json({ error: 'Slot is in the past' });
 
@@ -444,12 +451,14 @@ app.post('/api/bookings', handle(async (req, res) => {
   if (blocked) return res.status(409).json({ error: 'Day not available' });
   if (taken)   return res.status(409).json({ error: 'Already booked' });
 
-  const booking = { date, time, name: name.trim(), email: email?.trim() || null, phone: phone.trim() };
+  const booking = {
+    date, time, name: name.trim(), email: email?.trim() || null, phone: phone.trim(), services: picks,
+  };
   await insertBooking(booking, 'pending');
 
   notifyAdmin({
     title: 'Kërkesë e re për rezervim',
-    body:  `${booking.name} · ${sqDate(date)} · ${time}`,
+    body:  `${booking.name} · ${sqDate(date)} · ${time}\n${services.summary(picks)}`,
   });
   notifyClient('received', booking);
 
@@ -489,7 +498,7 @@ app.post('/api/admin/theme', requireAdmin, handle(async (req, res) => {
   res.json({ theme });
 }));
 
-const BOOKING_COLS = 'date, time, name, email, phone, contact, status, created_at';
+const BOOKING_COLS = 'date, time, name, email, phone, contact, services, status, created_at';
 
 function mapBooking(r) {
   return {
@@ -499,6 +508,7 @@ function mapBooking(r) {
     email:     r.email,
     phone:     r.phone,
     contact:   r.contact,        // legacy rows only
+    services:  r.services || [], // empty on rows from before services
     status:    r.status,
     createdAt: r.created_at,
   };
@@ -534,7 +544,7 @@ app.post('/api/admin/bookings/status', requireAdmin, handle(async (req, res) => 
 
   const { rows } = await pool.query(
     `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
-     RETURNING id, name, email, phone, google_event_id`,
+     RETURNING id, name, email, phone, services, google_event_id`,
     [tr.to, date, time, tr.from]
   );
   if (!rows.length) return res.status(409).json({ error: 'Not in expected state' });
@@ -555,16 +565,19 @@ app.post('/api/admin/bookings/status', requireAdmin, handle(async (req, res) => 
 
 // Admin creates a booking directly (auto-accepted; bypasses day-block, not the time cutoff)
 app.post('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
-  const { date, time, name, email, phone } = req.body;
+  const { date, time, name, email, phone, services: picks = [] } = req.body;
   if (!date || !time || !name?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
   }
+  const svcError = services.check(picks, { required: false });   // optional for the admin
+  if (svcError) return res.status(400).json({ error: svcError });
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
   if (isSlotPast(date, time)) return res.status(409).json({ error: 'Slot is in the past' });
   if (await isSlotTaken(date, time)) return res.status(409).json({ error: 'Already booked' });
 
   const booking = {
     date, time, name: name.trim(), email: email?.trim() || null, phone: phone?.trim() || null,
+    services: picks.length ? picks : null,
   };
   const id = await insertBooking(booking, 'accepted');
   notifyClient('accepted', booking);
