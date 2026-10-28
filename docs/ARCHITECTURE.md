@@ -20,7 +20,7 @@ booking.js          — public booking calendar + request flow
 admin.js            — admin logic (JWT auth, push subscribe, API calls)
 calendar.js         — shared by both: Albania time, date labels, month grid (RedaCalendar)
 timepicker.js       — shared wheel time picker (RedaTimePicker.create)
-services.js         — shared by both + server: the three services, pick rules, picker
+services.js         — shared by both + server: the services + extras, pick rules, picker
                       (RedaServices); a test keeps them equal to the price-list categories
 themes.js/.css      — seasonal decorations for the theme picked in admin (`/?theme=x` previews)
 hero.js             — hero video loader (saveData/2g gate), parallax, scroll reveals,
@@ -44,8 +44,9 @@ assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster
   `accepted → cancelled` (cancel). Denied/cancelled rows are **kept as records** (visible
   under the *All* filter) and free the time up again.
 - Same-day times already past in Albania local time (`Europe/Tirane`) cannot be requested.
-- A request must tick at least one service (Manikyr / Pedikyr / Make-Up); admin-created
-  bookings may have none. Picks are stored in `bookings.services` and shown in the admin
+- A request must tick at least one service (Manikyr / Pedikyr / Make-Up); Manikyr and
+  Pedikyr each offer a "+ Trajtim" extra, live only while that service is ticked.
+  Admin-created bookings may have none. Picks are stored in `bookings.services` and shown in the admin
   list, calendar event and emails — not in SMS, which must stay one segment. The
   appointment length is unchanged.
 

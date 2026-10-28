@@ -159,10 +159,10 @@ test('only public files are served, and admin secrets have no fallback', () => {
 test('booking services match the price-list categories on the page', () => {
   const { SERVICES } = require('../services');
   const categories = [...read('index.html').matchAll(/class="category-name">([^<]*)</g)].map(m => m[1]);
-  assert.deepEqual(SERVICES, categories, 'services.js and the price-list categories have drifted apart');
+  assert.deepEqual(SERVICES.map(s => s.name), categories, 'services.js and the price-list categories have drifted apart');
 });
 
-test('service picks: at least one known service, optional for the admin', () => {
+test('service picks: at least one service, extras need theirs, optional for the admin', () => {
   const { check, summary } = require('../services');
   assert.equal(check(['Manikyr']), '');
   assert.equal(check(['Manikyr', 'Pedikyr', 'Make-Up']), '');
@@ -173,7 +173,14 @@ test('service picks: at least one known service, optional for the admin', () => 
   assert.equal(check(['Masazh']), 'Unknown service');
   assert.equal(check([], { required: false }), '');                             // admin may skip
   assert.equal(check(['Masazh'], { required: false }), 'Unknown service');
+  assert.equal(check(['Manikyr', 'Manikyr: Trajtim', 'Pedikyr', 'Pedikyr: Trajtim']), '');
+  assert.equal(check(['Manikyr: Trajtim']), 'No service');                      // extra alone
+  assert.equal(check(['Pedikyr', 'Manikyr: Trajtim']), 'Extra without service');
+  assert.equal(check(['Make-Up', 'Make-Up: Trajtim']), 'Unknown service');      // Make-Up has none
+  assert.equal(check(['Manikyr: Trajtim'], { required: false }), 'Extra without service');
   assert.equal(summary(['Manikyr', 'Make-Up']), 'Manikyr + Make-Up');
+  assert.equal(summary(['Manikyr', 'Manikyr: Trajtim', 'Pedikyr']), 'Manikyr me trajtim + Pedikyr');
+  assert.equal(summary(['Manikyr: Tipsa']), 'Manikyr: Tipsa');                  // older bookings
 });
 
 test('services are required on public bookings, optional for the admin, and stored', () => {

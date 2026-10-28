@@ -439,11 +439,17 @@
 .bk-submit:active   { transform: scale(0.97); }
 .cal-nav-btn:active { transform: scale(0.94); }
 
-/* ── Services picker (services.js): three checkboxes in a row ── */
+/* ── Services picker (services.js): one row per service, its extra on the right ── */
 .svc { border: none; padding: 0; margin: 0; min-width: 0; }
 .svc > .bk-label { padding: 0; margin-bottom: 10px; }
 
-.svc-list { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.svc-list { display: flex; flex-direction: column; gap: 2px; }
+.svc-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
 
 .svc-row {
   display: flex;
@@ -485,6 +491,10 @@
   font-size: 1.1rem;
   color: var(--brown);
 }
+
+.svc-row--extra .svc-name { font-size: 0.98rem; color: var(--brown-mid); }
+.svc-row--extra:has(input:disabled) { opacity: 0.35; cursor: not-allowed; }
+.svc-row--extra input:disabled { cursor: not-allowed; }
 
 .svc-hint {
   font-family: 'Cormorant Garamond', Georgia, serif;
