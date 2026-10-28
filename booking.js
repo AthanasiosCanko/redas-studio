@@ -161,7 +161,7 @@
     svcPicker.reset();
     updateSubmit();
     overlay.hidden       = false;
-    overlay.querySelector('.svc-tab').focus();
+    overlay.querySelector('.svc-row input').focus();
   }
 
   function closeModal() { overlay.hidden = true; }

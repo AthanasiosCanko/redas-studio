@@ -156,37 +156,24 @@ test('only public files are served, and admin secrets have no fallback', () => {
   assert.ok(!/JWT_SECRET\s*=\s*process\.env\.JWT_SECRET\s*\|\|/.test(server), 'JWT_SECRET must not have a fallback');
 });
 
-test('booking services match the price list on the page', () => {
+test('booking services match the price-list categories on the page', () => {
   const { SERVICES } = require('../services');
-  const decode = t => t.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d)).replace(/&amp;/g, '&');
-  const panels = read('index.html').split('class="category-name">').slice(1).map(chunk => ({
-    category: chunk.slice(0, chunk.indexOf('<')),
-    rows: [...chunk.split('</ul>')[0].matchAll(/service-name">([^<]*)<[\s\S]*?service-price">([^<]*)</g)]
-      .map(m => `${decode(m[1]).toUpperCase()} ${decode(m[2])}`),   // CSS uppercases the names
-  }));
-  assert.deepEqual(
-    SERVICES.map(c => ({ category: c.category, rows: c.items.map(i => `${i.name.toUpperCase()} ${i.price}`) })),
-    panels,
-    'services.js and the price list in index.html have drifted apart'
-  );
+  const categories = [...read('index.html').matchAll(/class="category-name">([^<]*)</g)].map(m => m[1]);
+  assert.deepEqual(SERVICES, categories, 'services.js and the price-list categories have drifted apart');
 });
 
-test('service picks: a main service is required, add-ons need one, single categories allow one', () => {
+test('service picks: at least one known service, optional for the admin', () => {
   const { check, summary } = require('../services');
-  assert.equal(check(['Manikyr: Tipsa']), '');
-  assert.equal(check(['Manikyr: Tipsa', 'Manikyr: French', 'Pedikyr: Trajtim këmbësh']), '');
+  assert.equal(check(['Manikyr']), '');
+  assert.equal(check(['Manikyr', 'Pedikyr', 'Make-Up']), '');
   assert.equal(check([]), 'No service');
   assert.equal(check(undefined), 'Invalid services');
-  assert.equal(check(['Manikyr: French']), 'No service');                       // add-on alone
-  assert.equal(check(['Pedikyr: Trajtim këmbësh', 'Manikyr: French']), 'Add-on without service');
-  assert.equal(check(['Make-Up: Natural make-up', 'Make-Up: Bridal make-up']), 'Too many services');
-  assert.equal(check(['Manikyr: Tipsa', 'Manikyr: Tipsa']), 'Invalid services');
-  assert.equal(check(['Manikyr: Something else']), 'Unknown service');
+  assert.equal(check('Manikyr'), 'Invalid services');
+  assert.equal(check(['Manikyr', 'Manikyr']), 'Invalid services');
+  assert.equal(check(['Masazh']), 'Unknown service');
   assert.equal(check([], { required: false }), '');                             // admin may skip
-  assert.equal(check(['Manikyr: Design'], { required: false }), 'Add-on without service');
-  assert.equal(summary(['Manikyr: Tipsa', 'Manikyr: French', 'Pedikyr: Heqje xheli']),
-    'Manikyr: Tipsa + French · Pedikyr: Heqje xheli');
+  assert.equal(check(['Masazh'], { required: false }), 'Unknown service');
+  assert.equal(summary(['Manikyr', 'Make-Up']), 'Manikyr + Make-Up');
 });
 
 test('services are required on public bookings, optional for the admin, and stored', () => {

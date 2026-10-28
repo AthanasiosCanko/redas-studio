@@ -20,8 +20,8 @@ booking.js          — public booking calendar + request flow
 admin.js            — admin logic (JWT auth, push subscribe, API calls)
 calendar.js         — shared by both: Albania time, date labels, month grid (RedaCalendar)
 timepicker.js       — shared wheel time picker (RedaTimePicker.create)
-services.js         — shared by both + server: service list, pick rules, picker (RedaServices);
-                      a test keeps it equal to the price list in index.html
+services.js         — shared by both + server: the three services, pick rules, picker
+                      (RedaServices); a test keeps them equal to the price-list categories
 themes.js/.css      — seasonal decorations for the theme picked in admin (`/?theme=x` previews)
 hero.js             — hero video loader (saveData/2g gate), parallax, scroll reveals,
                       pinned horizontal price-category scroll
@@ -44,10 +44,10 @@ assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster
   `accepted → cancelled` (cancel). Denied/cancelled rows are **kept as records** (visible
   under the *All* filter) and free the time up again.
 - Same-day times already past in Albania local time (`Europe/Tirane`) cannot be requested.
-- A request must include at least one main service (add-ons only beside a main service of
-  their category; Make-Up allows one pick). Admin-created bookings may have none. Picks are
-  stored in `bookings.services` and shown in the admin list, calendar event and emails —
-  not in SMS, which must stay one segment. The appointment length is unchanged.
+- A request must tick at least one service (Manikyr / Pedikyr / Make-Up); admin-created
+  bookings may have none. Picks are stored in `bookings.services` and shown in the admin
+  list, calendar event and emails — not in SMS, which must stay one segment. The
+  appointment length is unchanged.
 
 Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`).
 

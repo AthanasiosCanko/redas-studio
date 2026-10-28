@@ -117,7 +117,7 @@ async function initDb() {
       google_event_id VARCHAR(255),
       created_at      TIMESTAMPTZ  DEFAULT NOW()
     );
-    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS services TEXT[];   -- "Category: Name" picks
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS services TEXT[];   -- Manikyr / Pedikyr / Make-Up
     CREATE TABLE IF NOT EXISTS blocked_days (
       date DATE PRIMARY KEY
     );
