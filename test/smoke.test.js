@@ -237,10 +237,21 @@ test('input checks: real calendar dates and column-sized text', () => {
   assert.ok(server.includes('types.setTypeParser(types.builtins.DATE'), 'DATE must be parsed as text');
 });
 
-test('every requireAdmin route also references a JWT check', () => {
+test('every /api/admin route except login requires the admin token', () => {
   const server = read('server.js');
-  assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');
-  assert.ok(server.includes('Bearer '), 'requireAdmin must parse a Bearer token');
+  const routes = [...server.matchAll(/app\.(get|post|put|patch|delete)\('(\/api\/admin[^']*)',\s*([^\n]*)/g)];
+  assert.ok(routes.length >= 9, `expected the admin routes, found ${routes.length}`);
+  for (const [, method, url, rest] of routes) {
+    if (url === '/api/admin/login') continue;
+    assert.ok(rest.startsWith('requireAdmin'), `${method.toUpperCase()} ${url} is not behind requireAdmin`);
+  }
+  assert.ok(server.includes('jwt.verify') && server.includes('Bearer '), 'requireAdmin must verify a Bearer JWT');
+});
+
+test('.env.example lists every variable the server reads', () => {
+  const used = new Set([...read('server.js').matchAll(/process\.env\.([A-Z_]+)/g)].map(m => m[1]));
+  const listed = new Set([...read('.env.example').matchAll(/^([A-Z_]+)=/gm)].map(m => m[1]));
+  for (const v of used) assert.ok(listed.has(v), `.env.example is missing ${v}`);
 });
 
 test('Google Calendar sync is wired to accept, admin-create and cancel', () => {
