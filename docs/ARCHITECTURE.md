@@ -43,6 +43,9 @@ assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster
 - The admin transitions it: `pending → accepted` (accept), `pending → denied` (deny), or
   `accepted → cancelled` (cancel). Denied/cancelled rows are **kept as records** (visible
   under the *All* filter) and free the time up again.
+- Bookings from before today can be **archived** (`archived_at`; out of every list, the day
+  panel and the calendar dots, shown under *Të arkivuara*), restored, and — only once
+  archived — **deleted** permanently. The server enforces both limits.
 - Same-day times already past in Albania local time (`Europe/Tirane`) cannot be requested.
 - A request must tick at least one service (Manikyr / Pedikyr / Make-Up); Manikyr and
   Pedikyr each offer a "+ Trajtim" extra, live only while that service is ticked.

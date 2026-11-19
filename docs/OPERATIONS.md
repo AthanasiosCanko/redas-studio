@@ -44,9 +44,10 @@ No database or browser required.
 
 Visit `/admin`. The UI is in Albanian.
 
-- **Rezervimet** — filter by Kërkesat (pending) / Të ardhshme / Të kaluara / Të gjitha.
-  Pending requests show **Prano** (accept) and **Refuzo** (deny); confirmed bookings show
-  **Anulo** (cancel).
+- **Rezervimet** — filter by Kërkesat (pending) / Të ardhshme / Të kaluara / Të gjitha /
+  Të arkivuara. Pending requests show **Prano** (accept) and **Refuzo** (deny); confirmed
+  bookings show **Anulo** (cancel); bookings from before today show **Arkivo**. Archived
+  ones show **Rikthe** (restore) and **Fshi** (delete for good, after a confirmation).
 - **Disponueshmëria** — click a day to see its bookings, **Shto rezervim** (auto-accepted;
   services optional, saving without one takes a second press), or **Blloko ditën** to
   block the whole day.

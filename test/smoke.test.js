@@ -196,6 +196,17 @@ test('services are required on public bookings, optional for the admin, and stor
   }
 });
 
+test('archive: only past bookings, delete: only archived ones, both admin-only', () => {
+  const server = read('server.js'), admin = read('admin.html');
+  assert.ok(server.includes('ADD COLUMN IF NOT EXISTS archived_at'), 'bookings.archived_at column missing');
+  assert.ok(server.includes("app.post('/api/admin/bookings/archive', requireAdmin"), 'archive route must require admin');
+  assert.ok(server.includes("app.post('/api/admin/bookings/delete', requireAdmin"), 'delete route must require admin');
+  assert.ok(/SET archived_at = NOW\(\) WHERE id = \$1 AND archived_at IS NULL AND date < \$2/.test(server), 'archive must be limited to past bookings');
+  assert.ok(/DELETE FROM bookings WHERE id = \$1 AND archived_at IS NOT NULL/.test(server), 'delete must be limited to archived bookings');
+  assert.ok(/BOOKING_COLS = 'id,[^']*archived_at'/.test(server), 'admin lists need the id and archived state');
+  assert.ok(admin.includes('data-filter="archived"'), 'archived filter missing');
+});
+
 test('every requireAdmin route also references a JWT check', () => {
   const server = read('server.js');
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');

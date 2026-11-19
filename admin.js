@@ -10,6 +10,7 @@
     upcoming: 'Nuk ka rezervime të ardhshme.',
     past:     'Nuk ka rezervime të kaluara.',
     all:      'Nuk ka rezervime.',
+    archived: 'Nuk ka rezervime të arkivuara.',
   };
 
   // ── Token helpers ────────────────────────────────────────
@@ -164,18 +165,24 @@
     });
   });
 
+  // Archived bookings show only under "Të arkivuara"
   const FILTERS = {
-    requests: (bk)        => bk.status === 'pending',
-    upcoming: (bk, today) => bk.status === 'accepted' && bk.date >= today,
-    past:     (bk, today) => bk.status === 'accepted' && bk.date <  today,
-    all:      ()          => true,
+    requests: (bk)        => !bk.archived && bk.status === 'pending',
+    upcoming: (bk, today) => !bk.archived && bk.status === 'accepted' && bk.date >= today,
+    past:     (bk, today) => !bk.archived && bk.status === 'accepted' && bk.date <  today,
+    all:      (bk)        => !bk.archived,
+    archived: (bk)        => bk.archived,
   };
 
+  // Bookings from before today can only be archived; archived ones can be
+  // restored or deleted for good
   function actionButtons(bk, isPast) {
     const btn = (action, label) =>
-      `<button class="bk-act bk-act--${action}" data-action="${action}" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">${label}</button>`;
+      `<button class="bk-act bk-act--${action}" data-action="${action}" data-id="${bk.id}" data-date="${esc(bk.date)}" data-time="${esc(bk.time)}">${label}</button>`;
+    if (bk.archived)                           return statusBadge(bk.status) + btn('restore', 'Rikthe') + btn('delete', 'Fshi');
+    if (isPast)                                return statusBadge(bk.status) + btn('archive', 'Arkivo');
     if (bk.status === 'pending')               return btn('accept', 'Prano') + btn('deny', 'Refuzo');
-    if (bk.status === 'accepted' && !isPast)   return btn('cancel', 'Anulo');
+    if (bk.status === 'accepted')              return btn('cancel', 'Anulo');
     return statusBadge(bk.status);
   }
 
@@ -191,8 +198,12 @@
     const groups = {};
     for (const bk of list) (groups[bk.date] ||= []).push(bk);
 
+    // Archive reads newest first; the working lists run in date order
+    const dates = Object.keys(groups).sort();
+    if (currentFilter === 'archived') dates.reverse();
+
     bookingsList.innerHTML = '';
-    for (const date of Object.keys(groups).sort()) {
+    for (const date of dates) {
       const isPast = date < today;
 
       const group     = document.createElement('div');
@@ -211,11 +222,34 @@
     }
 
     bookingsList.querySelectorAll('.bk-act').forEach(btn => {
-      btn.addEventListener('click', () => doStatus(btn.dataset.action, btn.dataset.date, btn.dataset.time));
+      const { action, id, date, time } = btn.dataset;
+      btn.addEventListener('click', () =>
+        (ARCHIVE_ACTIONS[action] ? doArchive(action, Number(id)) : doStatus(action, date, time)));
     });
   }
 
-  const CONFIRMS = { deny: 'Ta refuzoni këtë kërkesë?', cancel: 'Ta anuloni këtë rezervim?' };
+  const CONFIRMS = {
+    deny:   'Ta refuzoni këtë kërkesë?',
+    cancel: 'Ta anuloni këtë rezervim?',
+    delete: 'Ta fshini përgjithmonë këtë rezervim? Nuk mund të rikthehet.',
+  };
+
+  const ARCHIVE_ACTIONS = {
+    archive: ['/api/admin/bookings/archive', { archived: true }],
+    restore: ['/api/admin/bookings/archive', { archived: false }],
+    delete:  ['/api/admin/bookings/delete',  {}],
+  };
+
+  async function doArchive(action, id) {
+    if (CONFIRMS[action] && !confirm(CONFIRMS[action])) return;
+    const [url, body] = ARCHIVE_ACTIONS[action];
+    try {
+      await post(url, { id, ...body });
+      await refreshAll();
+    } catch {
+      alert(action === 'delete' ? 'Rezervimi nuk u fshi.' : 'Rezervimi nuk u përditësua.');
+    }
+  }
 
   async function doStatus(action, date, time) {
     if (CONFIRMS[action] && !confirm(CONFIRMS[action])) return;

@@ -234,7 +234,11 @@
   text-align: left;
 }
 
-.bk-item--past { opacity: 0.45; }
+/* Past/inactive rows fade their details; the buttons (Arkivo, Rikthe,
+   Fshi) stay at full strength so they don't read as disabled */
+.bk-item--past > .bk-item-time,
+.bk-item--past > .bk-item-info,
+.bk-item--past .bk-status { opacity: 0.45; }
 
 .bk-item-time {
   flex-shrink: 0;
@@ -312,7 +316,8 @@
 .bk-act--accept:hover { background: #2f7a52; color: #fff; }
 
 .bk-act--deny:hover,
-.bk-act--cancel:hover { background: #9b2c2c; color: #fff; border-color: #9b2c2c; }
+.bk-act--cancel:hover,
+.bk-act--delete:hover { background: #9b2c2c; color: #fff; border-color: #9b2c2c; }
 
 .bk-status {
   font-family: 'Montserrat', sans-serif;
@@ -464,6 +469,8 @@
   .bk-item { gap: 10px; }
   .bk-item-time { width: 44px; font-size: 0.72rem; }
   .bk-act { padding: 7px 9px; letter-spacing: 0.12em; }
+  /* status + two buttons (archive view) stack instead of squeezing the name */
+  .bk-item-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 52%; row-gap: 6px; }
 
   /* Day panel */
   .day-panel { padding: 16px; }

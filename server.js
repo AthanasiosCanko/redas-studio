@@ -118,6 +118,7 @@ async function initDb() {
       created_at      TIMESTAMPTZ  DEFAULT NOW()
     );
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS services TEXT[];   -- Manikyr / Pedikyr / Make-Up
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;   -- set = in "Të arkivuara"
     CREATE TABLE IF NOT EXISTS blocked_days (
       date DATE PRIMARY KEY
     );
@@ -415,7 +416,7 @@ app.get('/api/calendar/:year/:month', handle(async (req, res) => {
   const { year, month } = req.params;
   const inMonth = `EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2`;
   const [bkRes, bdRes] = await Promise.all([
-    pool.query(`SELECT date FROM bookings WHERE ${ACTIVE} AND ${inMonth}`, [year, month]),
+    pool.query(`SELECT date FROM bookings WHERE ${ACTIVE} AND archived_at IS NULL AND ${inMonth}`, [year, month]),
     pool.query(`SELECT date FROM blocked_days WHERE ${inMonth}`, [year, month]),
   ]);
 
@@ -498,10 +499,11 @@ app.post('/api/admin/theme', requireAdmin, handle(async (req, res) => {
   res.json({ theme });
 }));
 
-const BOOKING_COLS = 'date, time, name, email, phone, contact, services, status, created_at';
+const BOOKING_COLS = 'id, date, time, name, email, phone, contact, services, status, created_at, archived_at';
 
 function mapBooking(r) {
   return {
+    id:        r.id,
     date:      r.date.toISOString().slice(0, 10),
     time:      r.time,
     name:      r.name,
@@ -509,6 +511,7 @@ function mapBooking(r) {
     phone:     r.phone,
     contact:   r.contact,        // legacy rows only
     services:  r.services || [], // empty on rows from before services
+    archived:  !!r.archived_at,
     status:    r.status,
     createdAt: r.created_at,
   };
@@ -524,7 +527,7 @@ app.get('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
 app.get('/api/admin/day/:date', requireAdmin, handle(async (req, res) => {
   const { date } = req.params;
   const [bkRes, dayBlocked] = await Promise.all([
-    pool.query(`SELECT ${BOOKING_COLS} FROM bookings WHERE date = $1 AND ${ACTIVE} ORDER BY time`, [date]),
+    pool.query(`SELECT ${BOOKING_COLS} FROM bookings WHERE date = $1 AND ${ACTIVE} AND archived_at IS NULL ORDER BY time`, [date]),
     isDayBlocked(date),
   ]);
   res.json({ bookings: bkRes.rows.map(mapBooking), dayBlocked });
@@ -561,6 +564,29 @@ app.post('/api/admin/bookings/status', requireAdmin, handle(async (req, res) => 
   else if (action === 'cancel') calendarDelete(eventId);
 
   res.json({ ok: true, status: tr.to });
+}));
+
+// Move a booking from before today into "Të arkivuara", or bring it back.
+// Archived bookings leave the other lists, the day panel and the calendar dots.
+app.post('/api/admin/bookings/archive', requireAdmin, handle(async (req, res) => {
+  const { id, archived = true } = req.body;
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Bad request' });
+  const { rowCount } = archived
+    ? await pool.query(
+        `UPDATE bookings SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL AND date < $2`,
+        [id, nowInAlbania().date])
+    : await pool.query(`UPDATE bookings SET archived_at = NULL WHERE id = $1 AND archived_at IS NOT NULL`, [id]);
+  if (!rowCount) return res.status(409).json({ error: 'Not in expected state' });
+  res.json({ ok: true });
+}));
+
+// Permanently delete a booking — only one already archived
+app.post('/api/admin/bookings/delete', requireAdmin, handle(async (req, res) => {
+  const { id } = req.body;
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Bad request' });
+  const { rowCount } = await pool.query(`DELETE FROM bookings WHERE id = $1 AND archived_at IS NOT NULL`, [id]);
+  if (!rowCount) return res.status(409).json({ error: 'Not archived' });
+  res.json({ ok: true });
 }));
 
 // Admin creates a booking directly (auto-accepted; bypasses day-block, not the time cutoff)
