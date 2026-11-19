@@ -2,6 +2,7 @@
 
 const express    = require('express');
 const path       = require('path');
+const crypto     = require('crypto');
 const { Pool }   = require('pg');
 const jwt        = require('jsonwebtoken');
 const webpush    = require('web-push');
@@ -359,7 +360,42 @@ function notifyClient(kind, { date, time, name, email, phone, services: picks })
 }
 
 // ── Middleware ───────────────────────────────────────────
+// Render puts one proxy in front; trusting it makes req.ip the client's
+// address (for the rate limits) instead of the proxy's.
+app.set('trust proxy', 1);
 app.use(express.json());
+
+// Baseline hardening: no MIME sniffing, no framing (clickjacking on the
+// admin), HTTPS only, and no full URLs leaked to other sites.
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options':    'nosniff',
+    'X-Frame-Options':           'DENY',
+    'Strict-Transport-Security': 'max-age=15552000',
+    'Referrer-Policy':           'strict-origin-when-cross-origin',
+  });
+  next();
+});
+
+// Fixed-window request counter per client IP, kept in memory (the app runs
+// as a single instance). Over `max` within `windowMs` → 429 with `error`.
+function rateLimit({ windowMs, max, error }) {
+  const hits = new Map();   // ip → { count, reset }
+  return (req, res, next) => {
+    const now = Date.now();
+    let h = hits.get(req.ip);
+    if (!h || now > h.reset) hits.set(req.ip, h = { count: 0, reset: now + windowMs });
+    if (++h.count > max) return res.status(429).json({ error });
+    if (hits.size > 10000) for (const [ip, v] of hits) if (now > v.reset) hits.delete(ip);
+    next();
+  };
+}
+
+// Password guessing: 10 tries per 15 minutes per address
+const loginLimit   = rateLimit({ windowMs: 15 * 60e3, max: 10, error: 'Too many attempts' });
+// Each request texts the number given, at the salon's cost: 20 per hour per
+// address is far above any real client yet stops a script
+const bookingLimit = rateLimit({ windowMs: 60 * 60e3, max: 20, error: 'Too many requests' });
 
 // Serve only the site's own files. The repo root also holds server.js,
 // sq.js, package.json, docs and tests, none of which belong on the web.
@@ -378,7 +414,7 @@ function requireAdmin(req, res, next) {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    jwt.verify(token, JWT_SECRET);
+    jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
@@ -446,7 +482,7 @@ app.get('/api/availability/:date', handle(async (req, res) => {
 // Create a booking request (status: pending). The public form has no email
 // field, so none is taken here: otherwise anyone could have the salon's Gmail
 // send a booking email to any address.
-app.post('/api/bookings', handle(async (req, res) => {
+app.post('/api/bookings', bookingLimit, handle(async (req, res) => {
   const { date, time, name, phone, services: picks } = req.body;
   if (!date || !time || !name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
@@ -476,9 +512,14 @@ app.post('/api/bookings', handle(async (req, res) => {
 
 // ── Admin routes ─────────────────────────────────────────
 
-app.post('/api/admin/login', (req, res) => {
+// Compared as hashes so the check takes the same time whatever the input
+const sameSecret = (a, b) => crypto.timingSafeEqual(
+  crypto.createHash('sha256').update(String(a)).digest(),
+  crypto.createHash('sha256').update(String(b)).digest());
+
+app.post('/api/admin/login', loginLimit, (req, res) => {
   if (!ADMIN_READY) return res.status(503).json({ error: 'Admin login not configured' });
-  if (req.body.password !== ADMIN_PASSWORD) {
+  if (!sameSecret(req.body.password ?? '', ADMIN_PASSWORD)) {
     return res.status(401).json({ error: 'Wrong password' });
   }
   const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '12h' });

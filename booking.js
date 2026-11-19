@@ -169,6 +169,7 @@
     'Already booked':      'Na vjen keq, ky orar sapo u zu. Ju lutem zgjidhni një tjetër.',
     'Slot is in the past': 'Na vjen keq, ky orar ka kaluar. Ju lutem zgjidhni një tjetër.',
     'Day not available':   'Na vjen keq, kjo ditë nuk është e disponueshme. Ju lutem zgjidhni një tjetër.',
+    'Too many requests':   'Keni dërguar shumë kërkesa. Ju lutem provoni përsëri pas pak ose na telefononi.',
   };
 
   form.addEventListener('submit', async e => {

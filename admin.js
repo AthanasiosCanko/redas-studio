@@ -130,7 +130,10 @@
       const { token } = await post('/api/admin/login', { password: document.getElementById('login-pw').value });
       setToken(token);
       showDashboard();
-    } catch {
+    } catch (err) {
+      loginError.textContent = err.status === 429
+        ? 'Shumë përpjekje — provoni përsëri pas 15 minutash.'
+        : 'Fjalëkalim i gabuar — provoni përsëri.';
       loginError.hidden = false;
     }
   });

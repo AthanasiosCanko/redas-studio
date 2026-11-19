@@ -214,6 +214,14 @@ test('public bookings take no email, and email HTML escapes client text', () => 
   assert.ok(server.includes('Përshëndetje ${escHtml(name)}'), 'the email greeting must escape the name');
 });
 
+test('login and public bookings are rate-limited; login compares in constant time', () => {
+  const server = read('server.js');
+  assert.ok(server.includes("app.post('/api/admin/login', loginLimit,"), 'login must be rate-limited');
+  assert.ok(server.includes("app.post('/api/bookings', bookingLimit,"), 'public bookings must be rate-limited');
+  assert.ok(/sameSecret\(req\.body\.password/.test(server), 'password must be compared with timingSafeEqual');
+  assert.ok(server.includes("algorithms: ['HS256']"), 'JWT verification must pin the algorithm');
+});
+
 test('every requireAdmin route also references a JWT check', () => {
   const server = read('server.js');
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');
