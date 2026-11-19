@@ -311,12 +311,16 @@ async function sendEmail(to, subject, text, html) {
   }
 }
 
+// Client-supplied text goes into email HTML only through this
+const escHtml = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
 // Compose + send the client email for a booking lifecycle event.
 // kind ∈ 'received' | 'accepted' | 'denied' | 'cancelled'
 function bookingEmail(kind, { to, name, date, time, services: picks }) {
   if (!to) return;
   const fd    = longDate(date);
-  const greet = name ? `Përshëndetje ${name},` : 'Përshëndetje,';
+  const greet = name ? `Përshëndetje ${escHtml(name)},` : 'Përshëndetje,';
 
   const COPY = {
     received:  ['E morëm kërkesën tuaj për rezervim',
@@ -333,9 +337,11 @@ function bookingEmail(kind, { to, name, date, time, services: picks }) {
   const [subject, base] = entry;
   // Requests and confirmations also list what was booked (validated names)
   const line = picks?.length && (kind === 'received' || kind === 'accepted')
-    ? `${base}<br>Shërbimet: ${services.summary(picks)}` : base;
+    ? `${base}<br>Shërbimet: ${escHtml(services.summary(picks))}` : base;
 
-  const text = `${greet}\n\n${line.replace(/<br>/g, '\n').replace(/<\/?strong>/g, '')}\n\n— R-EDA'S STUDIO`;
+  const plain = s => s.replace(/<br>/g, '\n').replace(/<\/?strong>/g, '')
+    .replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" })[e]);
+  const text = `${plain(greet)}\n\n${plain(line)}\n\n— R-EDA'S STUDIO`;
   const html = `<div style="font-family:Georgia,'Times New Roman',serif;color:#5c2520;font-size:16px;line-height:1.6;max-width:480px">
     <p style="margin:0 0 16px">${greet}</p>
     <p style="margin:0 0 24px">${line}</p>
@@ -437,10 +443,12 @@ app.get('/api/availability/:date', handle(async (req, res) => {
   res.json({ taken: bkRes.rows.map(r => r.time), dayBlocked });
 }));
 
-// Create a booking request (status: pending)
+// Create a booking request (status: pending). The public form has no email
+// field, so none is taken here: otherwise anyone could have the salon's Gmail
+// send a booking email to any address.
 app.post('/api/bookings', handle(async (req, res) => {
-  const { date, time, name, email, phone, services: picks } = req.body;
-  if (!date || !time || !name?.trim() || !phone?.trim()) {   // email is optional
+  const { date, time, name, phone, services: picks } = req.body;
+  if (!date || !time || !name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Missing fields' });
   }
   const svcError = services.check(picks);   // at least one main service
@@ -453,7 +461,7 @@ app.post('/api/bookings', handle(async (req, res) => {
   if (taken)   return res.status(409).json({ error: 'Already booked' });
 
   const booking = {
-    date, time, name: name.trim(), email: email?.trim() || null, phone: phone.trim(), services: picks,
+    date, time, name: name.trim(), email: null, phone: phone.trim(), services: picks,
   };
   await insertBooking(booking, 'pending');
 

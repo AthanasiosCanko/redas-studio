@@ -207,6 +207,13 @@ test('archive: only past bookings, delete: only archived ones, both admin-only',
   assert.ok(admin.includes('data-filter="archived"'), 'archived filter missing');
 });
 
+test('public bookings take no email, and email HTML escapes client text', () => {
+  const server = read('server.js');
+  const route = server.match(/app\.post\('\/api\/bookings'[\s\S]*?\n\}\)\);/)[0];
+  assert.ok(!/\bemail\b(?!: null)/.test(route.replace(/\/\/.*$/gm, '')), 'the public route must not read an email from the request');
+  assert.ok(server.includes('Përshëndetje ${escHtml(name)}'), 'the email greeting must escape the name');
+});
+
 test('every requireAdmin route also references a JWT check', () => {
   const server = read('server.js');
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');
