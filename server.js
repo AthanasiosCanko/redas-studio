@@ -85,12 +85,17 @@ function isValidTime(time) {
   return mins >= BOOK_START_MIN && mins <= BOOK_END_MIN;
 }
 
-// A real calendar date written 'YYYY-MM-DD'
+// A real calendar date written 'YYYY-MM-DD', in a sane range (Postgres
+// rejects year 0, and nothing here is booked a century out)
 function isValidDate(d) {
-  if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  if (typeof d !== 'string' || !/^(20\d\d|2100)-\d{2}-\d{2}$/.test(d)) return false;
   const t = new Date(d + 'T00:00:00Z');
   return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d;
 }
+
+// The public form fixes the +355 prefix, so a request texting any other
+// country (premium-rate numbers are the SMS-abuse classic) isn't from it
+const isAlbanianPhone = p => /^355\d{8,9}$/.test(String(p).replace(/\D/g, ''));
 
 // Typed-in text: a string that fits its VARCHAR(255) column. `required`
 // also rejects missing or blank values.
@@ -380,9 +385,6 @@ function notifyClient(kind, { date, time, name, email, phone, services: picks })
 }
 
 // ── Middleware ───────────────────────────────────────────
-// Render puts one proxy in front; trusting it makes req.ip the client's
-// address (for the rate limits) instead of the proxy's.
-app.set('trust proxy', 1);
 app.use(express.json());
 
 // Baseline hardening: no MIME sniffing, no framing (clickjacking on the
@@ -397,16 +399,35 @@ app.use((req, res, next) => {
   next();
 });
 
-// Fixed-window request counter per client IP, kept in memory (the app runs
-// as a single instance). Over `max` within `windowMs` → 429 with `error`.
+// Who is asking, for the rate limits. Render serves every app through
+// Cloudflare, whose edge sets CF-Connecting-IP to the visitor's address and
+// overwrites any copy a client sends. X-Forwarded-For is no use here: its last
+// hop is a Cloudflare edge shared by many visitors, and its first is whatever
+// the client wrote. Locally (no Cloudflare) the socket address stands in.
+// IPv6 visitors count per /64, the block one subscriber usually holds, so
+// rotating addresses inside it doesn't reset the count.
+function clientKey(req) {
+  const ip = req.get('cf-connecting-ip') || req.socket.remoteAddress || '';
+  if (!ip.includes(':') || ip.startsWith('::ffff:')) return ip;
+  const [head, tail = ''] = ip.split('::');
+  const h = head ? head.split(':') : [], t = tail ? tail.split(':') : [];
+  const groups = [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t];
+  return `${groups.slice(0, 4).join(':')}::/64`;
+}
+
+// Fixed-window request counter per client, kept in memory (the app runs as a
+// single instance). Over `max` within `windowMs` → 429 with `error`.
 function rateLimit({ windowMs, max, error }) {
-  const hits = new Map();   // ip → { count, reset }
-  return (req, res, next) => {
+  const hits = new Map();   // client → { count, reset }
+  setInterval(() => {       // drop finished windows so the map can't grow without end
     const now = Date.now();
-    let h = hits.get(req.ip);
-    if (!h || now > h.reset) hits.set(req.ip, h = { count: 0, reset: now + windowMs });
+    for (const [k, v] of hits) if (now > v.reset) hits.delete(k);
+  }, windowMs).unref();
+  return (req, res, next) => {
+    const now = Date.now(), key = clientKey(req);
+    let h = hits.get(key);
+    if (!h || now > h.reset) hits.set(key, h = { count: 0, reset: now + windowMs });
     if (++h.count > max) return res.status(429).json({ error });
-    if (hits.size > 10000) for (const [ip, v] of hits) if (now > v.reset) hits.delete(ip);
     next();
   };
 }
@@ -514,7 +535,9 @@ app.post('/api/bookings', bookingLimit, handle(async (req, res) => {
   if (!date || !time || !name?.trim?.() || !phone?.trim?.()) {
     return res.status(400).json({ error: 'Missing fields' });
   }
-  if (!isValidDate(date) || !isText(name) || !isText(phone)) return res.status(400).json({ error: 'Invalid fields' });
+  if (!isValidDate(date) || !isText(name) || !isText(phone) || !isAlbanianPhone(phone)) {
+    return res.status(400).json({ error: 'Invalid fields' });
+  }
   const svcError = services.check(picks);   // at least one main service
   if (svcError) return res.status(400).json({ error: svcError });
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });

@@ -226,7 +226,7 @@ test('input checks: real calendar dates and column-sized text', () => {
   const server = read('server.js');
   const isValidDate = new Function(`${server.match(/function isValidDate\([\s\S]*?\n}/)[0]}; return isValidDate;`)();
   for (const ok of ['2026-11-19', '2028-02-29', '2026-12-31']) assert.ok(isValidDate(ok), ok);
-  for (const bad of ['2026-02-30', '2027-02-29', '2026-13-01', '26-11-19', '2026-1-1', 'x', 5, null]) {
+  for (const bad of ['2026-02-30', '2027-02-29', '2026-13-01', '26-11-19', '2026-1-1', 'x', 5, null, '0000-01-01', '9999-12-31']) {
     assert.ok(!isValidDate(bad), String(bad));
   }
   const isText = new Function(`const TEXT_MAX = 255; ${server.match(/const isText = [\s\S]*?;\n/)[0]} return isText;`)();
@@ -235,6 +235,21 @@ test('input checks: real calendar dates and column-sized text', () => {
   assert.ok(!isText('  ', { required: true }) && isText('Ana', { required: true }));
   // dates never pass through a JS Date (that shifted them by the server's timezone)
   assert.ok(server.includes('types.setTypeParser(types.builtins.DATE'), 'DATE must be parsed as text');
+});
+
+test('rate limits key on the Cloudflare client address (IPv6 per /64); SMS only to +355', () => {
+  const server = read('server.js');
+  const clientKey = new Function(`${server.match(/function clientKey\([\s\S]*?\n}/)[0]}; return clientKey;`)();
+  const req = (cf, sock) => ({ get: h => (h === 'cf-connecting-ip' ? cf : undefined), socket: { remoteAddress: sock } });
+  assert.equal(clientKey(req('203.0.113.7', '10.0.0.1')), '203.0.113.7');          // Cloudflare's header wins
+  assert.equal(clientKey(req(undefined, '127.0.0.1')), '127.0.0.1');                // local: the socket
+  assert.equal(clientKey(req('2a02:2149:8a1f:4b00:1:2:3:4', '')), '2a02:2149:8a1f:4b00::/64');
+  assert.equal(clientKey(req('2a02:2149:8a1f:4b00::9', '')), '2a02:2149:8a1f:4b00::/64');  // same /64
+  assert.equal(clientKey(req('2a02:2149::1', '')), '2a02:2149:0:0::/64');
+  assert.ok(!server.includes("'trust proxy'"), 'X-Forwarded-For is spoofable/shared on Render; key on CF-Connecting-IP');
+  const isAlbanianPhone = new Function(`return ${server.match(/const isAlbanianPhone = ([^;]*);/)[1]};`)();
+  for (const ok of ['+355 691234567', '+355 69 123 4567', '+355 42345678']) assert.ok(isAlbanianPhone(ok), ok);
+  for (const bad of ['+881 123456789', '+355 691', '+355 +355 691234567', '691234567']) assert.ok(!isAlbanianPhone(bad), bad);
 });
 
 test('every /api/admin route except login requires the admin token', () => {
