@@ -3,7 +3,7 @@
 const express    = require('express');
 const path       = require('path');
 const crypto     = require('crypto');
-const { Pool }   = require('pg');
+const { Pool, types } = require('pg');
 const jwt        = require('jsonwebtoken');
 const webpush    = require('web-push');
 const nodemailer = require('nodemailer');
@@ -17,6 +17,11 @@ if (!process.env.DATABASE_URL) {
   console.error('ERROR: DATABASE_URL environment variable is not set.');
   process.exit(1);
 }
+
+// DATE columns come back as the 'YYYY-MM-DD' text Postgres stores. The
+// default (a JS Date at local midnight) shifted dates by a day whenever the
+// server's timezone wasn't UTC.
+types.setTypeParser(types.builtins.DATE, v => v);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -79,6 +84,21 @@ function isValidTime(time) {
   const mins = h * 60 + m;
   return mins >= BOOK_START_MIN && mins <= BOOK_END_MIN;
 }
+
+// A real calendar date written 'YYYY-MM-DD'
+function isValidDate(d) {
+  if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const t = new Date(d + 'T00:00:00Z');
+  return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d;
+}
+
+// Typed-in text: a string that fits its VARCHAR(255) column. `required`
+// also rejects missing or blank values.
+const TEXT_MAX = 255;
+const isText = (v, { required = false } = {}) =>
+  v == null || v === ''
+    ? !required
+    : typeof v === 'string' && v.length <= TEXT_MAX && (!required || v.trim().length > 0);
 
 // Returns { date: 'YYYY-MM-DD', totalMins } for right now in Albania time.
 function nowInAlbania() {
@@ -455,15 +475,21 @@ app.get('/api/theme', handle(async (req, res) => {
 
 // Calendar month data: blocked days + active-booking dot counts
 app.get('/api/calendar/:year/:month', handle(async (req, res) => {
-  const { year, month } = req.params;
-  const inMonth = `EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2`;
+  const year = Number(req.params.year), month = Number(req.params.month);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) {
+    return res.status(400).json({ error: 'Bad month' });
+  }
+  // A date range (not EXTRACT) so the date indexes apply
+  const pad = n => String(n).padStart(2, '0');
+  const range = [`${year}-${pad(month)}-01`, month === 12 ? `${year + 1}-01-01` : `${year}-${pad(month + 1)}-01`];
+  const inMonth = `date >= $1 AND date < $2`;
   const [bkRes, bdRes] = await Promise.all([
-    pool.query(`SELECT date FROM bookings WHERE ${ACTIVE} AND archived_at IS NULL AND ${inMonth}`, [year, month]),
-    pool.query(`SELECT date FROM blocked_days WHERE ${inMonth}`, [year, month]),
+    pool.query(`SELECT date FROM bookings WHERE ${ACTIVE} AND archived_at IS NULL AND ${inMonth}`, range),
+    pool.query(`SELECT date FROM blocked_days WHERE ${inMonth}`, range),
   ]);
 
   const days = {};
-  const day  = row => (days[row.date.toISOString().slice(0, 10)] ||= { blocked: false, bookingCount: 0 });
+  const day  = row => (days[row.date] ||= { blocked: false, bookingCount: 0 });
   for (const row of bkRes.rows) day(row).bookingCount++;
   for (const row of bdRes.rows) day(row).blocked = true;
   res.json({ days });
@@ -472,6 +498,7 @@ app.get('/api/calendar/:year/:month', handle(async (req, res) => {
 // Availability for one day (public — only the taken times, no personal info)
 app.get('/api/availability/:date', handle(async (req, res) => {
   const { date } = req.params;
+  if (!isValidDate(date)) return res.status(400).json({ error: 'Bad date' });
   const [bkRes, dayBlocked] = await Promise.all([
     pool.query(`SELECT time FROM bookings WHERE date = $1 AND ${ACTIVE} ORDER BY time`, [date]),
     isDayBlocked(date),
@@ -484,9 +511,10 @@ app.get('/api/availability/:date', handle(async (req, res) => {
 // send a booking email to any address.
 app.post('/api/bookings', bookingLimit, handle(async (req, res) => {
   const { date, time, name, phone, services: picks } = req.body;
-  if (!date || !time || !name?.trim() || !phone?.trim()) {
+  if (!date || !time || !name?.trim?.() || !phone?.trim?.()) {
     return res.status(400).json({ error: 'Missing fields' });
   }
+  if (!isValidDate(date) || !isText(name) || !isText(phone)) return res.status(400).json({ error: 'Invalid fields' });
   const svcError = services.check(picks);   // at least one main service
   if (svcError) return res.status(400).json({ error: svcError });
   if (!isValidTime(time)) return res.status(400).json({ error: 'Invalid time' });
@@ -553,7 +581,7 @@ const BOOKING_COLS = 'id, date, time, name, email, phone, contact, services, sta
 function mapBooking(r) {
   return {
     id:        r.id,
-    date:      r.date.toISOString().slice(0, 10),
+    date:      r.date,
     time:      r.time,
     name:      r.name,
     email:     r.email,
@@ -575,6 +603,7 @@ app.get('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
 // One day's active bookings + blocked state (for the availability panel)
 app.get('/api/admin/day/:date', requireAdmin, handle(async (req, res) => {
   const { date } = req.params;
+  if (!isValidDate(date)) return res.status(400).json({ error: 'Bad date' });
   const [bkRes, dayBlocked] = await Promise.all([
     pool.query(`SELECT ${BOOKING_COLS} FROM bookings WHERE date = $1 AND ${ACTIVE} AND archived_at IS NULL ORDER BY time`, [date]),
     isDayBlocked(date),
@@ -592,7 +621,7 @@ const STATUS_TRANSITIONS = {
 app.post('/api/admin/bookings/status', requireAdmin, handle(async (req, res) => {
   const { date, time, action } = req.body;
   const tr = STATUS_TRANSITIONS[action];
-  if (!date || !time || !tr) return res.status(400).json({ error: 'Bad request' });
+  if (!isValidDate(date) || typeof time !== 'string' || !tr) return res.status(400).json({ error: 'Bad request' });
 
   const { rows } = await pool.query(
     `UPDATE bookings SET status = $1 WHERE date = $2 AND time = $3 AND status = $4
@@ -641,8 +670,11 @@ app.post('/api/admin/bookings/delete', requireAdmin, handle(async (req, res) => 
 // Admin creates a booking directly (auto-accepted; bypasses day-block, not the time cutoff)
 app.post('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
   const { date, time, name, email, phone, services: picks = [] } = req.body;
-  if (!date || !time || !name?.trim()) {
+  if (!date || !time || !name?.trim?.()) {
     return res.status(400).json({ error: 'Missing fields' });
+  }
+  if (!isValidDate(date) || !isText(name) || !isText(email) || !isText(phone)) {
+    return res.status(400).json({ error: 'Invalid fields' });
   }
   const svcError = services.check(picks, { required: false });   // optional for the admin
   if (svcError) return res.status(400).json({ error: svcError });
@@ -663,7 +695,7 @@ app.post('/api/admin/bookings', requireAdmin, handle(async (req, res) => {
 // Delete the block if there is one, otherwise add it
 app.post('/api/admin/blocked-days/toggle', requireAdmin, handle(async (req, res) => {
   const { date } = req.body;
-  if (!date) return res.status(400).json({ error: 'Missing date' });
+  if (!isValidDate(date)) return res.status(400).json({ error: 'Bad date' });
   const { rowCount } = await pool.query(`DELETE FROM blocked_days WHERE date = $1`, [date]);
   if (!rowCount) {
     await pool.query(`INSERT INTO blocked_days (date) VALUES ($1) ON CONFLICT DO NOTHING`, [date]);

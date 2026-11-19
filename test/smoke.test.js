@@ -222,6 +222,21 @@ test('login and public bookings are rate-limited; login compares in constant tim
   assert.ok(server.includes("algorithms: ['HS256']"), 'JWT verification must pin the algorithm');
 });
 
+test('input checks: real calendar dates and column-sized text', () => {
+  const server = read('server.js');
+  const isValidDate = new Function(`${server.match(/function isValidDate\([\s\S]*?\n}/)[0]}; return isValidDate;`)();
+  for (const ok of ['2026-11-19', '2028-02-29', '2026-12-31']) assert.ok(isValidDate(ok), ok);
+  for (const bad of ['2026-02-30', '2027-02-29', '2026-13-01', '26-11-19', '2026-1-1', 'x', 5, null]) {
+    assert.ok(!isValidDate(bad), String(bad));
+  }
+  const isText = new Function(`const TEXT_MAX = 255; ${server.match(/const isText = [\s\S]*?;\n/)[0]} return isText;`)();
+  assert.ok(isText('Ana') && isText(undefined) && isText(''));
+  assert.ok(!isText('a'.repeat(256)) && !isText(5) && !isText({}));
+  assert.ok(!isText('  ', { required: true }) && isText('Ana', { required: true }));
+  // dates never pass through a JS Date (that shifted them by the server's timezone)
+  assert.ok(server.includes('types.setTypeParser(types.builtins.DATE'), 'DATE must be parsed as text');
+});
+
 test('every requireAdmin route also references a JWT check', () => {
   const server = read('server.js');
   assert.ok(server.includes('jwt.verify'), 'requireAdmin must verify the JWT');
