@@ -30,9 +30,20 @@
       },
     });
     const data = await res.json();
+    // The 12-hour token ran out mid-session: back to the login screen
+    // with a reason, instead of every action failing one by one
+    if (res.status === 401 && token) {
+      clearToken();
+      showLogin('Seanca skadoi — hyni përsëri.');
+      throw Object.assign(new Error('Session expired'), { status: 401, expired: true });
+    }
     if (!res.ok) throw Object.assign(new Error(data.error || 'API error'), { status: res.status });
     return data;
   }
+
+  // An action's error alert — skipped when the session expired, since the
+  // login screen already says why
+  const failed = (err, message) => { if (!err?.expired) alert(message); };
 
   const post = (url, body) => apiFetch(url, { method: 'POST', body: JSON.stringify(body) });
 
@@ -117,7 +128,12 @@
     showDashboard(bookings);
   }
 
-  function showLogin()     { loginScreen.hidden = false; dashboard.hidden = true; }
+  function showLogin(reason) {
+    loginScreen.hidden = false;
+    dashboard.hidden   = true;
+    loginError.textContent = reason || '';
+    loginError.hidden      = !reason;
+  }
   function showDashboard(bookings) {
     loginScreen.hidden = true;
     dashboard.hidden   = false;
@@ -254,8 +270,8 @@
     try {
       await post(url, { id, ...body });
       await refreshAll();
-    } catch {
-      alert(action === 'delete' ? 'Rezervimi nuk u fshi.' : 'Rezervimi nuk u përditësua.');
+    } catch (err) {
+      failed(err, action === 'delete' ? 'Rezervimi nuk u fshi.' : 'Rezervimi nuk u përditësua.');
     }
   }
 
@@ -264,8 +280,8 @@
     try {
       await post('/api/admin/bookings/status', { date, time, action });
       await refreshAll();
-    } catch {
-      alert('Rezervimi nuk u përditësua.');
+    } catch (err) {
+      failed(err, 'Rezervimi nuk u përditësua.');
     }
   }
 
@@ -344,7 +360,7 @@
       await post('/api/admin/blocked-days/toggle', { date: admSelectedDate });
       await loadAdmCalendar();
       await loadDayPanel(admSelectedDate);
-    } catch { alert('Nuk u përditësua.'); }
+    } catch (err) { failed(err, 'Nuk u përditësua.'); }
   });
 
   addBookingBtn.addEventListener('click', () => {
@@ -375,7 +391,10 @@
   let admChosen    = null;
   let admPicker    = null;
 
+  let admOpener = null;   // focus goes back here when the modal closes
+
   function openAdmModal(dateKey) {
+    admOpener = document.activeElement;
     admModalDate         = dateKey;
     admBkSub.textContent = formatDate(dateKey);
     admBkForm.hidden     = false;
@@ -407,7 +426,10 @@
     return !msg;
   }
 
-  function closeAdmModal() { admOverlay.hidden = true; }
+  function closeAdmModal() {
+    admOverlay.hidden = true;
+    admOpener?.focus();
+  }
 
   admBkClose.addEventListener('click', closeAdmModal);
   admOverlay.addEventListener('click', e => { if (e.target === admOverlay) closeAdmModal(); });
@@ -445,7 +467,7 @@
       admBkSuccess.hidden = false;
       setTimeout(() => { closeAdmModal(); refreshAll(); }, 1300);
     } catch (err) {
-      alert(ADD_ERRORS[err.message] || 'Rezervimi nuk u ruajt.');
+      failed(err, ADD_ERRORS[err.message] || 'Rezervimi nuk u ruajt.');
     } finally {
       admBkSubmit.disabled    = false;
       admBkSubmit.textContent = origLabel;

@@ -20,10 +20,12 @@
 
   function create(container, { initial = '10:00', onChange } = {}) {
     container.classList.add('time-picker');
+    container.setAttribute('role', 'group');
+    container.setAttribute('aria-label', 'Ora e takimit');
     container.innerHTML = `
-      <div class="tp-wheel" data-wheel="h"></div>
-      <span class="tp-colon">:</span>
-      <div class="tp-wheel" data-wheel="m"></div>
+      <div class="tp-wheel" data-wheel="h" role="group" aria-label="Ora"></div>
+      <span class="tp-colon" aria-hidden="true">:</span>
+      <div class="tp-wheel" data-wheel="m" role="group" aria-label="Minutat"></div>
       <div class="tp-highlight" aria-hidden="true"></div>
     `;
     const hWheel = container.querySelector('[data-wheel="h"]');

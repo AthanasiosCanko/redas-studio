@@ -84,7 +84,9 @@
       cell.type        = 'button';
       cell.className   = 'cal-cell';
       cell.textContent = d;
-      decorate(cell, dateKey(year, month, d));
+      const key = dateKey(year, month, d);
+      cell.setAttribute('aria-label', formatDate(key, { year: true }));   // not just "30"
+      decorate(cell, key);
       grid.appendChild(cell);
     }
   }

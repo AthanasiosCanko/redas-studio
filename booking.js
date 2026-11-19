@@ -151,7 +151,10 @@
   });
 
   // ── Modal ────────────────────────────────────────────────
+  let opener = null;   // focus goes back here when the modal closes
+
   function openModal(date, time) {
+    opener = document.activeElement;
     modalSub.textContent = `${friendlyDate(date)}  ·  ${time}`;
     form.hidden          = false;
     successDiv.hidden    = true;
@@ -163,12 +166,16 @@
     overlay.querySelector('.svc-row input').focus();
   }
 
-  function closeModal() { overlay.hidden = true; }
+  function closeModal() {
+    overlay.hidden = true;
+    opener?.focus();
+  }
 
   const ERRORS = {
     'Already booked':      'Na vjen keq, ky orar sapo u zu. Ju lutem zgjidhni një tjetër.',
     'Slot is in the past': 'Na vjen keq, ky orar ka kaluar. Ju lutem zgjidhni një tjetër.',
     'Day not available':   'Na vjen keq, kjo ditë nuk është e disponueshme. Ju lutem zgjidhni një tjetër.',
+    'Invalid fields':      'Ju lutem kontrolloni emrin dhe numrin e telefonit.',
     'Too many requests':   'Keni dërguar shumë kërkesa. Ju lutem provoni përsëri pas pak ose na telefononi.',
   };
 
