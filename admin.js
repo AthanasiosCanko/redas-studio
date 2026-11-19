@@ -121,7 +121,8 @@
     let bookings;
     try {
       ({ bookings } = await apiFetch('/api/admin/bookings'));
-    } catch {
+    } catch (err) {
+      if (err.expired) return;   // apiFetch already showed the login + reason
       clearToken();
       return showLogin();
     }
@@ -131,12 +132,17 @@
   function showLogin(reason) {
     loginScreen.hidden = false;
     dashboard.hidden   = true;
+    admOverlay.hidden  = true;   // the add-booking modal sits outside #dashboard
     loginError.textContent = reason || '';
     loginError.hidden      = !reason;
   }
   function showDashboard(bookings) {
     loginScreen.hidden = true;
     dashboard.hidden   = false;
+    // Start clean after a re-login: no day panel or status from before it
+    admSelectedDate    = null;
+    dayPanel.hidden    = true;
+    themeStatus.hidden = true;
     if (bookings) renderBookings(bookings);
     else loadBookings();
     initAdminCalendar();
