@@ -102,22 +102,26 @@
   }
 
   // ── Session ───────────────────────────────────────────────
+  // The bookings fetch doubles as the token check, and its result is
+  // rendered straight away rather than fetched a second time
   async function checkSession() {
     if (!getToken()) return showLogin();
+    let bookings;
     try {
-      await apiFetch('/api/admin/bookings');
-      showDashboard();
+      ({ bookings } = await apiFetch('/api/admin/bookings'));
     } catch {
       clearToken();
-      showLogin();
+      return showLogin();
     }
+    showDashboard(bookings);
   }
 
   function showLogin()     { loginScreen.hidden = false; dashboard.hidden = true; }
-  function showDashboard() {
+  function showDashboard(bookings) {
     loginScreen.hidden = true;
     dashboard.hidden   = false;
-    loadBookings();
+    if (bookings) renderBookings(bookings);
+    else loadBookings();
     initAdminCalendar();
     loadTheme();
     subscribeToPush();
