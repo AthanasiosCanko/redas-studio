@@ -65,9 +65,10 @@
   let currentFilter   = 'requests';
 
   // ── Utilities ────────────────────────────────────────────
+  // Escapes for HTML text and attribute values (rows put data in both)
   function esc(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   }
 
   const hint = text => `<span class="adm-hint">${text}</span>`;
