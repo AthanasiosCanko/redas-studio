@@ -16,7 +16,8 @@ against **Neon** Postgres.
 
 ## Non-obvious things worth knowing up front
 
-- **Deploy by pushing; do not run the app locally** — no local database exists.
+- **Deploy by pushing; never point a local run at the Neon database** — for a runtime check
+  use a throwaway Postgres (see OPERATIONS.md). `npm run check` runs every test.
 - **Notifications fail silently without their env vars** — the booking still succeeds.
 - **Motion is deliberately not gated on `prefers-reduced-motion`** — do not reintroduce it.
 - **`sw.js` must keep bypassing `.mp4`/`.webm`** — otherwise iOS playback breaks.

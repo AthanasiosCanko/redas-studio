@@ -5,7 +5,12 @@
 - **Frontend** — plain HTML/CSS/JS (no build step)
 - **Backend** — Node.js + Express (`server.js`): static files + REST API
 - **Database** — Postgres on Neon (serverless); `DATABASE_URL` set in Render
-- **Auth** — Admin JWT via `POST /api/admin/login`, token in `sessionStorage`
+- **Auth** — Admin JWT (HS256, 12 h) via `POST /api/admin/login`, token in `sessionStorage`;
+  an expired token sends the panel back to the login screen
+- **Hardening** — login limited to 10 tries / 15 min and public booking requests to 20 / hour
+  per client (in memory, keyed on Cloudflare's `CF-Connecting-IP`, IPv6 per /64); every
+  input is validated (real dates 2000–2100, text ≤ 255); public requests text only +355
+  numbers and take no email; nosniff / no-framing / HSTS headers; email HTML is escaped
 - **PWA** — installable; service worker (`sw.js`) + Web Push to admin on new requests
 
 ## Project structure
@@ -31,6 +36,7 @@ sq.js               — Albanian dates and SMS copy (server-side)
 manifest.json       — PWA manifest, public site (start_url "/")
 manifest-admin.json — PWA manifest, admin app (start_url "/admin")
 render.yaml         — Render Blueprint (web service only; DB is external Neon)
+.env.example        — every variable server.js reads (a test keeps it complete)
 test/smoke.test.js  — dependency-free smoke tests
 assets/             — logo, PWA icons, hero video (mp4+webm, ≤3MB) + poster
 ```

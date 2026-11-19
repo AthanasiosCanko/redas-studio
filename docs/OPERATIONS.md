@@ -35,10 +35,21 @@ connection string points at `localhost`. Optional keys no-op silently — see
 ## Tests
 
 ```bash
-npm test          # node --test — runs test/smoke.test.js
+npm run check     # node --test — syntax of every JS file + test/smoke.test.js
 ```
 
-No database or browser required.
+No database, browser or secrets required. Node 20+ (nodemailer 10 needs it).
+
+For a runtime check, run the app against a **throwaway** local Postgres — never the Neon
+database. `TZ=UTC` matches Render; every variable is listed in `.env.example`.
+
+```bash
+initdb -D /tmp/redas-pg -U postgres --auth=trust
+pg_ctl -D /tmp/redas-pg -o "-p 54329 -c listen_addresses=127.0.0.1" start
+psql -h 127.0.0.1 -p 54329 -U postgres -c "create database redas"
+TZ=UTC ADMIN_PASSWORD=pw JWT_SECRET=dev \
+  DATABASE_URL=postgres://postgres@localhost:54329/redas node server.js   # tables self-create
+```
 
 ## Admin panel
 
