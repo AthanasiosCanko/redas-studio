@@ -16,7 +16,7 @@
 ## Project structure
 
 ```
-index.html          — public landing page (video hero, price list, booking calendar)
+index.html          — public landing page (video hero, price list, booking calendar, WhatsApp button)
 admin.html          — admin dashboard (bookings + availability)
 styles.css          — design tokens, video-hero, price-list
 booking.css         — calendar, wheel time picker, booking modal
