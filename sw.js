@@ -1,5 +1,5 @@
 /* ── R-EDA'S STUDIO — Service Worker ───────────────────── */
-const CACHE = 'redas-v5';
+const CACHE = 'redas-v6';
 const PRECACHE = [
   '/',
   '/index.html',
